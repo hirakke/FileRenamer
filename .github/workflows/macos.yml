@@ -1,0 +1,18 @@
+name: macOS build and safety tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Safety tests
+        run: swift run RenameKitTests
+      - name: Release build
+        run: >-
+          xcodebuild -project FileRenamer.xcodeproj -scheme FileRenamer
+          -configuration Release -destination 'generic/platform=macOS'
+          -derivedDataPath .derivedData CODE_SIGNING_ALLOWED=NO build

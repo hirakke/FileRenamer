@@ -1,0 +1,597 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1A0000000000000000000001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000001 /* AppModel.swift */; };
+		1A0000000000000000000002 /* FileRenamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000002 /* FileRenamerApp.swift */; };
+		1A0000000000000000000003 /* Support/FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000003 /* Support/FlowLayout.swift */; };
+		1A0000000000000000000004 /* Support/GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000004 /* Support/GlassStyle.swift */; };
+		1A0000000000000000000005 /* Support/InlineTextRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000005 /* Support/InlineTextRun.swift */; };
+		1A0000000000000000000006 /* Support/ListScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000006 /* Support/ListScrollController.swift */; };
+		1A0000000000000000000007 /* Support/Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000007 /* Support/Palette.swift */; };
+		1A0000000000000000000008 /* Support/SortValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000008 /* Support/SortValueFormatter.swift */; };
+		1A0000000000000000000009 /* Support/ThumbnailProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000009 /* Support/ThumbnailProvider.swift */; };
+		1A000000000000000000000A /* Views/BlockFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000A /* Views/BlockFace.swift */; };
+		1A000000000000000000000B /* Views/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000B /* Views/ContentView.swift */; };
+		1A000000000000000000000C /* Views/FileGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000C /* Views/FileGridView.swift */; };
+		1A000000000000000000000D /* Views/FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000D /* Views/FileListView.swift */; };
+		1A000000000000000000000E /* Views/NamingRuleBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000E /* Views/NamingRuleBar.swift */; };
+		1A000000000000000000000F /* Views/OrderStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000F /* Views/OrderStepper.swift */; };
+		2A0000000000000000000001 /* Engine/FileNameSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */; };
+		2A0000000000000000000002 /* Engine/ItemSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000002 /* Engine/ItemSorter.swift */; };
+		2A0000000000000000000003 /* Engine/RenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000003 /* Engine/RenameEngine.swift */; };
+		2A0000000000000000000004 /* Engine/RenameValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000004 /* Engine/RenameValidator.swift */; };
+		2A0000000000000000000005 /* IO/FileImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000005 /* IO/FileImporter.swift */; };
+		2A0000000000000000000006 /* IO/FileKinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000006 /* IO/FileKinds.swift */; };
+		2A0000000000000000000007 /* IO/MetadataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000007 /* IO/MetadataLoader.swift */; };
+		2A0000000000000000000008 /* IO/RenameExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000008 /* IO/RenameExecutor.swift */; };
+		2A0000000000000000000009 /* IO/RenameHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000009 /* IO/RenameHistory.swift */; };
+		2A000000000000000000000A /* IO/RulePresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000A /* IO/RulePresetStore.swift */; };
+		2A000000000000000000000B /* Models/FileMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000B /* Models/FileMetadata.swift */; };
+		2A000000000000000000000C /* Models/RenameItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000C /* Models/RenameItem.swift */; };
+		2A000000000000000000000D /* Models/RenamePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000D /* Models/RenamePreview.swift */; };
+		2A000000000000000000000E /* Models/RenameRule+TextEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */; };
+		2A000000000000000000000F /* Models/RenameRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000F /* Models/RenameRule.swift */; };
+		3A0000000000000000000001 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000001 /* EngineTests.swift */; };
+		3A0000000000000000000002 /* SafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000002 /* SafetyTests.swift */; };
+		3A0000000000000000000003 /* TestHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000003 /* TestHarness.swift */; };
+		3A0000000000000000000004 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000004 /* main.swift */; };
+		4A0000000000000000000001 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
+		4A0000000000000000000002 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
+		6F27EE15302C7D0700497B26 /* FileRenamer.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6F27EE14302C7D0700497B26 /* FileRenamer.icon */; };
+		B00000000000000000000010 /* Views/PresetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000010 /* Views/PresetMenu.swift */; };
+		B00000000000000000000011 /* Views/RuleTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000011 /* Views/RuleTextField.swift */; };
+		B00000000000000000000012 /* Views/StatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000012 /* Views/StatusBar.swift */; };
+		B00000000000000000000013 /* Views/TokenEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000013 /* Views/TokenEditor.swift */; };
+		B00000000000000000000014 /* Views/TokenInsertPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000014 /* Views/TokenInsertPanel.swift */; };
+		C00000000000000000000010 /* Models/RenameRulePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000010 /* Models/RenameRulePreset.swift */; };
+		C00000000000000000000011 /* IO/RenameJournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000011 /* IO/RenameJournalStore.swift */; };
+		C00000000000000000000012 /* IO/RenameHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000012 /* IO/RenameHistoryStore.swift */; };
+		D00000000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D60000000000000000000001 /* Resources/Assets.xcassets */; };
+		D00000000000000000000002 /* Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A00000000000000000000052 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000011;
+			remoteInfo = RenameKit;
+		};
+		A00000000000000000000053 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000011;
+			remoteInfo = RenameKit;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		5A0000000000000000000001 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		5A0000000000000000000002 /* FileRenamerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileRenamerApp.swift; sourceTree = "<group>"; };
+		5A0000000000000000000003 /* Support/FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/FlowLayout.swift; sourceTree = "<group>"; };
+		5A0000000000000000000004 /* Support/GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/GlassStyle.swift; sourceTree = "<group>"; };
+		5A0000000000000000000005 /* Support/InlineTextRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/InlineTextRun.swift; sourceTree = "<group>"; };
+		5A0000000000000000000006 /* Support/ListScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/ListScrollController.swift; sourceTree = "<group>"; };
+		5A0000000000000000000007 /* Support/Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Palette.swift; sourceTree = "<group>"; };
+		5A0000000000000000000008 /* Support/SortValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/SortValueFormatter.swift; sourceTree = "<group>"; };
+		5A0000000000000000000009 /* Support/ThumbnailProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/ThumbnailProvider.swift; sourceTree = "<group>"; };
+		5A000000000000000000000A /* Views/BlockFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/BlockFace.swift; sourceTree = "<group>"; };
+		5A000000000000000000000B /* Views/ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ContentView.swift; sourceTree = "<group>"; };
+		5A000000000000000000000C /* Views/FileGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/FileGridView.swift; sourceTree = "<group>"; };
+		5A000000000000000000000D /* Views/FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/FileListView.swift; sourceTree = "<group>"; };
+		5A000000000000000000000E /* Views/NamingRuleBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/NamingRuleBar.swift; sourceTree = "<group>"; };
+		5A000000000000000000000F /* Views/OrderStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/OrderStepper.swift; sourceTree = "<group>"; };
+		6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/FileNameSanitizer.swift; sourceTree = "<group>"; };
+		6A0000000000000000000002 /* Engine/ItemSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/ItemSorter.swift; sourceTree = "<group>"; };
+		6A0000000000000000000003 /* Engine/RenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/RenameEngine.swift; sourceTree = "<group>"; };
+		6A0000000000000000000004 /* Engine/RenameValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/RenameValidator.swift; sourceTree = "<group>"; };
+		6A0000000000000000000005 /* IO/FileImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/FileImporter.swift; sourceTree = "<group>"; };
+		6A0000000000000000000006 /* IO/FileKinds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/FileKinds.swift; sourceTree = "<group>"; };
+		6A0000000000000000000007 /* IO/MetadataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/MetadataLoader.swift; sourceTree = "<group>"; };
+		6A0000000000000000000008 /* IO/RenameExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameExecutor.swift; sourceTree = "<group>"; };
+		6A0000000000000000000009 /* IO/RenameHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameHistory.swift; sourceTree = "<group>"; };
+		6A000000000000000000000A /* IO/RulePresetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RulePresetStore.swift; sourceTree = "<group>"; };
+		6A000000000000000000000B /* Models/FileMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/FileMetadata.swift; sourceTree = "<group>"; };
+		6A000000000000000000000C /* Models/RenameItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameItem.swift; sourceTree = "<group>"; };
+		6A000000000000000000000D /* Models/RenamePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenamePreview.swift; sourceTree = "<group>"; };
+		6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/RenameRule+TextEditing.swift"; sourceTree = "<group>"; };
+		6A000000000000000000000F /* Models/RenameRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameRule.swift; sourceTree = "<group>"; };
+		6F27EE14302C7D0700497B26 /* FileRenamer.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = FileRenamer.icon; sourceTree = "<group>"; };
+		7A0000000000000000000001 /* EngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
+		7A0000000000000000000002 /* SafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyTests.swift; sourceTree = "<group>"; };
+		7A0000000000000000000003 /* TestHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHarness.swift; sourceTree = "<group>"; };
+		7A0000000000000000000004 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A00000000000000000000060 /* FileRenamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FileRenamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000061 /* libRenameKit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRenameKit.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000062 /* RenameKitTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RenameKitTests; sourceTree = BUILT_PRODUCTS_DIR; };
+		A60000000000000000000010 /* Models/RenameRulePreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameRulePreset.swift; sourceTree = "<group>"; };
+		A60000000000000000000011 /* IO/RenameJournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameJournalStore.swift; sourceTree = "<group>"; };
+		A60000000000000000000012 /* IO/RenameHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameHistoryStore.swift; sourceTree = "<group>"; };
+		D60000000000000000000001 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		D60000000000000000000003 /* Config/FileRenamer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Config/FileRenamer.entitlements; sourceTree = SOURCE_ROOT; };
+		F00000000000000000000010 /* Views/PresetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/PresetMenu.swift; sourceTree = "<group>"; };
+		F00000000000000000000011 /* Views/RuleTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RuleTextField.swift; sourceTree = "<group>"; };
+		F00000000000000000000012 /* Views/StatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/StatusBar.swift; sourceTree = "<group>"; };
+		F00000000000000000000013 /* Views/TokenEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TokenEditor.swift; sourceTree = "<group>"; };
+		F00000000000000000000014 /* Views/TokenInsertPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TokenInsertPanel.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000000041 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A0000000000000000000001 /* libRenameKit.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000045 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A0000000000000000000002 /* libRenameKit.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				6F27EE14302C7D0700497B26 /* FileRenamer.icon */,
+				D60000000000000000000003 /* Config/FileRenamer.entitlements */,
+				A00000000000000000000004 /* FileRenamer */,
+				A00000000000000000000005 /* RenameKit */,
+				A00000000000000000000006 /* RenameKitTests */,
+				A00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000060 /* FileRenamer.app */,
+				A00000000000000000000061 /* libRenameKit.a */,
+				A00000000000000000000062 /* RenameKitTests */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000004 /* FileRenamer */ = {
+			isa = PBXGroup;
+			children = (
+				5A0000000000000000000001 /* AppModel.swift */,
+				5A0000000000000000000002 /* FileRenamerApp.swift */,
+				5A0000000000000000000003 /* Support/FlowLayout.swift */,
+				5A0000000000000000000004 /* Support/GlassStyle.swift */,
+				5A0000000000000000000005 /* Support/InlineTextRun.swift */,
+				5A0000000000000000000006 /* Support/ListScrollController.swift */,
+				5A0000000000000000000007 /* Support/Palette.swift */,
+				5A0000000000000000000008 /* Support/SortValueFormatter.swift */,
+				5A0000000000000000000009 /* Support/ThumbnailProvider.swift */,
+				5A000000000000000000000A /* Views/BlockFace.swift */,
+				5A000000000000000000000B /* Views/ContentView.swift */,
+				5A000000000000000000000C /* Views/FileGridView.swift */,
+				5A000000000000000000000D /* Views/FileListView.swift */,
+				5A000000000000000000000E /* Views/NamingRuleBar.swift */,
+				5A000000000000000000000F /* Views/OrderStepper.swift */,
+				F00000000000000000000010 /* Views/PresetMenu.swift */,
+				F00000000000000000000011 /* Views/RuleTextField.swift */,
+				F00000000000000000000012 /* Views/StatusBar.swift */,
+				F00000000000000000000013 /* Views/TokenEditor.swift */,
+				F00000000000000000000014 /* Views/TokenInsertPanel.swift */,
+				D60000000000000000000001 /* Resources/Assets.xcassets */,
+				D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */,
+			);
+			name = FileRenamer;
+			path = Sources/FileRenamer;
+			sourceTree = SOURCE_ROOT;
+		};
+		A00000000000000000000005 /* RenameKit */ = {
+			isa = PBXGroup;
+			children = (
+				6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */,
+				6A0000000000000000000002 /* Engine/ItemSorter.swift */,
+				6A0000000000000000000003 /* Engine/RenameEngine.swift */,
+				6A0000000000000000000004 /* Engine/RenameValidator.swift */,
+				6A0000000000000000000005 /* IO/FileImporter.swift */,
+				6A0000000000000000000006 /* IO/FileKinds.swift */,
+				6A0000000000000000000007 /* IO/MetadataLoader.swift */,
+				6A0000000000000000000008 /* IO/RenameExecutor.swift */,
+				6A0000000000000000000009 /* IO/RenameHistory.swift */,
+				6A000000000000000000000A /* IO/RulePresetStore.swift */,
+				6A000000000000000000000B /* Models/FileMetadata.swift */,
+				6A000000000000000000000C /* Models/RenameItem.swift */,
+				6A000000000000000000000D /* Models/RenamePreview.swift */,
+				6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */,
+				6A000000000000000000000F /* Models/RenameRule.swift */,
+				A60000000000000000000010 /* Models/RenameRulePreset.swift */,
+				A60000000000000000000011 /* IO/RenameJournalStore.swift */,
+				A60000000000000000000012 /* IO/RenameHistoryStore.swift */,
+			);
+			name = RenameKit;
+			path = Sources/RenameKit;
+			sourceTree = SOURCE_ROOT;
+		};
+		A00000000000000000000006 /* RenameKitTests */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000000000000000000001 /* EngineTests.swift */,
+				7A0000000000000000000002 /* SafetyTests.swift */,
+				7A0000000000000000000003 /* TestHarness.swift */,
+				7A0000000000000000000004 /* main.swift */,
+			);
+			name = RenameKitTests;
+			path = Sources/RenameKitTests;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000010 /* FileRenamer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000020 /* Build configuration list for PBXNativeTarget "FileRenamer" */;
+			buildPhases = (
+				A00000000000000000000040 /* Sources */,
+				A00000000000000000000041 /* Frameworks */,
+				A00000000000000000000042 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000000050 /* PBXTargetDependency */,
+			);
+			name = FileRenamer;
+			productName = FileRenamer;
+			productReference = A00000000000000000000060 /* FileRenamer.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A00000000000000000000011 /* RenameKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000021 /* Build configuration list for PBXNativeTarget "RenameKit" */;
+			buildPhases = (
+				A00000000000000000000043 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RenameKit;
+			productName = RenameKit;
+			productReference = A00000000000000000000061 /* libRenameKit.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		A00000000000000000000012 /* RenameKitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000022 /* Build configuration list for PBXNativeTarget "RenameKitTests" */;
+			buildPhases = (
+				A00000000000000000000044 /* Sources */,
+				A00000000000000000000045 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000000051 /* PBXTargetDependency */,
+			);
+			name = RenameKitTests;
+			productName = RenameKitTests;
+			productReference = A00000000000000000000062 /* RenameKitTests */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					A00000000000000000000010 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					A00000000000000000000011 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					A00000000000000000000012 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = A00000000000000000000023 /* Build configuration list for PBXProject "FileRenamer" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = ja;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				ja,
+				en,
+				Base,
+			);
+			mainGroup = A00000000000000000000002;
+			productRefGroup = A00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000010 /* FileRenamer */,
+				A00000000000000000000011 /* RenameKit */,
+				A00000000000000000000012 /* RenameKitTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A00000000000000000000042 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6F27EE15302C7D0700497B26 /* FileRenamer.icon in Resources */,
+				D00000000000000000000001 /* Resources/Assets.xcassets in Resources */,
+				D00000000000000000000002 /* Resources/PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000000040 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A0000000000000000000001 /* AppModel.swift in Sources */,
+				1A0000000000000000000002 /* FileRenamerApp.swift in Sources */,
+				1A0000000000000000000003 /* Support/FlowLayout.swift in Sources */,
+				1A0000000000000000000004 /* Support/GlassStyle.swift in Sources */,
+				1A0000000000000000000005 /* Support/InlineTextRun.swift in Sources */,
+				1A0000000000000000000006 /* Support/ListScrollController.swift in Sources */,
+				1A0000000000000000000007 /* Support/Palette.swift in Sources */,
+				1A0000000000000000000008 /* Support/SortValueFormatter.swift in Sources */,
+				1A0000000000000000000009 /* Support/ThumbnailProvider.swift in Sources */,
+				1A000000000000000000000A /* Views/BlockFace.swift in Sources */,
+				1A000000000000000000000B /* Views/ContentView.swift in Sources */,
+				1A000000000000000000000C /* Views/FileGridView.swift in Sources */,
+				1A000000000000000000000D /* Views/FileListView.swift in Sources */,
+				1A000000000000000000000E /* Views/NamingRuleBar.swift in Sources */,
+				1A000000000000000000000F /* Views/OrderStepper.swift in Sources */,
+				B00000000000000000000010 /* Views/PresetMenu.swift in Sources */,
+				B00000000000000000000011 /* Views/RuleTextField.swift in Sources */,
+				B00000000000000000000012 /* Views/StatusBar.swift in Sources */,
+				B00000000000000000000013 /* Views/TokenEditor.swift in Sources */,
+				B00000000000000000000014 /* Views/TokenInsertPanel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000043 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A0000000000000000000001 /* Engine/FileNameSanitizer.swift in Sources */,
+				2A0000000000000000000002 /* Engine/ItemSorter.swift in Sources */,
+				2A0000000000000000000003 /* Engine/RenameEngine.swift in Sources */,
+				2A0000000000000000000004 /* Engine/RenameValidator.swift in Sources */,
+				2A0000000000000000000005 /* IO/FileImporter.swift in Sources */,
+				2A0000000000000000000006 /* IO/FileKinds.swift in Sources */,
+				2A0000000000000000000007 /* IO/MetadataLoader.swift in Sources */,
+				2A0000000000000000000008 /* IO/RenameExecutor.swift in Sources */,
+				2A0000000000000000000009 /* IO/RenameHistory.swift in Sources */,
+				2A000000000000000000000A /* IO/RulePresetStore.swift in Sources */,
+				2A000000000000000000000B /* Models/FileMetadata.swift in Sources */,
+				2A000000000000000000000C /* Models/RenameItem.swift in Sources */,
+				2A000000000000000000000D /* Models/RenamePreview.swift in Sources */,
+				2A000000000000000000000E /* Models/RenameRule+TextEditing.swift in Sources */,
+				2A000000000000000000000F /* Models/RenameRule.swift in Sources */,
+				C00000000000000000000010 /* Models/RenameRulePreset.swift in Sources */,
+				C00000000000000000000011 /* IO/RenameJournalStore.swift in Sources */,
+				C00000000000000000000012 /* IO/RenameHistoryStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000044 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3A0000000000000000000001 /* EngineTests.swift in Sources */,
+				3A0000000000000000000002 /* SafetyTests.swift in Sources */,
+				3A0000000000000000000003 /* TestHarness.swift in Sources */,
+				3A0000000000000000000004 /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A00000000000000000000050 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000011 /* RenameKit */;
+			targetProxy = A00000000000000000000052 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000000051 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000011 /* RenameKit */;
+			targetProxy = A00000000000000000000053 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000000030 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = FileRenamer;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Config/FileRenamer.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
+				INFOPLIST_KEY_CFBundleDisplayName = "File Renamer";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 FileRenamer. All rights reserved.";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A00000000000000000000031 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = FileRenamer;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = Config/FileRenamer.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readwrite;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
+				INFOPLIST_KEY_CFBundleDisplayName = "File Renamer";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 FileRenamer. All rights reserved.";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A00000000000000000000032 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = RenameKit;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A00000000000000000000033 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEFINES_MODULE = YES;
+				MACH_O_TYPE = staticlib;
+				PRODUCT_NAME = RenameKit;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A00000000000000000000034 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				PRODUCT_NAME = RenameKitTests;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A00000000000000000000035 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				PRODUCT_NAME = RenameKitTests;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A00000000000000000000036 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A00000000000000000000037 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000000020 /* Build configuration list for PBXNativeTarget "FileRenamer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000030 /* Debug */,
+				A00000000000000000000031 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000021 /* Build configuration list for PBXNativeTarget "RenameKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000032 /* Debug */,
+				A00000000000000000000033 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000022 /* Build configuration list for PBXNativeTarget "RenameKitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000034 /* Debug */,
+				A00000000000000000000035 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000023 /* Build configuration list for PBXProject "FileRenamer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000036 /* Debug */,
+				A00000000000000000000037 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000001 /* Project object */;
+}
