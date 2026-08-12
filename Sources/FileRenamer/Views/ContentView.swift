@@ -217,7 +217,7 @@ private struct WorkspaceSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Text("命名作業")
+                Text("FileRenamer")
                     .font(.headline.weight(.semibold))
 
                 Spacer()

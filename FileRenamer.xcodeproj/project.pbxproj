@@ -437,7 +437,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
-				INFOPLIST_KEY_CFBundleDisplayName = "File Renamer";
+				INFOPLIST_KEY_CFBundleDisplayName = FileRenamer;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 FileRenamer. All rights reserved.";
@@ -464,7 +464,7 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
-				INFOPLIST_KEY_CFBundleDisplayName = "File Renamer";
+				INFOPLIST_KEY_CFBundleDisplayName = FileRenamer;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 FileRenamer. All rights reserved.";
