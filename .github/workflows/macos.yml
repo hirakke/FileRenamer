@@ -8,7 +8,7 @@ jobs:
   test:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Safety tests
         run: swift run RenameKitTests
       - name: Release build
