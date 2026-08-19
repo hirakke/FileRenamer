@@ -7,26 +7,50 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
     public let date: Date
     public let moves: [RenameOperation]
     public let accessBookmarks: [Data]
+    public let imageEdits: [ImageEditRecord]
 
     public init(
         id: UUID = UUID(),
         date: Date = Date(),
         moves: [RenameOperation],
-        accessBookmarks: [Data] = []
+        accessBookmarks: [Data] = [],
+        imageEdits: [ImageEditRecord] = []
     ) {
         self.id = id
         self.date = date
         self.moves = moves
         self.accessBookmarks = accessBookmarks
+        self.imageEdits = imageEdits
     }
 
-    public var fileCount: Int { moves.count }
+    public var fileCount: Int { max(moves.count, imageEdits.count) }
 
     /// The transaction that puts everything back.
     public var inverted: RenameTransaction {
         RenameTransaction(moves: moves.reversed().map {
             RenameOperation(source: $0.destination, destination: $0.source)
-        }, accessBookmarks: accessBookmarks)
+        }, accessBookmarks: accessBookmarks, imageEdits: imageEdits)
+    }
+
+    public func addingImageEdits(_ edits: [ImageEditRecord]) -> RenameTransaction {
+        RenameTransaction(
+            id: id,
+            date: date,
+            moves: moves,
+            accessBookmarks: accessBookmarks,
+            imageEdits: edits
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, date, moves, accessBookmarks, imageEdits }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        date = try values.decodeIfPresent(Date.self, forKey: .date) ?? Date()
+        moves = try values.decodeIfPresent([RenameOperation].self, forKey: .moves) ?? []
+        accessBookmarks = try values.decodeIfPresent([Data].self, forKey: .accessBookmarks) ?? []
+        imageEdits = try values.decodeIfPresent([ImageEditRecord].self, forKey: .imageEdits) ?? []
     }
 }
 

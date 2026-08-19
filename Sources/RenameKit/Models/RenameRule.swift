@@ -172,6 +172,112 @@ public enum CaseTransform: String, CaseIterable, Hashable, Sendable, Codable {
     }
 }
 
+public enum ImageOutputFormat: String, CaseIterable, Hashable, Sendable, Codable {
+    case preserve
+    case jpeg
+    case png
+
+    public var displayName: String {
+        switch self {
+        case .preserve: return "変更しない"
+        case .jpeg: return "JPEG"
+        case .png: return "PNG"
+        }
+    }
+
+    public var fileExtension: String? {
+        switch self {
+        case .preserve: return nil
+        case .jpeg: return "jpg"
+        case .png: return "png"
+        }
+    }
+}
+
+public enum JPEGQualityPreset: String, CaseIterable, Hashable, Sendable, Codable {
+    case maximum
+    case high
+    case standard
+    case compact
+    case custom
+
+    public var displayName: String {
+        switch self {
+        case .maximum: return "最高品質 — 100%"
+        case .high: return "高品質 — 95%（推奨）"
+        case .standard: return "標準 — 90%"
+        case .compact: return "軽量 — 80%"
+        case .custom: return "カスタム"
+        }
+    }
+
+    public var fixedPercent: Int? {
+        switch self {
+        case .maximum: return 100
+        case .high: return 95
+        case .standard: return 90
+        case .compact: return 80
+        case .custom: return nil
+        }
+    }
+}
+
+public struct JPEGQualitySetting: Hashable, Sendable, Codable {
+    public var preset: JPEGQualityPreset
+    public var customPercent: Int
+
+    public init(preset: JPEGQualityPreset = .high, customPercent: Int = 95) {
+        self.preset = preset
+        self.customPercent = customPercent
+    }
+
+    public var normalizedCustomPercent: Int { max(50, min(customPercent, 100)) }
+    public var percent: Int { preset.fixedPercent ?? normalizedCustomPercent }
+    public var compressionQuality: Double { Double(percent) / 100.0 }
+}
+
+public struct ImageResizeConfiguration: Hashable, Sendable, Codable {
+    public var isEnabled: Bool
+    public var maxLongEdge: Int
+    public var preventsUpscaling: Bool
+
+    public init(
+        isEnabled: Bool = false,
+        maxLongEdge: Int = 2048,
+        preventsUpscaling: Bool = true
+    ) {
+        self.isEnabled = isEnabled
+        self.maxLongEdge = maxLongEdge
+        self.preventsUpscaling = preventsUpscaling
+    }
+
+    public var normalizedLongEdge: Int { max(64, min(maxLongEdge, 20_000)) }
+
+    public func targetDimensions(width: Int, height: Int) -> (width: Int, height: Int) {
+        let sourceLongEdge = max(width, height)
+        guard isEnabled, sourceLongEdge > 0 else { return (width, height) }
+        let targetLongEdge = preventsUpscaling
+            ? min(normalizedLongEdge, sourceLongEdge)
+            : normalizedLongEdge
+        let scale = Double(targetLongEdge) / Double(sourceLongEdge)
+        return (
+            max(1, Int((Double(width) * scale).rounded())),
+            max(1, Int((Double(height) * scale).rounded()))
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case isEnabled, maxLongEdge, preventsUpscaling
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = try values.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        maxLongEdge = try values.decodeIfPresent(Int.self, forKey: .maxLongEdge) ?? 2048
+        preventsUpscaling = try values.decodeIfPresent(Bool.self, forKey: .preventsUpscaling) ?? true
+    }
+}
+
 public struct OriginalNameConfiguration: Identifiable, Hashable, Sendable, Codable {
     public var id: UUID
     public var transform: CaseTransform
@@ -327,10 +433,33 @@ public struct RenameRule: Hashable, Sendable, Codable {
     public var tokens: [RenameToken]
     /// Off by default: extensions are preserved verbatim (see the safety rules).
     public var extensionTransform: CaseTransform
+    /// Content conversion is intentionally limited to JPEG and PNG.
+    public var imageOutputFormat: ImageOutputFormat
+    public var imageResize: ImageResizeConfiguration
 
-    public init(tokens: [RenameToken] = [], extensionTransform: CaseTransform = .none) {
+    public init(
+        tokens: [RenameToken] = [],
+        extensionTransform: CaseTransform = .none,
+        imageOutputFormat: ImageOutputFormat = .preserve,
+        imageResize: ImageResizeConfiguration = ImageResizeConfiguration()
+    ) {
         self.tokens = tokens
         self.extensionTransform = extensionTransform
+        self.imageOutputFormat = imageOutputFormat
+        self.imageResize = imageResize
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case tokens, extensionTransform, imageOutputFormat, imageResize
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        tokens = try values.decodeIfPresent([RenameToken].self, forKey: .tokens) ?? []
+        extensionTransform = try values.decodeIfPresent(CaseTransform.self, forKey: .extensionTransform) ?? .none
+        imageOutputFormat = try values.decodeIfPresent(ImageOutputFormat.self, forKey: .imageOutputFormat) ?? .preserve
+        imageResize = try values.decodeIfPresent(ImageResizeConfiguration.self, forKey: .imageResize)
+            ?? ImageResizeConfiguration()
     }
 
     public var containsCounter: Bool {

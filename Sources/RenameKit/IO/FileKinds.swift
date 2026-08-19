@@ -5,6 +5,9 @@ import UniformTypeIdentifiers
 /// only used to pick a group's primary file, to decide whether EXIF is worth reading,
 /// and to show the right placeholder.
 public enum FileKinds {
+    public static let editableImageExtensions: Set<String> = [
+        "jpg", "jpeg", "jpe", "png", "heic", "heif"
+    ]
     public static let rawExtensions: Set<String> = [
         "raf", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2",
         "dng", "orf", "rw2", "pef", "raw", "3fr", "fff", "iiq",
@@ -45,6 +48,18 @@ public enum FileKinds {
         }
         guard let type = UTType(filenameExtension: ext) else { return false }
         return type.conforms(to: .image)
+    }
+
+    public static func isEditableImage(_ url: URL) -> Bool {
+        editableImageExtensions.contains(url.pathExtension.lowercased())
+    }
+
+    public static func isJPEG(_ url: URL) -> Bool {
+        jpegExtensions.contains(url.pathExtension.lowercased())
+    }
+
+    public static func isHEIF(_ url: URL) -> Bool {
+        ["heic", "heif"].contains(url.pathExtension.lowercased())
     }
 
     /// Lower sorts first when choosing which file in a RAW+JPEG group is the primary.

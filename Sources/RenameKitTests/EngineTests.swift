@@ -68,6 +68,127 @@ func runEngineTests() async {
         try expectEqual(previews[0].proposedName, "Event.RAF")
     }
 
+    await runner.test("拡張子を小文字・大文字へ切り替えられる") {
+        let lower = RenameRule(
+            tokens: [.text(TextConfiguration(value: "Event"))],
+            extensionTransform: .lowercase
+        )
+        let upper = RenameRule(
+            tokens: [.text(TextConfiguration(value: "Event"))],
+            extensionTransform: .uppercase
+        )
+        try expectEqual(
+            RenameEngine().makePreviews(items: [makeItem("photo.JpG")], rule: lower)[0].proposedName,
+            "Event.jpg"
+        )
+        try expectEqual(
+            RenameEngine().makePreviews(items: [makeItem("photo.jpg")], rule: upper)[0].proposedName,
+            "Event.JPG"
+        )
+    }
+
+    await runner.test("JPEG・PNGへ画像形式を変更できる") {
+        for (format, expected) in [(ImageOutputFormat.jpeg, "Event.jpg"), (.png, "Event.png")] {
+            let rule = RenameRule(
+                tokens: [.text(TextConfiguration(value: "Event"))],
+                imageOutputFormat: format
+            )
+            let preview = RenameEngine().makePreviews(items: [makeItem("photo.png")], rule: rule)[0]
+            try expectEqual(preview.proposedName, expected)
+            try expectEqual(preview.requiresContentProcessing, format != .png)
+        }
+    }
+
+    await runner.test("JPEG品質の値と表示条件が一箇所で決まる") {
+        let expected: [(JPEGQualityPreset, Int, Double)] = [
+            (.compact, 80, 0.80),
+            (.standard, 90, 0.90),
+            (.high, 95, 0.95),
+            (.maximum, 100, 1.00)
+        ]
+        for (preset, percent, quality) in expected {
+            let setting = JPEGQualitySetting(preset: preset)
+            try expectEqual(setting.percent, percent)
+            try expectEqual(setting.compressionQuality, quality)
+        }
+        try expectEqual(
+            JPEGQualitySetting(preset: .custom, customPercent: 73).compressionQuality,
+            0.73
+        )
+        try expectEqual(JPEGQualitySetting(preset: .custom, customPercent: 20).percent, 50)
+        try expectEqual(JPEGQualitySetting(preset: .custom, customPercent: 120).percent, 100)
+
+        let jpeg = folder.appendingPathComponent("photo.jpg")
+        let png = folder.appendingPathComponent("photo.png")
+        let explicitJPEG = RenameRule(imageOutputFormat: .jpeg)
+        try expect(explicitJPEG.showsJPEGQuality(for: [png]))
+        try expect(explicitJPEG.imageEditConfiguration(for: jpeg) != nil)
+        try expect(explicitJPEG.imageEditConfiguration(
+            for: jpeg,
+            jpegQuality: JPEGQualitySetting(preset: .maximum)
+        ) == nil)
+        try expect(explicitJPEG.imageEditConfiguration(
+            for: jpeg,
+            jpegQuality: JPEGQualitySetting(preset: .maximum),
+            preservesJPEGAtMaximumQuality: false
+        ) != nil)
+        try expect(!RenameEngine().makePreviews(
+            items: [makeItem("photo.jpg")],
+            rule: explicitJPEG,
+            jpegQuality: JPEGQualitySetting(preset: .maximum)
+        )[0].requiresContentProcessing)
+        try expect(RenameEngine().makePreviews(
+            items: [makeItem("photo.jpg")],
+            rule: explicitJPEG,
+            jpegQuality: JPEGQualitySetting(preset: .maximum),
+            preservesJPEGAtMaximumQuality: false
+        )[0].requiresContentProcessing)
+
+        let maximumWithResize = RenameRule(
+            imageOutputFormat: .jpeg,
+            imageResize: ImageResizeConfiguration(isEnabled: true, maxLongEdge: 128)
+        )
+        try expect(maximumWithResize.imageEditConfiguration(
+            for: jpeg,
+            jpegQuality: JPEGQualitySetting(preset: .maximum)
+        ) != nil)
+
+        let preserveResize = RenameRule(
+            imageResize: ImageResizeConfiguration(isEnabled: true, maxLongEdge: 1200)
+        )
+        try expect(preserveResize.showsJPEGQuality(for: [jpeg]))
+        try expect(!preserveResize.showsJPEGQuality(for: [png]))
+        let customConfiguration = preserveResize.imageEditConfiguration(
+            for: jpeg,
+            jpegQuality: JPEGQualitySetting(preset: .custom, customPercent: 73)
+        )
+        try expectEqual(customConfiguration?.jpegCompressionQuality, 0.73)
+
+        let pngOutput = RenameRule(
+            imageOutputFormat: .png,
+            imageResize: ImageResizeConfiguration(isEnabled: true, maxLongEdge: 1200)
+        )
+        try expect(!pngOutput.showsJPEGQuality(for: [jpeg, png]))
+    }
+
+    await runner.test("通常リネームだけでは画像を再エンコードしない") {
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: "Renamed"))])
+        let preview = RenameEngine().makePreviews(items: [makeItem("photo.jpg")], rule: rule)[0]
+        try expect(!preview.requiresContentProcessing)
+        try expect(rule.imageEditConfiguration(for: preview.sourceURL) == nil)
+    }
+
+    await runner.test("RAWは画像形式変換の対象外") {
+        let rule = RenameRule(
+            tokens: [.text(TextConfiguration(value: "Event"))],
+            imageOutputFormat: .jpeg,
+            imageResize: ImageResizeConfiguration(isEnabled: true, maxLongEdge: 1280)
+        )
+        let preview = RenameEngine().makePreviews(items: [makeItem("photo.RAF")], rule: rule)[0]
+        try expectEqual(preview.proposedName, "Event.RAF")
+        try expect(!preview.requiresContentProcessing)
+    }
+
     await runner.test("撮影日がなければ作成日にフォールバックする") {
         let items = [
             makeItem("shot.jpg", creation: makeDate("2020-01-01 00:00:00"), capture: makeDate("2026-08-08 14:30:05")),
@@ -162,6 +283,20 @@ func runEngineTests() async {
         let original = try JSONDecoder().decode(OriginalNameConfiguration.self, from: originalData)
         try expectEqual(original.find, "")
         try expectEqual(original.transform, .lowercase)
+
+        let ruleData = Data("{\"tokens\":[],\"extensionTransform\":\"none\"}".utf8)
+        let legacyRule = try JSONDecoder().decode(RenameRule.self, from: ruleData)
+        try expectEqual(legacyRule.imageOutputFormat, .preserve)
+        try expect(!legacyRule.imageResize.isEnabled)
+        try expect(legacyRule.imageResize.preventsUpscaling)
+
+        let legacyImageConfiguration = Data("{\"outputFormat\":\"jpeg\",\"maxLongEdge\":128}".utf8)
+        let decodedImageConfiguration = try JSONDecoder().decode(
+            ImageEditConfiguration.self,
+            from: legacyImageConfiguration
+        )
+        try expectEqual(decodedImageConfiguration.jpegCompressionQuality, 0.95)
+        try expect(decodedImageConfiguration.preventsUpscaling)
     }
 }
 

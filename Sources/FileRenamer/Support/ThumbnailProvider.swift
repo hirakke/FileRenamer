@@ -52,9 +52,10 @@ struct ThumbnailView: View {
     var size: CGFloat
 
     @State private var image: NSImage?
+    @State private var loadedRequestID: String?
 
-    /// Two cache sizes cover the list and grid. Slider movement now scales an
-    /// existing grid thumbnail instead of launching a new Quick Look job per tick.
+    /// Two cache sizes cover the list and grid. Changing the discrete column count
+    /// scales an existing thumbnail instead of launching redundant Quick Look jobs.
     private var requestSize: CGFloat { size <= 64 ? 64 : 320 }
     private var requestID: String {
         "\(url.standardizedFileURL.path)|\(Int(requestSize))"
@@ -62,7 +63,9 @@ struct ThumbnailView: View {
 
     var body: some View {
         Group {
-            if let image {
+            // A LazyVGrid can update a cell's input before the replacement task has
+            // started. Never display the previous request's image during that gap.
+            if let image, loadedRequestID == requestID {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -82,8 +85,23 @@ struct ThumbnailView: View {
                 .strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.7)
         }
         .task(id: requestID) {
+            let requestedID = requestID
+            let requestedURL = url
             image = nil
-            image = await ThumbnailProvider.shared.thumbnail(for: url, size: requestSize, scale: 2)
+            loadedRequestID = nil
+
+            let loaded = await ThumbnailProvider.shared.thumbnail(
+                for: requestedURL,
+                size: requestSize,
+                scale: 2
+            )
+
+            // ThumbnailProvider intentionally shares in-flight Quick Look work.
+            // Awaiting that shared task does not necessarily stop immediately when
+            // SwiftUI cancels this cell task during sorting, so reject late results.
+            guard !Task.isCancelled, requestedID == requestID else { return }
+            image = loaded
+            loadedRequestID = requestedID
         }
     }
 }

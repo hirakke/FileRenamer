@@ -2,7 +2,19 @@
 build/
 .xcode-derived/
 .derivedData/
+.derivedData-*/
+.release-*/
+.capture-*/
+.module-cache/
+.swiftpm-build/
 .swiftpm/
+__pycache__/
+*.pyc
 .DS_Store
 *.xcuserstate
 xcuserdata/
+
+# Local source photos and generated marketing previews are not release sources.
+AppStoreAssets/CaptureInput/
+AppStoreAssets/SamplePhotos/
+AppStoreAssets/Preview/

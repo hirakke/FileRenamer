@@ -41,7 +41,12 @@ public extension RenameRule {
             result.append(.text(TextConfiguration(value: "")))
         }
 
-        return RenameRule(tokens: result, extensionTransform: extensionTransform)
+        return RenameRule(
+            tokens: result,
+            extensionTransform: extensionTransform,
+            imageOutputFormat: imageOutputFormat,
+            imageResize: imageResize
+        )
     }
 
     /// Saving shape: the scaffolding empty runs are dropped again.
@@ -59,7 +64,12 @@ public extension RenameRule {
             }
             result.append(token)
         }
-        return RenameRule(tokens: result, extensionTransform: extensionTransform)
+        return RenameRule(
+            tokens: result,
+            extensionTransform: extensionTransform,
+            imageOutputFormat: imageOutputFormat,
+            imageResize: imageResize
+        )
     }
 
     /// Drops `token` into the middle of a text run, splitting it at the caret — the

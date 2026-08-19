@@ -47,7 +47,12 @@ public struct RenameEngine: Sendable {
     }
 
     /// - Parameter items: already in display order. Index 0 gets the first counter value.
-    public func makePreviews(items: [RenameItem], rule: RenameRule) -> [RenamePreview] {
+    public func makePreviews(
+        items: [RenameItem],
+        rule: RenameRule,
+        jpegQuality: JPEGQualitySetting = JPEGQualitySetting(),
+        preservesJPEGAtMaximumQuality: Bool = true
+    ) -> [RenamePreview] {
         let formatters = FormatterCache()
         var counterGroups: [UUID: [String: Int]] = [:]
         return items.enumerated().map { index, item in
@@ -63,6 +68,8 @@ public struct RenameEngine: Sendable {
                 for: item,
                 at: index,
                 rule: rule,
+                jpegQuality: jpegQuality,
+                preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality,
                 formatters: formatters,
                 counterIndices: counterIndices
             )
@@ -73,6 +80,8 @@ public struct RenameEngine: Sendable {
         for item: RenameItem,
         at index: Int,
         rule: RenameRule,
+        jpegQuality: JPEGQualitySetting,
+        preservesJPEGAtMaximumQuality: Bool,
         formatters: FormatterCache,
         counterIndices: [UUID: Int]
     ) -> RenamePreview {
@@ -127,12 +136,20 @@ public struct RenameEngine: Sendable {
         let operations = item.allURLs.map { url -> RenameOperation in
             RenameOperation(source: url, destination: destination(for: url, baseName: baseName, rule: rule))
         }
+        let requiresContentProcessing = item.allURLs.contains {
+            rule.imageEditConfiguration(
+                for: $0,
+                jpegQuality: jpegQuality,
+                preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality
+            ) != nil
+        }
 
         return RenamePreview(
             itemID: item.id,
             counterValue: counterValue,
             proposedBaseName: baseName,
             operations: operations,
+            requiresContentProcessing: requiresContentProcessing,
             generationWarnings: generationWarnings
         )
     }
@@ -170,12 +187,17 @@ public struct RenameEngine: Sendable {
         }
     }
 
-    /// Extension is carried over from the source, never generated. Renaming must not
-    /// be able to turn a `.RAF` into anything else.
     private func destination(for url: URL, baseName: String, rule: RenameRule) -> URL {
-        let ext = rule.extensionTransform.apply(url.pathExtension)
+        let outputExtension: String
+        if FileKinds.isEditableImage(url), let converted = rule.imageOutputFormat.fileExtension {
+            outputExtension = converted
+        } else {
+            outputExtension = url.pathExtension
+        }
+        let ext = rule.extensionTransform.apply(outputExtension)
         let directory = url.deletingLastPathComponent()
         let fileName = ext.isEmpty ? baseName : "\(baseName).\(ext)"
         return directory.appendingPathComponent(fileName, isDirectory: false)
     }
+
 }

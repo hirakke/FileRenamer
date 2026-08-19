@@ -6,81 +6,56 @@ import RenameKit
 struct FileListView: View {
     @EnvironmentObject private var model: AppModel
 
-    private static let viewportSpace = "fileListViewport"
-    @State private var rowGeometry = RowGeometryStore()
-    @State private var scrollController = ListScrollController()
-
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            List(selection: $model.selection) {
-                ForEach(model.items) { item in
-                    HStack(spacing: 8) {
-                        FileRow(item: item, preview: model.preview(for: item), sortField: model.sortOption.field)
-                        OrderStepper(id: item.id, axis: .vertical, onStep: step)
+            ScrollViewReader { proxy in
+                List(selection: $model.selection) {
+                    ForEach(model.items) { item in
+                        HStack(spacing: 8) {
+                            let preview = model.preview(for: item)
+                            FileRow(
+                                item: item,
+                                preview: preview,
+                                sortField: model.sortOption.field,
+                                imageChangeSummary: model.imageChangeSummary(for: item, preview: preview)
+                            )
+                            OrderStepper(id: item.id, axis: .vertical)
+                        }
+                        .onForceClick {
+                            model.selection = [item.id]
+                            model.quickLookURL = item.originalURL
+                        }
+                        .simultaneousGesture(
+                            TapGesture(count: 2).onEnded {
+                                model.selection = [item.id]
+                                model.quickLookURL = item.originalURL
+                            }
+                        )
+                        .id(item.id)
+                        .contextMenu { rowMenu(for: item) }
                     }
-                    .onForceClick {
-                        model.selection = [item.id]
-                        model.quickLookURL = item.originalURL
+                    .onMove { offsets, destination in
+                        model.move(fromOffsets: offsets, toOffset: destination)
                     }
-                    .background {
-                        RowFrameRecorder(id: item.id, store: rowGeometry, coordinateSpace: Self.viewportSpace)
-                        EnclosingScrollViewProbe(controller: scrollController)
-                    }
-                    .contextMenu { rowMenu(for: item) }
                 }
-                .onMove { offsets, destination in
-                    model.move(fromOffsets: offsets, toOffset: destination)
+                .listStyle(.inset)
+                .alternatingRowBackgrounds()
+                .scrollContentBackground(.hidden)
+                .workSurface(opacity: 0.95)
+                .onDeleteCommand { model.removeSelected() }
+                .onKeyPress(.space) {
+                    model.quickLookSelection()
+                    return .handled
+                }
+                .onChange(of: model.scrollTick) {
+                    guard let target = model.scrollTargetID else { return }
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(target)
+                    }
                 }
             }
-            .listStyle(.inset)
-            .alternatingRowBackgrounds()
-            .scrollContentBackground(.hidden)
-            .workSurface(opacity: 0.95)
-            .coordinateSpace(.named(Self.viewportSpace))
-            .onDeleteCommand { model.removeSelected() }
-            .onKeyPress(.space) {
-                model.quickLookSelection()
-                return .handled
-            }
-        }
-    }
-
-    /// Steps the row and slides the list by exactly the distance the row travelled, so
-    /// the row lands back under the pointer and can be clicked again immediately.
-    ///
-    /// The distance is measured from the current layout *before* the move: stepping
-    /// swaps the row with its neighbour, so the row ends up occupying the neighbour's
-    /// slot, and the offset is the gap between those two slots.
-    private func step(rowID: UUID, delta: Int) {
-        let distance = travelDistance(rowID: rowID, delta: delta)
-        model.stepFromRow(rowID, by: delta)
-        if let distance {
-            scrollController.scroll(by: distance)
-        }
-    }
-
-    private func travelDistance(rowID: UUID, delta: Int) -> CGFloat? {
-        let targets = model.stepTargets(for: rowID)
-        let indices = model.items.indices.filter { targets.contains(model.items[$0].id) }
-        guard let first = indices.first, let last = indices.last else { return nil }
-        let frames = rowGeometry.frames
-
-        if delta > 0 {
-            let neighbour = last + 1
-            guard model.items.indices.contains(neighbour),
-                  let moved = frames[model.items[last].id],
-                  let target = frames[model.items[neighbour].id]
-            else { return nil }
-            return target.maxY - moved.maxY
-        } else {
-            let neighbour = first - 1
-            guard model.items.indices.contains(neighbour),
-                  let moved = frames[model.items[first].id],
-                  let target = frames[model.items[neighbour].id]
-            else { return nil }
-            return target.minY - moved.minY
         }
     }
 
@@ -146,6 +121,7 @@ struct FileRow: View {
     let item: RenameItem
     let preview: RenamePreview?
     var sortField: SortField = .fileName
+    var imageChangeSummary: String?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -171,11 +147,20 @@ struct FileRow: View {
                 .foregroundStyle(.tertiary)
                 .frame(width: 16)
 
-            Text(preview?.proposedName ?? item.displayName)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .foregroundStyle(nameColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(preview?.proposedName ?? item.displayName)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .foregroundStyle(nameColor)
+                if let imageChangeSummary {
+                    Text(imageChangeSummary)
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .help(imageChangeSummary ?? preview?.proposedName ?? item.displayName)
 
             ValidationBadge(item: item, preview: preview)
         }

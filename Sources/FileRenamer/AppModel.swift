@@ -11,9 +11,19 @@ private actor PreviewGenerationWorker {
     private let engine = RenameEngine()
     private let validator = RenameValidator()
 
-    func generate(items: [RenameItem], rule: RenameRule) throws -> [RenamePreview] {
+    func generate(
+        items: [RenameItem],
+        rule: RenameRule,
+        jpegQuality: JPEGQualitySetting,
+        preservesJPEGAtMaximumQuality: Bool
+    ) throws -> [RenamePreview] {
         try Task.checkCancellation()
-        let generated = engine.makePreviews(items: items, rule: rule)
+        let generated = engine.makePreviews(
+            items: items,
+            rule: rule,
+            jpegQuality: jpegQuality,
+            preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality
+        )
         try Task.checkCancellation()
         return validator.validate(generated, checkExistingFiles: false)
     }
@@ -49,6 +59,8 @@ final class AppModel: ObservableObject {
     // MARK: Published state
 
     @Published private(set) var items: [RenameItem] = []
+    @Published private(set) var importedFolderRoots: [URL] = []
+    @Published private(set) var workingDirectories: [URL] = []
     private(set) var previews: [RenamePreview] = []
     private(set) var previewsByItemID: [UUID: RenamePreview] = [:]
     private(set) var errorCount = 0
@@ -90,10 +102,24 @@ final class AppModel: ObservableObject {
     @Published private(set) var canCancelBusyOperation = false
     @Published private(set) var preventsTermination = false
     @Published private(set) var isValidatingDestinations = false
+    @Published private(set) var isScanningSimilarImages = false
+    @Published private(set) var similarImageMatchesByItemID: [UUID: [SimilarImageMatch]] = [:]
+    @Published var similarityReview: SimilarityReview?
     @Published var alertMessage: AlertMessage?
     @Published var resultMessage: ResultMessage?
     @Published var quickLookURL: URL?
+    @Published var renameConfirmation: RenameConfirmation?
     @Published var isUndoConfirmationPresented = false
+    @Published var isImageResizeOriginalChoicePresented = false
+    @Published var isOriginalImagesFolderNamePresented = false
+    @Published var originalImagesFolderName = ""
+    @Published var jpegQualitySetting: JPEGQualitySetting {
+        didSet {
+            guard jpegQualitySetting != oldValue else { return }
+            imageSettingsStore.saveJPEGQuality(jpegQualitySetting)
+            refreshPreviews()
+        }
+    }
 
     @Published private(set) var history = RenameHistory()
 
@@ -103,11 +129,17 @@ final class AppModel: ObservableObject {
     private let destinationWorker = DestinationValidationWorker()
     private let importer = FileImporter()
     private let executor = RenameExecutor()
+    private let imageProcessor = ImageProcessor()
     private let presetStore: RulePresetStore
     private let historyStore: RenameHistoryStore
+    private let imageSettingsStore: ImageSettingsStore
+    private let preferences: AppPreferences
     private var busyTask: Task<Void, Never>?
     private var validationTask: Task<Void, Never>?
+    private var similarityTask: Task<Void, Never>?
+    private var isPreviewRefreshScheduled = false
     private var previewRevision = 0
+    private var similarityRevision = 0
 
     private struct FolderAccess {
         let url: URL
@@ -131,13 +163,61 @@ final class AppModel: ObservableObject {
         var offersUndo: Bool = false
     }
 
+    struct RenameConfirmation: Identifiable {
+        let id = UUID()
+        let rows: [RenameConfirmationRow]
+        let changedItemCount: Int
+        let renamedFileCount: Int
+        let processedImageCount: Int
+        let warningCount: Int
+        let originalImagesDirectory: URL?
+
+        var replacesOriginalImages: Bool {
+            processedImageCount > 0 && originalImagesDirectory == nil
+        }
+    }
+
+    struct RenameConfirmationRow: Identifiable {
+        let id = UUID()
+        let sourceName: String
+        let destinationName: String
+        let sourceDirectoryPath: String
+        let changesName: Bool
+        let imageChange: String?
+        let warning: String?
+    }
+
+    struct SimilarityReview: Identifiable {
+        let id = UUID()
+        let source: RenameItem
+        let candidates: [SimilarityReviewCandidate]
+    }
+
+    struct SimilarityReviewCandidate: Identifiable {
+        var id: UUID { item.id }
+        let item: RenameItem
+        let kind: SimilarImageMatchKind
+        let featureDistance: Float?
+    }
+
+    struct SimilarityBadge {
+        let count: Int
+        let containsExactMatch: Bool
+    }
+
     init(
         presetStore: RulePresetStore = RulePresetStore(),
         historyStore: RenameHistoryStore = RenameHistoryStore(),
+        imageSettingsStore: ImageSettingsStore = ImageSettingsStore(),
+        preferences: AppPreferences? = nil,
         recoversPendingRenames: Bool = true
     ) {
         self.presetStore = presetStore
         self.historyStore = historyStore
+        self.imageSettingsStore = imageSettingsStore
+        self.preferences = preferences ?? AppPreferences()
+        jpegQualitySetting = imageSettingsStore.loadJPEGQuality()
+        viewMode = self.preferences.defaultViewMode
         history = historyStore.load()
         let loadedPresets = presetStore.loadWithDiagnostics()
         presets = RenameRulePreset.builtIns + loadedPresets.presets
@@ -162,6 +242,12 @@ final class AppModel: ObservableObject {
     }
     var canUndo: Bool { !isBusy && history.canUndo }
     var canRedo: Bool { !isBusy && history.canRedo }
+    var similarImagePairCount: Int {
+        similarImageMatchesByItemID.values.reduce(0) { $0 + $1.count } / 2
+    }
+    var showsJPEGQualitySetting: Bool {
+        rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
+    }
     var importedDirectories: [URL] {
         var seenPaths = Set<String>()
         return items
@@ -172,14 +258,91 @@ final class AppModel: ObservableObject {
                 $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
             }
     }
+    /// User-selected folder roots, plus parent folders for any individually added
+    /// files that sit outside those roots. A recursive folder import therefore stays
+    /// one understandable workspace instead of expanding into every subdirectory.
+    private func calculateWorkingDirectories() -> [URL] {
+        guard !items.isEmpty else { return [] }
+        let fileDirectories = importedDirectories
+        var result = importedFolderRoots.filter { root in
+            fileDirectories.contains { directory in
+                root.standardizedFileURL == directory.standardizedFileURL
+                    || isAncestor(root, of: directory)
+            }
+        }
+        for directory in fileDirectories where !result.contains(where: { root in
+            root.standardizedFileURL == directory.standardizedFileURL
+                || isAncestor(root, of: directory)
+        }) {
+            result.append(directory)
+        }
+        return uniqueDirectories(result)
+    }
     var undoConfirmationMessage: String {
         guard let transaction = history.lastTransaction else {
             return "元に戻せるリネーム履歴がありません。"
         }
-        return "直前に変更した\(transaction.fileCount)ファイルを、元の名前に戻します。"
+        return "直前に変更した\(transaction.fileCount)ファイルを、元の状態に戻します。"
+    }
+
+    func imageChangeSummary(for item: RenameItem, preview: RenamePreview?) -> String? {
+        guard let preview,
+              preview.requiresContentProcessing,
+              let width = item.metadata.pixelWidth,
+              let height = item.metadata.pixelHeight
+        else { return nil }
+
+        let target = rule.imageResize.targetDimensions(width: width, height: height)
+        let sourceDimensions = "\(width)×\(height)"
+        let targetDimensions = "\(target.width)×\(target.height)"
+        let targetFormat = preview.destinationURL.pathExtension.uppercased()
+        return sourceDimensions == targetDimensions
+            ? "\(sourceDimensions) • \(targetFormat)へ再保存"
+            : "\(sourceDimensions) → \(targetDimensions) • \(targetFormat)"
+    }
+
+    func preferencesDidChange() {
+        refreshPreviews()
+    }
+
+    func similarityPreferencesDidChange() {
+        scheduleSimilarityScan()
     }
 
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
+
+    func similarityBadge(for itemID: UUID) -> SimilarityBadge? {
+        guard let matches = similarImageMatchesByItemID[itemID], !matches.isEmpty else { return nil }
+        return SimilarityBadge(
+            count: matches.count,
+            containsExactMatch: matches.contains { $0.kind == .exact }
+        )
+    }
+
+    func showSimilarImages(for itemID: UUID) {
+        guard let source = items.first(where: { $0.id == itemID }),
+              let matches = similarImageMatchesByItemID[itemID],
+              !matches.isEmpty
+        else { return }
+
+        let candidates = matches.compactMap { match -> SimilarityReviewCandidate? in
+            guard let item = items.first(where: { $0.id == match.otherItemID }) else { return nil }
+            return SimilarityReviewCandidate(
+                item: item,
+                kind: match.kind,
+                featureDistance: match.featureDistance
+            )
+        }
+        guard !candidates.isEmpty else { return }
+        similarityReview = SimilarityReview(source: source, candidates: candidates)
+    }
+
+    func showFirstSimilarImageGroup() {
+        guard let itemID = items.lazy.map(\.id).first(where: {
+            !(similarImageMatchesByItemID[$0] ?? []).isEmpty
+        }) else { return }
+        showSimilarImages(for: itemID)
+    }
 
     /// One row's validation problem, flattened for the status-bar popover.
     struct Issue: Identifiable, Hashable {
@@ -214,16 +377,25 @@ final class AppModel: ObservableObject {
         guard !urls.isEmpty else { return }
         guard beginBusy("読み込み中…", cancellable: true) else { return }
         let transientAccess = beginImportAccess(for: urls)
+        // Resolve directory metadata only after opening the security-scoped URLs;
+        // external volumes and sandboxed drag-and-drop locations may require it.
+        let folderRoots = folderURLs(in: urls)
         let options = importOptions
         busyTask = Task { [weak self] in
-            await self?.performImport(urls, options: options, transientAccess: transientAccess)
+            await self?.performImport(
+                urls,
+                options: options,
+                transientAccess: transientAccess,
+                folderRoots: folderRoots
+            )
         }
     }
 
     private func performImport(
         _ urls: [URL],
         options: ImportOptions,
-        transientAccess: [URL]
+        transientAccess: [URL],
+        folderRoots: [URL]
     ) async {
         var endedBusy = false
         defer {
@@ -236,9 +408,11 @@ final class AppModel: ObservableObject {
             result = try await importer.importItems(from: urls, options: options)
             try Task.checkCancellation()
         } catch is CancellationError {
+            workingDirectories = calculateWorkingDirectories()
             resultMessage = ResultMessage(text: "読み込みをキャンセルしました")
             return
         } catch {
+            workingDirectories = calculateWorkingDirectories()
             alertMessage = AlertMessage(title: "読み込めませんでした", detail: error.localizedDescription)
             return
         }
@@ -250,10 +424,15 @@ final class AppModel: ObservableObject {
         }
 
         items = ItemSorter.reindexed(items + fresh)
+        if !result.items.isEmpty {
+            recordImportedFolderRoots(folderRoots)
+        }
+        workingDirectories = calculateWorkingDirectories()
         endBusy()
         endedBusy = true
 
         refreshPreviews()
+        scheduleSimilarityScan()
 
         if fresh.isEmpty && !result.items.isEmpty {
             alertMessage = AlertMessage(title: "追加できるファイルがありません", detail: "すべて既にリストに含まれています。")
@@ -272,6 +451,7 @@ final class AppModel: ObservableObject {
         guard previous.groupCompanionFiles != importOptions.groupCompanionFiles, !items.isEmpty else { return }
         let urls = items.flatMap(\.allURLs)
         items = []
+        clearSimilarityResults()
         importURLs(urls)
     }
 
@@ -306,6 +486,26 @@ final class AppModel: ObservableObject {
             }
         }
         return transient
+    }
+
+    private func folderURLs(in urls: [URL]) -> [URL] {
+        uniqueDirectories(urls.filter {
+            (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+        })
+    }
+
+    private func recordImportedFolderRoots(_ roots: [URL]) {
+        var merged = importedFolderRoots.map(\.standardizedFileURL)
+        for root in roots.map(\.standardizedFileURL) {
+            if merged.contains(where: {
+                $0 == root || isAncestor($0, of: root)
+            }) {
+                continue
+            }
+            merged.removeAll(where: { isAncestor(root, of: $0) })
+            merged.append(root)
+        }
+        importedFolderRoots = uniqueDirectories(merged)
     }
 
     private func ensureFolderAccess(
@@ -457,17 +657,21 @@ final class AppModel: ObservableObject {
 
     func removeSelected() {
         guard !selection.isEmpty else { return }
-        releaseStepGrab()
         items = ItemSorter.reindexed(items.filter { !selection.contains($0.id) })
+        if items.isEmpty { importedFolderRoots = [] }
+        workingDirectories = calculateWorkingDirectories()
         selection.removeAll()
         refreshPreviews()
+        scheduleSimilarityScan()
     }
 
     func removeAll() {
-        releaseStepGrab()
         items = []
+        importedFolderRoots = []
+        workingDirectories = []
         selection.removeAll()
         refreshPreviews()
+        scheduleSimilarityScan()
     }
 
     func selectAll() {
@@ -476,14 +680,12 @@ final class AppModel: ObservableObject {
 
     /// Drag & drop in the list.
     func move(fromOffsets offsets: IndexSet, toOffset destination: Int) {
-        releaseStepGrab()
         items = ItemSorter.move(items, fromOffsets: offsets, toOffset: destination)
         refreshPreviews()
     }
 
     /// Drag & drop in the grid, where a drop lands on a cell instead of a gap.
     func move(ids: Set<UUID>, toIndex index: Int) {
-        releaseStepGrab()
         items = ItemSorter.move(items, ids: ids, toIndex: index)
         refreshPreviews()
     }
@@ -493,48 +695,21 @@ final class AppModel: ObservableObject {
     func shift(ids: Set<UUID>, by delta: Int) {
         let targets = effectiveTargets(for: ids)
         guard !targets.isEmpty else { return }
-        releaseStepGrab()
         items = ItemSorter.shift(items, ids: targets, by: delta)
         refreshPreviews()
     }
 
-    // MARK: Repeat-clicking a stepper
-    //
-    // Stepping a row moves it out from under the cursor, so the button now sitting
-    // there belongs to the item that was displaced. Without help, a second click
-    // would move the wrong file back. So a step "grabs" its target: for a short
-    // while, any stepper click keeps moving the same item, and the cursor can stay
-    // parked on one spot and click it all the way down the list.
-    //
-    // The grab expires shortly after the last click, so a deliberate click on some
-    // other row later behaves normally.
-
-    private static let stepGrabTimeout: Duration = .milliseconds(1600)
-
-    @Published private(set) var grabbedStepIDs: Set<UUID>?
-    private var stepGrabExpiry: Task<Void, Never>?
-
-    /// Row the list should scroll to keep visible. The tick makes repeated requests
-    /// for the *same* row distinguishable, which is the normal case here: click the
-    /// arrow twenty times and the list follows the file down twenty rows.
+    /// Row that should remain visible after a single-step move or issue selection.
+    /// `ScrollViewReader` only moves the viewport when this row would leave it.
     @Published private(set) var scrollTargetID: UUID?
     @Published private(set) var scrollTick = 0
 
-    /// The rows a stepper button on `id` would actually move. The list needs this to
-    /// measure how far they are about to travel.
-    func stepTargets(for rowID: UUID) -> Set<UUID> {
-        if let grabbed = grabbedStepIDs, !grabbed.isEmpty { return grabbed }
-        return effectiveTargets(for: [rowID])
-    }
-
     func stepFromRow(_ id: UUID, by delta: Int) {
-        let targets = stepTargets(for: id)
+        let targets = effectiveTargets(for: [id])
         guard !targets.isEmpty, ItemSorter.canShift(items, ids: targets, by: delta) else { return }
 
         items = ItemSorter.shift(items, ids: targets, by: delta)
-        // Keep the moving rows highlighted so it stays obvious which file is sliding.
         selection = targets
-        grab(targets)
         requestScroll(towards: delta, among: targets)
         refreshPreviews()
     }
@@ -555,36 +730,12 @@ final class AppModel: ObservableObject {
     }
 
     func canStepFromRow(_ id: UUID, by delta: Int) -> Bool {
-        ItemSorter.canShift(items, ids: stepTargets(for: id), by: delta)
-    }
-
-    /// True while this row is the one a parked cursor keeps moving — the view uses it
-    /// to keep the button visibly attached to that item.
-    func isGrabbedForStepping(_ id: UUID) -> Bool {
-        grabbedStepIDs?.contains(id) ?? false
-    }
-
-    private func grab(_ ids: Set<UUID>) {
-        grabbedStepIDs = ids
-        stepGrabExpiry?.cancel()
-        stepGrabExpiry = Task { [weak self] in
-            try? await Task.sleep(for: Self.stepGrabTimeout)
-            guard !Task.isCancelled else { return }
-            await MainActor.run { self?.grabbedStepIDs = nil }
-        }
-    }
-
-    /// Any other way of changing the order releases the grab.
-    private func releaseStepGrab() {
-        stepGrabExpiry?.cancel()
-        stepGrabExpiry = nil
-        grabbedStepIDs = nil
+        ItemSorter.canShift(items, ids: effectiveTargets(for: [id]), by: delta)
     }
 
     func moveToEdge(ids: Set<UUID>, toStart: Bool) {
         let targets = effectiveTargets(for: ids)
         guard !targets.isEmpty else { return }
-        releaseStepGrab()
         items = ItemSorter.moveToEdge(items, ids: targets, toStart: toStart)
         refreshPreviews()
     }
@@ -601,14 +752,12 @@ final class AppModel: ObservableObject {
     }
 
     func applySort(_ option: SortDescriptorOption) {
-        releaseStepGrab()
         sortOption = option
         items = ItemSorter.sorted(items, by: option)
         refreshPreviews()
     }
 
     func reverseOrder() {
-        releaseStepGrab()
         items = ItemSorter.reindexed(items.reversed())
         refreshPreviews()
     }
@@ -624,6 +773,69 @@ final class AppModel: ObservableObject {
             return item
         }
         refreshPreviews()
+    }
+
+    // MARK: - Similar images
+
+    /// Starts a local background scan for the current immutable item snapshot.
+    /// Ordering changes do not call this method because results are keyed by item ID.
+    private func scheduleSimilarityScan() {
+        similarityTask?.cancel()
+        similarityRevision &+= 1
+        let revision = similarityRevision
+        similarityReview = nil
+
+        guard preferences.detectsSimilarImages else {
+            clearSimilarityResults(cancelTask: false)
+            return
+        }
+
+        let candidates = items.compactMap { item -> SimilarImageCandidate? in
+            let imageURLs = item.allURLs.filter(FileKinds.isImage)
+            guard !imageURLs.isEmpty else { return nil }
+            let analysisURL = imageURLs.first(where: { !FileKinds.isRAW($0) }) ?? imageURLs[0]
+            return SimilarImageCandidate(
+                itemID: item.id,
+                analysisURL: analysisURL,
+                allURLs: item.allURLs
+            )
+        }
+        guard candidates.count > 1 else {
+            clearSimilarityResults(cancelTask: false)
+            return
+        }
+
+        let configuration = preferences.similarImageScanConfiguration
+        isScanningSimilarImages = true
+        similarityTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let matches = try await SimilarImageDetector.shared.scan(
+                    candidates: candidates,
+                    configuration: configuration
+                )
+                guard !Task.isCancelled, self.similarityRevision == revision else { return }
+                self.similarImageMatchesByItemID = matches
+                self.isScanningSimilarImages = false
+            } catch is CancellationError {
+                if self.similarityRevision == revision {
+                    self.isScanningSimilarImages = false
+                }
+            } catch {
+                if self.similarityRevision == revision {
+                    self.similarImageMatchesByItemID = [:]
+                    self.isScanningSimilarImages = false
+                }
+            }
+        }
+    }
+
+    private func clearSimilarityResults(cancelTask: Bool = true) {
+        if cancelTask { similarityTask?.cancel() }
+        similarityTask = nil
+        similarImageMatchesByItemID = [:]
+        isScanningSimilarImages = false
+        similarityReview = nil
     }
 
     // MARK: - Preview
@@ -649,7 +861,9 @@ final class AppModel: ObservableObject {
             do {
                 let structural = try await self.previewWorker.generate(
                     items: itemSnapshot,
-                    rule: ruleSnapshot
+                    rule: ruleSnapshot,
+                    jpegQuality: self.jpegQualitySetting,
+                    preservesJPEGAtMaximumQuality: self.preferences.preservesJPEGAtMaximumQuality
                 )
                 guard !Task.isCancelled, self.previewRevision == revision else { return }
                 self.applyPreviews(structural)
@@ -674,14 +888,22 @@ final class AppModel: ObservableObject {
     }
 
     private func applyPreviews(_ newPreviews: [RenamePreview]) {
-        // These values describe one snapshot and must be published atomically. Five
-        // independent @Published assignments caused five complete SwiftUI updates.
-        objectWillChange.send()
+        // These values describe one snapshot and must be published atomically. The
+        // notification is deferred because preview generation can complete while a
+        // rule field is still inside SwiftUI's update transaction.
         previews = newPreviews
         previewsByItemID = Dictionary(uniqueKeysWithValues: newPreviews.map { ($0.itemID, $0) })
         errorCount = newPreviews.errorCount
         warningCount = newPreviews.warningCount
         changedCount = newPreviews.changedCount
+
+        guard !isPreviewRefreshScheduled else { return }
+        isPreviewRefreshScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.isPreviewRefreshScheduled = false
+            self.objectWillChange.send()
+        }
     }
 
     // MARK: - Presets
@@ -831,15 +1053,244 @@ final class AppModel: ObservableObject {
 
     func rename() {
         guard canRename else { return }
-        let changedDirectories = previews
-            .flatMap(\.effectiveOperations)
-            .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
-        guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
-        guard beginBusy("リネーム中…", critical: true) else { return }
-        busyTask = Task { [weak self] in await self?.performRename() }
+        if previews.contains(where: { $0.requiresContentProcessing }),
+           preferences.confirmsOriginalProtection {
+            isImageResizeOriginalChoicePresented = true
+            return
+        }
+        requestRename(originalImagesDirectory: nil)
     }
 
-    private func performRename() async {
+    func replaceOriginalImagesForResize() {
+        isImageResizeOriginalChoicePresented = false
+        DispatchQueue.main.async { [weak self] in
+            self?.requestRename(originalImagesDirectory: nil)
+        }
+    }
+
+    func chooseOriginalImagesDestinationForResize() {
+        isImageResizeOriginalChoicePresented = false
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.originalImagesFolderName = self.defaultOriginalImagesFolderName()
+            self.isOriginalImagesFolderNamePresented = true
+        }
+    }
+
+    func confirmOriginalImagesFolderName() {
+        let name = originalImagesFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains(":") else {
+            alertMessage = AlertMessage(
+                title: "フォルダ名を使用できません",
+                detail: "空欄、`.`、`..`、`/`、`:` はフォルダ名に使用できません。"
+            )
+            return
+        }
+        originalImagesFolderName = name
+        isOriginalImagesFolderNamePresented = false
+        DispatchQueue.main.async { [weak self] in
+            self?.presentOriginalImagesDestinationPanel()
+        }
+    }
+
+    private func presentOriginalImagesDestinationPanel() {
+        guard canRename else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "保存場所を選択"
+        panel.message = "選択した場所に元画像専用の新しいフォルダを作成します。"
+        panel.directoryURL = importedDirectories.count == 1 ? importedDirectories.first : nil
+        guard panel.runModal() == .OK, let parentDirectory = panel.url else { return }
+
+        let started = parentDirectory.startAccessingSecurityScopedResource()
+        guard let bookmark = try? parentDirectory.bookmarkData(
+            options: .withSecurityScope,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        ) else {
+            if started { parentDirectory.stopAccessingSecurityScopedResource() }
+            alertMessage = AlertMessage(
+                title: "保存先へのアクセスを許可できませんでした",
+                detail: "別のフォルダを選択して、もう一度お試しください。"
+            )
+            return
+        }
+        registerFolderAccess(url: parentDirectory, bookmark: bookmark, isActive: started)
+
+        let originalsDirectory = parentDirectory.appendingPathComponent(
+            originalImagesFolderName,
+            isDirectory: true
+        )
+        guard !FileManager.default.fileExists(atPath: originalsDirectory.path) else {
+            alertMessage = AlertMessage(
+                title: "同名の保存フォルダがあります",
+                detail: "「\(originalsDirectory.lastPathComponent)」が既に存在します。ファイルは変更していません。もう一度保存場所を選択してください。"
+            )
+            return
+        }
+
+        let collisions = originalImageNameCollisions()
+        guard collisions.isEmpty else {
+            let shownNames = collisions.prefix(5).joined(separator: "、")
+            let remainder = collisions.count > 5 ? " ほか\(collisions.count - 5)件" : ""
+            alertMessage = AlertMessage(
+                title: "同名の元画像があります",
+                detail: "保存対象内で「\(shownNames)」\(remainder)の名前が重複しています。ファイルは変更していません。重複する画像名を変更してから、もう一度実行してください。"
+            )
+            return
+        }
+        requestRename(originalImagesDirectory: originalsDirectory)
+    }
+
+    private func defaultOriginalImagesFolderName() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
+        return "FileRenamer 元画像 \(formatter.string(from: Date()))"
+    }
+
+    private func originalImageNameCollisions() -> [String] {
+        var seenNames = Set<String>()
+        var collisions = Set<String>()
+        for preview in previews {
+            for operation in preview.operations {
+                guard rule.imageEditConfiguration(
+                    for: operation.source,
+                    jpegQuality: jpegQualitySetting,
+                    preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+                ) != nil else { continue }
+                let name = operation.source.lastPathComponent
+                let comparisonName = name.precomposedStringWithCanonicalMapping.lowercased()
+                if !seenNames.insert(comparisonName).inserted {
+                    collisions.insert(name)
+                }
+            }
+        }
+        return collisions.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
+    }
+
+    private func requestRename(originalImagesDirectory: URL?) {
+        guard canRename else { return }
+        guard preferences.confirmsRenameChanges else {
+            beginRename(originalImagesDirectory: originalImagesDirectory)
+            return
+        }
+        renameConfirmation = makeRenameConfirmation(
+            originalImagesDirectory: originalImagesDirectory
+        )
+    }
+
+    func confirmRename() {
+        guard let confirmation = renameConfirmation else { return }
+        let originalImagesDirectory = confirmation.originalImagesDirectory
+        renameConfirmation = nil
+        DispatchQueue.main.async { [weak self] in
+            self?.beginRename(originalImagesDirectory: originalImagesDirectory)
+        }
+    }
+
+    private func makeRenameConfirmation(
+        originalImagesDirectory: URL?
+    ) -> RenameConfirmation {
+        var rows: [RenameConfirmationRow] = []
+        var changedItemIDs = Set<UUID>()
+
+        for item in items {
+            guard let preview = previewsByItemID[item.id],
+                  !preview.validation.isError else { continue }
+
+            var includedItem = false
+            for operation in preview.operations {
+                let imageConfiguration = rule.imageEditConfiguration(
+                    for: operation.source,
+                    jpegQuality: jpegQualitySetting,
+                    preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+                )
+                guard !operation.isNoop || imageConfiguration != nil else { continue }
+
+                rows.append(RenameConfirmationRow(
+                    sourceName: operation.source.lastPathComponent,
+                    destinationName: operation.destination.lastPathComponent,
+                    sourceDirectoryPath: operation.source.deletingLastPathComponent().path,
+                    changesName: !operation.isNoop,
+                    imageChange: imageConfiguration == nil
+                        ? nil
+                        : imageConfirmationSummary(for: item, operation: operation),
+                    warning: preview.validation.message
+                ))
+                includedItem = true
+            }
+            if includedItem { changedItemIDs.insert(item.id) }
+        }
+
+        return RenameConfirmation(
+            rows: rows,
+            changedItemCount: changedItemIDs.count,
+            renamedFileCount: rows.filter(\.changesName).count,
+            processedImageCount: rows.filter { $0.imageChange != nil }.count,
+            warningCount: changedItemIDs.reduce(into: 0) { count, itemID in
+                if previewsByItemID[itemID]?.validation.isWarning == true { count += 1 }
+            },
+            originalImagesDirectory: originalImagesDirectory
+        )
+    }
+
+    private func imageConfirmationSummary(
+        for item: RenameItem,
+        operation: RenameOperation
+    ) -> String {
+        var details: [String] = []
+
+        if rule.imageResize.isEnabled,
+           let width = item.metadata.pixelWidth,
+           let height = item.metadata.pixelHeight {
+            let target = rule.imageResize.targetDimensions(width: width, height: height)
+            if width == target.width, height == target.height {
+                details.append("サイズ維持 \(width)×\(height) px")
+            } else {
+                details.append("\(width)×\(height) → \(target.width)×\(target.height) px")
+            }
+        } else if rule.imageResize.isEnabled {
+            details.append("長辺 \(rule.imageResize.normalizedLongEdge) px")
+        }
+
+        let sourceExtension = operation.source.pathExtension.uppercased()
+        let destinationExtension = operation.destination.pathExtension.uppercased()
+        if sourceExtension != destinationExtension {
+            details.append("\(sourceExtension.isEmpty ? "拡張子なし" : sourceExtension) → \(destinationExtension.isEmpty ? "拡張子なし" : destinationExtension)")
+        } else if !destinationExtension.isEmpty {
+            details.append("\(destinationExtension)で再保存")
+        }
+
+        if FileKinds.isJPEG(operation.destination) {
+            details.append("品質 \(jpegQualitySetting.percent)%")
+        }
+
+        return details.isEmpty ? "画像データを再生成" : details.joined(separator: "・")
+    }
+
+    private func beginRename(originalImagesDirectory: URL?) {
+        guard canRename else { return }
+        var changedDirectories = previews
+            .flatMap { preview in
+                preview.requiresContentProcessing ? preview.operations : preview.effectiveOperations
+            }
+            .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
+        if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
+        guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
+        guard beginBusy("ファイルを変更中…", critical: true) else { return }
+        busyTask = Task { [weak self] in
+            await self?.performRename(originalImagesDirectory: originalImagesDirectory)
+        }
+    }
+
+    private func performRename(originalImagesDirectory: URL?) async {
         defer { endBusy() }
 
         // Re-validate right before executing: the folder may have changed while the
@@ -852,7 +1303,12 @@ final class AppModel: ObservableObject {
         let structural: [RenamePreview]
         let validated: [RenamePreview]
         do {
-            structural = try await previewWorker.generate(items: itemSnapshot, rule: ruleSnapshot)
+            structural = try await previewWorker.generate(
+                items: itemSnapshot,
+                rule: ruleSnapshot,
+                jpegQuality: jpegQualitySetting,
+                preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+            )
             validated = try await destinationWorker.validate(structural)
         } catch {
             alertMessage = AlertMessage(title: "検証に失敗しました", detail: error.localizedDescription)
@@ -867,29 +1323,78 @@ final class AppModel: ObservableObject {
         let snapshot = previews
         let accessBookmarks = bookmarks(
             covering: itemSnapshot.flatMap(\.allURLs).map { $0.deletingLastPathComponent() }
+                + [originalImagesDirectory].compactMap { $0 }
         )
         do {
-            let transaction = try await executor.execute(
-                previews: snapshot,
-                accessBookmarks: accessBookmarks
-            ) { [weak self] value in
-                Task { @MainActor in self?.progress = value }
+            let hasMoves = snapshot.contains { !$0.effectiveOperations.isEmpty }
+            var transaction: RenameTransaction
+            if hasMoves {
+                transaction = try await executor.execute(
+                    previews: snapshot,
+                    accessBookmarks: accessBookmarks
+                ) { [weak self] value in
+                    Task { @MainActor in self?.progress = value * 0.55 }
+                }
+            } else {
+                transaction = RenameTransaction(moves: [], accessBookmarks: accessBookmarks)
             }
-            history.record(transaction)
+
+            let imageRequests = snapshot.flatMap { preview in
+                preview.operations.compactMap { operation -> ImageEditRequest? in
+                    guard let configuration = ruleSnapshot.imageEditConfiguration(
+                        for: operation.source,
+                        jpegQuality: jpegQualitySetting,
+                        preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+                    ) else {
+                        return nil
+                    }
+                    return ImageEditRequest(
+                        url: operation.destination,
+                        configuration: configuration,
+                        originalCopyDirectory: originalImagesDirectory,
+                        originalFileName: operation.source.lastPathComponent
+                    )
+                }
+            }
+            if !imageRequests.isEmpty {
+                do {
+                    let records = try await imageProcessor.apply(
+                        requests: imageRequests,
+                        transactionID: transaction.id,
+                        renameMoves: transaction.moves,
+                        accessBookmarks: accessBookmarks
+                    ) { [weak self] value in
+                        Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
+                    }
+                    transaction = transaction.addingImageEdits(records)
+                } catch {
+                    if hasMoves { _ = try? await executor.revert(transaction) }
+                    throw error
+                }
+            }
+            let discardedHistory = history.record(transaction)
+            imageProcessor.removeBackups(for: discardedHistory)
             persistHistory()
             adoptRenamedURLs(from: transaction)
+            progress = 1
+            let action = imageRequests.isEmpty ? "リネーム" : "変更"
             resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルをリネームしました",
+                text: "\(transaction.fileCount) ファイルを\(action)しました",
                 offersUndo: true
             )
         } catch {
-            alertMessage = AlertMessage(title: "リネームに失敗しました", detail: error.localizedDescription)
+            alertMessage = AlertMessage(title: "変更に失敗しました", detail: error.localizedDescription)
         }
     }
 
     func requestUndo() {
         guard canUndo else { return }
-        isUndoConfirmationPresented = true
+        if preferences.confirmsUndo {
+            isUndoConfirmationPresented = true
+        } else {
+            resultMessage = nil
+            performUndo()
+        }
     }
 
     func confirmUndo() {
@@ -903,7 +1408,7 @@ final class AppModel: ObservableObject {
         restoreFolderAccess(from: transaction.accessBookmarks)
         let directories = transaction.moves.flatMap {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
-        }
+        } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
         guard beginBusy("元に戻しています…", critical: true) else { return }
         busyTask = Task { [weak self] in await self?.revert(transaction) }
@@ -914,7 +1419,7 @@ final class AppModel: ObservableObject {
         restoreFolderAccess(from: transaction.accessBookmarks)
         let directories = transaction.moves.flatMap {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
-        }
+        } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
         guard beginBusy("やり直しています…", critical: true) else { return }
         busyTask = Task { [weak self] in await self?.reapply(transaction) }
@@ -923,11 +1428,27 @@ final class AppModel: ObservableObject {
     private func revert(_ transaction: RenameTransaction) async {
         defer { endBusy() }
         do {
-            _ = try await executor.revert(transaction)
+            var restoredImages = false
+            if !transaction.imageEdits.isEmpty {
+                try await imageProcessor.restore(transaction.imageEdits) { [weak self] value in
+                    Task { @MainActor in self?.progress = value * 0.45 }
+                }
+                restoredImages = true
+            }
+            if !transaction.moves.isEmpty {
+                do {
+                    _ = try await executor.revert(transaction) { [weak self] value in
+                        Task { @MainActor in self?.progress = 0.45 + value * 0.55 }
+                    }
+                } catch {
+                    if restoredImages { try? await imageProcessor.reapply(transaction.imageEdits) }
+                    throw error
+                }
+            }
             history.finishUndo()
             persistHistory()
             adoptRenamedURLs(from: transaction.inverted)
-            resultMessage = ResultMessage(text: "\(transaction.fileCount) ファイルを元の名前に戻しました")
+            resultMessage = ResultMessage(text: "\(transaction.fileCount) ファイルを元の状態に戻しました")
         } catch {
             alertMessage = AlertMessage(title: "元に戻せませんでした", detail: error.localizedDescription)
         }
@@ -936,23 +1457,38 @@ final class AppModel: ObservableObject {
     private func reapply(_ transaction: RenameTransaction) async {
         defer { endBusy() }
         do {
-            let previews = transaction.moves.map { operation in
-                RenamePreview(
-                    itemID: UUID(),
-                    counterValue: nil,
-                    proposedBaseName: operation.destination.deletingPathExtension().lastPathComponent,
-                    operations: [operation]
-                )
+            var reappliedRename: RenameTransaction?
+            if !transaction.moves.isEmpty {
+                let previews = transaction.moves.map { operation in
+                    RenamePreview(
+                        itemID: UUID(),
+                        counterValue: nil,
+                        proposedBaseName: operation.destination.deletingPathExtension().lastPathComponent,
+                        operations: [operation]
+                    )
+                }
+                reappliedRename = try await executor.execute(
+                    previews: previews,
+                    accessBookmarks: transaction.accessBookmarks
+                ) { [weak self] value in
+                    Task { @MainActor in self?.progress = value * 0.55 }
+                }
             }
-            _ = try await executor.execute(
-                previews: previews,
-                accessBookmarks: transaction.accessBookmarks
-            )
+            if !transaction.imageEdits.isEmpty {
+                do {
+                    try await imageProcessor.reapply(transaction.imageEdits) { [weak self] value in
+                        Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
+                    }
+                } catch {
+                    if let reappliedRename { _ = try? await executor.revert(reappliedRename) }
+                    throw error
+                }
+            }
             history.finishRedo()
             persistHistory()
             adoptRenamedURLs(from: transaction)
             resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルのリネームをやり直しました",
+                text: "\(transaction.fileCount) ファイルの変更をやり直しました",
                 offersUndo: true
             )
         } catch {
@@ -967,19 +1503,28 @@ final class AppModel: ObservableObject {
         for move in transaction.moves {
             mapping[move.source.standardizedFileURL.path] = move.destination
         }
+        let editedPaths = Set(transaction.imageEdits.map { $0.fileURL.standardizedFileURL.path })
+        let metadataLoader = MetadataLoader()
         items = items.map { item in
             let updatedURLs = item.allURLs.map { mapping[$0.standardizedFileURL.path] ?? $0 }
             guard let primary = updatedURLs.first else { return item }
+            let touchesEditedImage = item.allURLs.contains {
+                editedPaths.contains($0.standardizedFileURL.path)
+            } || updatedURLs.contains {
+                editedPaths.contains($0.standardizedFileURL.path)
+            }
             return RenameItem(
                 id: item.id,
                 originalURL: primary,
                 companionURLs: Array(updatedURLs.dropFirst()),
                 order: item.order,
                 isLocked: item.isLocked,
-                metadata: item.metadata
+                metadata: touchesEditedImage ? metadataLoader.load(for: updatedURLs) : item.metadata
             )
         }
+        workingDirectories = calculateWorkingDirectories()
         refreshPreviews()
+        scheduleSimilarityScan()
     }
 
     private func persistHistory() {
@@ -1000,6 +1545,11 @@ final class AppModel: ObservableObject {
 
     func openDirectoryInFinder(_ directory: URL) {
         NSWorkspace.shared.open(directory)
+    }
+
+    func copyDirectoryPath(_ directory: URL) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(directory.path, forType: .string)
     }
 
     func quickLookSelection() {
@@ -1051,17 +1601,19 @@ final class AppModel: ObservableObject {
     private func recoverPendingRenames() async {
         guard beginBusy("前回の処理を確認中…", critical: true) else { return }
         defer { endBusy() }
+        let imageReport = await imageProcessor.recoverPendingTransactions()
         let report = await executor.recoverPendingTransactions()
-        guard report.hasWork else { return }
+        guard imageReport.hasWork || report.hasWork else { return }
 
-        if report.hasUnresolvedWork {
+        if imageReport.hasUnresolvedWork || report.hasUnresolvedWork {
             alertMessage = AlertMessage(
                 title: "自動復旧できない処理があります",
-                detail: report.messages.joined(separator: "\n")
+                detail: (imageReport.messages + report.messages).joined(separator: "\n")
             )
         } else {
+            let recoveredCount = imageReport.recoveredFileCount + report.recoveredFileCount
             resultMessage = ResultMessage(
-                text: "前回中断された \(report.recoveredFileCount) ファイルを元の名前へ復旧しました"
+                text: "前回中断された \(recoveredCount) ファイルを元の状態へ復旧しました"
             )
         }
     }

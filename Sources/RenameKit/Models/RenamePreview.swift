@@ -40,6 +40,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
     /// New base name (no extension) shared by the primary and every companion.
     public let proposedBaseName: String
     public let operations: [RenameOperation]
+    public let requiresContentProcessing: Bool
     public var generationWarnings: [String]
     public var validation: RenameValidation
 
@@ -50,6 +51,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
         counterValue: Int?,
         proposedBaseName: String,
         operations: [RenameOperation],
+        requiresContentProcessing: Bool = false,
         generationWarnings: [String] = [],
         validation: RenameValidation = .valid
     ) {
@@ -57,6 +59,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
         self.counterValue = counterValue
         self.proposedBaseName = proposedBaseName
         self.operations = operations
+        self.requiresContentProcessing = requiresContentProcessing
         self.generationWarnings = generationWarnings
         self.validation = validation
     }
@@ -64,7 +67,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
     public var sourceURL: URL { operations.first?.source ?? URL(fileURLWithPath: "/") }
     public var destinationURL: URL { operations.first?.destination ?? sourceURL }
     public var proposedName: String { destinationURL.lastPathComponent }
-    public var isUnchanged: Bool { operations.allSatisfy(\.isNoop) }
+    public var isUnchanged: Bool { operations.allSatisfy(\.isNoop) && !requiresContentProcessing }
 
     /// Moves that actually need to run.
     public var effectiveOperations: [RenameOperation] { operations.filter { !$0.isNoop } }

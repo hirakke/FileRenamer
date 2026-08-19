@@ -1,14 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Direct control over the list's scroll offset.
-///
-/// `ScrollViewReader.scrollTo(_:anchor:)` is not usable for pinning a row under the
-/// pointer: on a `List` it collapses to "scroll just enough to make the row visible"
-/// and ignores a fractional anchor, so the row drifts away from the cursor and then
-/// jumps when it reaches an edge. Moving the clip view by an exact number of points
-/// is unambiguous, and it is what "the row stays still and the list slides" actually
-/// means.
+/// Direct control over a scroll offset for grid drag auto-scrolling.
 @MainActor
 final class ListScrollController {
     weak var scrollView: NSScrollView?
@@ -60,28 +53,82 @@ struct EnclosingScrollViewProbe: NSViewRepresentable {
     }
 }
 
-/// Last known on-screen frame of each row, in the list's coordinate space.
+/// Auto-scroll while a drag is in progress.
 ///
-/// A plain class, deliberately not observable: it is written during layout and only
-/// read at click time, so it must not invalidate any view.
+/// A grid drag can only reach what is on screen, so holding a cell near the top or
+/// bottom edge has to scroll the view under it — otherwise moving a photo past the
+/// visible page means dropping, scrolling, and picking it up again.
+///
+/// AppKit does this for `NSTableView` drags but not for a SwiftUI `LazyVGrid`, and
+/// SwiftUI's drop callbacks only fire while the pointer is over a drop target, so the
+/// edges are polled instead: the pointer position comes from `NSEvent`, and the loop
+/// ends by itself when the mouse button comes back up.
 @MainActor
-final class RowGeometryStore {
-    var frames: [UUID: CGRect] = [:]
-}
+final class DragAutoScroller {
+    let controller = ListScrollController()
+    /// Called once the mouse button is released, including when the drag was
+    /// abandoned outside the window — SwiftUI reports nothing in that case.
+    var onDragEnded: (() -> Void)?
 
-/// Records one row's frame into the store as it scrolls.
-struct RowFrameRecorder: View {
-    let id: UUID
-    let store: RowGeometryStore
-    let coordinateSpace: String
+    /// How close to an edge the pointer has to be, and how fast it then scrolls.
+    private let edgeZone: CGFloat = 72
+    private let maximumSpeed: CGFloat = 22
+    private var task: Task<Void, Never>?
 
-    var body: some View {
-        GeometryReader { proxy in
-            let frame = proxy.frame(in: .named(coordinateSpace))
-            Color.clear
-                .onChange(of: frame, initial: true) { _, newFrame in
-                    store.frames[id] = newFrame
+    func start() {
+        guard task == nil else { return }
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(16))
+                guard let self else { return }
+                guard NSEvent.pressedMouseButtons != 0 else {
+                    self.finish()
+                    return
                 }
+                self.step()
+            }
         }
+    }
+
+    func stop() {
+        task?.cancel()
+        task = nil
+    }
+
+    private func finish() {
+        stop()
+        onDragEnded?()
+    }
+
+    private func step() {
+        guard let scrollView = controller.scrollView,
+              let window = scrollView.window
+        else { return }
+
+        let windowPoint = window.convertPoint(fromScreen: NSEvent.mouseLocation)
+        let local = scrollView.convert(windowPoint, from: nil)
+        let bounds = scrollView.bounds
+        guard bounds.height > edgeZone * 2,
+              local.x >= bounds.minX, local.x <= bounds.maxX,
+              local.y >= bounds.minY, local.y <= bounds.maxY
+        else { return }
+
+        // An NSScrollView is not flipped by default, so "near the top" is the far end
+        // of its own y axis; check the flag rather than assuming either way.
+        let distanceFromTop = scrollView.isFlipped ? local.y - bounds.minY : bounds.maxY - local.y
+        let distanceFromBottom = bounds.height - distanceFromTop
+
+        if distanceFromTop < edgeZone {
+            controller.scroll(by: -speed(forDistance: distanceFromTop))
+        } else if distanceFromBottom < edgeZone {
+            controller.scroll(by: speed(forDistance: distanceFromBottom))
+        }
+    }
+
+    /// Accelerates as the pointer pushes further into the edge, so a small nudge
+    /// creeps and pinning to the very edge moves quickly.
+    private func speed(forDistance distance: CGFloat) -> CGFloat {
+        let depth = min(max((edgeZone - distance) / edgeZone, 0), 1)
+        return maximumSpeed * depth * depth
     }
 }

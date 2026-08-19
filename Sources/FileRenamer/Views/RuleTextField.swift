@@ -71,6 +71,8 @@ struct RuleTextField: View {
                     }
                 }
             }
+
+            ExtensionBlockToken(rule: $rule)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
@@ -136,6 +138,66 @@ struct RuleTextField: View {
         rule = rule.removingToken(id: block.id)
         focusRequest = RuleFocusRequest(runID: current.id, caret: current.value.count)
         return true
+    }
+}
+
+/// Extensions are not part of the editable base-name token array, but showing one
+/// as a fixed final block makes the complete output name legible at a glance.
+private struct ExtensionBlockToken: View {
+    @Binding var rule: RenameRule
+    @State private var isShowingPopover = false
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            isShowingPopover.toggle()
+        } label: {
+            ExtensionBlockFace(label: label, isSelected: isShowingPopover)
+                .opacity(isHovered ? 0.85 : 1)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .popover(isPresented: $isShowingPopover, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("拡張子")
+                    .font(.headline)
+
+                Text("大文字・小文字")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("大文字・小文字", selection: $rule.extensionTransform) {
+                    ForEach(CaseTransform.allCases, id: \.self) { transform in
+                        Text(transform.displayName).tag(transform)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+
+                Text("画像形式は「画像設定」から変更できます。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .frame(width: 280)
+        }
+        .help("拡張子の大文字・小文字を設定")
+        .accessibilityLabel("拡張子ブロック、\(label)")
+    }
+
+    private var label: String {
+        if let outputExtension = rule.imageOutputFormat.fileExtension {
+            return ".\(rule.extensionTransform.apply(outputExtension))"
+        }
+
+        switch rule.extensionTransform {
+        case .none:
+            return ".拡張子"
+        case .lowercase:
+            return ".拡張子（小文字）"
+        case .uppercase:
+            return ".拡張子（大文字）"
+        }
     }
 }
 

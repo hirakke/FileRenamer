@@ -28,10 +28,16 @@ public struct RenameHistory: Sendable, Codable {
     public var canRedo: Bool { !redoStack.isEmpty }
     public var lastTransaction: RenameTransaction? { undoStack.last }
 
-    public mutating func record(_ transaction: RenameTransaction) {
+    @discardableResult
+    public mutating func record(_ transaction: RenameTransaction) -> [RenameTransaction] {
+        var discarded = redoStack
         undoStack.append(transaction)
-        if undoStack.count > limit { undoStack.removeFirst(undoStack.count - limit) }
+        if undoStack.count > limit {
+            discarded.append(contentsOf: undoStack.prefix(undoStack.count - limit))
+            undoStack.removeFirst(undoStack.count - limit)
+        }
         redoStack.removeAll()
+        return discarded
     }
 
     /// Pops the transaction to undo. The caller performs the filesystem work and then
@@ -54,8 +60,11 @@ public struct RenameHistory: Sendable, Codable {
         undoStack.append(transaction)
     }
 
-    public mutating func clear() {
+    @discardableResult
+    public mutating func clear() -> [RenameTransaction] {
+        let discarded = undoStack + redoStack
         undoStack.removeAll()
         redoStack.removeAll()
+        return discarded
     }
 }

@@ -42,6 +42,26 @@ struct BlockFace: View {
     let token: RenameToken
     var isSelected: Bool = false
 
+    var body: some View {
+        RuleBlockFace(label: BlockLabel.text(for: token), tint: token.tint, isSelected: isSelected)
+    }
+}
+
+/// The fixed suffix block uses the same visual grammar as generated name blocks.
+struct ExtensionBlockFace: View {
+    let label: String
+    var isSelected: Bool = false
+
+    var body: some View {
+        RuleBlockFace(label: label, tint: Palette.azraqBlue, isSelected: isSelected)
+    }
+}
+
+private struct RuleBlockFace: View {
+    let label: String
+    let tint: Color
+    let isSelected: Bool
+
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
     }
@@ -51,13 +71,13 @@ struct BlockFace: View {
         // content, and coloured text on a strongly tinted ground disappears. The
         // block keeps the rounded shape but draws its own light wash, so the
         // contrast between text and ground is known rather than inherited.
-        Text(BlockLabel.text(for: token))
+        Text(label)
             .font(.system(.body, design: .monospaced).weight(.semibold))
-            .foregroundStyle(token.tint)
+            .foregroundStyle(tint)
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
-            .background(token.tint.opacity(isSelected ? 0.26 : 0.15), in: shape)
+            .background(tint.opacity(isSelected ? 0.26 : 0.15), in: shape)
             .overlay {
                 if isSelected {
                     shape.strokeBorder(Color.accentColor.opacity(0.65), lineWidth: 1)

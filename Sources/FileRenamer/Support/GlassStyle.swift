@@ -33,10 +33,9 @@ struct TranslucentWindowBackground: NSViewRepresentable {
             // thumbnails and controls. Only the backdrop is translucent.
             window.alphaValue = 1
             window.backgroundColor = .clear
-            // The workspace tabs are the title affordance. Suppress SwiftUI's
-            // fallback product-name title ("FileRenamer") at the NSWindow level.
-            window.title = ""
-            window.titleVisibility = .hidden
+            // The dynamic directory title is owned by `PlainWindowTitle`. A
+            // principal ToolbarItem would make macOS 26 wrap even plain text in an
+            // automatic Liquid Glass capsule.
             window.titlebarAppearsTransparent = true
             window.titlebarSeparatorStyle = .none
             window.toolbarStyle = .unified
@@ -47,6 +46,40 @@ struct TranslucentWindowBackground: NSViewRepresentable {
             // window fill even when NSWindow itself has a clear background.
             window.contentView?.wantsLayer = true
             window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+        }
+    }
+}
+
+/// Writes to NSWindow's standard title field, which remains ordinary text instead
+/// of becoming a Liquid Glass toolbar control on macOS 26.
+struct PlainWindowTitle: NSViewRepresentable {
+    let title: String
+
+    func makeNSView(context: Context) -> TitleBridgeView {
+        let view = TitleBridgeView()
+        view.title = title
+        return view
+    }
+
+    func updateNSView(_ nsView: TitleBridgeView, context: Context) {
+        nsView.title = title
+        nsView.applyTitle()
+    }
+
+    final class TitleBridgeView: NSView {
+        var title = ""
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            applyTitle()
+        }
+
+        func applyTitle() {
+            guard let window else { return }
+            window.title = title
+            window.titleVisibility = title.isEmpty ? .hidden : .visible
+            // A represented URL adds a proxy icon; keep this title text-only.
+            window.representedURL = nil
         }
     }
 }

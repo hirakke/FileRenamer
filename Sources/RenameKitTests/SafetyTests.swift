@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 import RenameKit
 
 private struct StubExistenceChecker: FileExistenceChecking {
@@ -289,6 +291,486 @@ func runExecutorTests() async {
         }
     }
 
+    runner.suite("ImageProcessor — 画像変換と復元")
+
+    await runner.test("PNGを長辺128pxのJPEGへ変換し、UndoとRedoが成立する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("source.png")
+            let backupRoot = sandbox.appendingPathComponent("backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 320, height: 160)
+            try originalData.write(to: source)
+
+            let processor = ImageProcessor(backupRootURL: backupRoot)
+            let configuration = ImageEditConfiguration(outputFormat: .jpeg, maxLongEdge: 128)
+            let records = try await processor.apply(
+                requests: [ImageEditRequest(url: source, configuration: configuration)],
+                transactionID: UUID()
+            )
+
+            let converted = try imageProperties(source)
+            try expectEqual(converted.width, 128)
+            try expectEqual(converted.height, 64)
+            try expectEqual(converted.type, UTType.jpeg.identifier)
+
+            try await processor.restore(records)
+            try expectEqual(try Data(contentsOf: source), originalData)
+            let restored = try imageProperties(source)
+            try expectEqual(restored.width, 320)
+            try expectEqual(restored.height, 160)
+            try expectEqual(restored.type, UTType.png.identifier)
+
+            try await processor.reapply(records)
+            let redone = try imageProperties(source)
+            try expectEqual(redone.width, 128)
+            try expectEqual(redone.height, 64)
+            try expectEqual(redone.type, UTType.jpeg.identifier)
+        }
+    }
+
+    await runner.test("JPEGを形式維持でリサイズし選択品質で再保存する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("source.jpg")
+            try makeTestImage(width: 320, height: 160, type: .jpeg, detailed: true).write(to: source)
+            let processor = ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("jpeg-resize-backups", isDirectory: true)
+            )
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .preserve,
+                        maxLongEdge: 128,
+                        jpegCompressionQuality: 0.80
+                    )
+                )],
+                transactionID: UUID()
+            )
+            let converted = try imageProperties(source)
+            try expectEqual(converted.width, 128)
+            try expectEqual(converted.height, 64)
+            try expectEqual(converted.type, UTType.jpeg.identifier)
+        }
+    }
+
+    await runner.test("小さい画像は既定で拡大せず、明示時だけ拡大する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("small.png")
+            let backupRoot = sandbox.appendingPathComponent("upscale-backups", isDirectory: true)
+            try makeTestPNG(width: 32, height: 16).write(to: source)
+
+            let processor = ImageProcessor(backupRootURL: backupRoot)
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(outputFormat: .preserve, maxLongEdge: 128)
+                )],
+                transactionID: UUID()
+            )
+
+            var resized = try imageProperties(source)
+            try expectEqual(resized.width, 32)
+            try expectEqual(resized.height, 16)
+
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .preserve,
+                        maxLongEdge: 128,
+                        preventsUpscaling: false
+                    )
+                )],
+                transactionID: UUID()
+            )
+
+            resized = try imageProperties(source)
+            try expectEqual(resized.width, 128)
+            try expectEqual(resized.height, 64)
+            try expectEqual(resized.type, UTType.png.identifier)
+        }
+    }
+
+    await runner.test("JPEG品質80・90・95・100とカスタム値を実エンコードへ渡す") {
+        try await withSandbox { sandbox in
+            let sourceData = try makeTestPNG(width: 640, height: 480, detailed: true)
+            let processor = ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("quality-backups", isDirectory: true)
+            )
+            let qualities = [0.80, 0.90, 0.95, 1.00, 0.73]
+            var sizes: [Double: Int] = [:]
+            for quality in qualities {
+                let url = sandbox.appendingPathComponent("quality-\(Int(quality * 100)).jpg")
+                try sourceData.write(to: url)
+                _ = try await processor.apply(
+                    requests: [ImageEditRequest(
+                        url: url,
+                        configuration: ImageEditConfiguration(
+                            outputFormat: .jpeg,
+                            maxLongEdge: nil,
+                            jpegCompressionQuality: quality
+                        )
+                    )],
+                    transactionID: UUID()
+                )
+                try expectEqual(try imageProperties(url).type, UTType.jpeg.identifier)
+                sizes[quality] = try Data(contentsOf: url).count
+            }
+            try expect((sizes[0.80] ?? 0) < (sizes[0.90] ?? 0))
+            try expect((sizes[0.90] ?? 0) < (sizes[0.95] ?? 0))
+            try expect((sizes[0.95] ?? 0) < (sizes[1.00] ?? 0))
+            try expect((sizes[0.73] ?? 0) < (sizes[0.80] ?? 0))
+        }
+    }
+
+    await runner.test("HEICをJPEGへ変換できる") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("input.heic")
+            try makeTestImage(width: 128, height: 64, type: .heic, detailed: true).write(to: source)
+            let processor = ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("heic-backups", isDirectory: true)
+            )
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .jpeg,
+                        maxLongEdge: nil,
+                        jpegCompressionQuality: 0.95
+                    )
+                )],
+                transactionID: UUID()
+            )
+            try expectEqual(try imageProperties(source).type, UTType.jpeg.identifier)
+        }
+    }
+
+    await runner.test("JPEGリサイズ後も撮影日時・GPS・カメラ情報を保持する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("metadata.jpg")
+            let metadata: [CFString: Any] = [
+                kCGImagePropertyExifDictionary: [
+                    kCGImagePropertyExifDateTimeOriginal: "2026:08:12 20:30:40",
+                    kCGImagePropertyExifLensModel: "Test Lens"
+                ],
+                kCGImagePropertyGPSDictionary: [
+                    kCGImagePropertyGPSLatitude: 35.6812,
+                    kCGImagePropertyGPSLatitudeRef: "N",
+                    kCGImagePropertyGPSLongitude: 139.7671,
+                    kCGImagePropertyGPSLongitudeRef: "E"
+                ],
+                kCGImagePropertyTIFFDictionary: [
+                    kCGImagePropertyTIFFMake: "Test Camera Co.",
+                    kCGImagePropertyTIFFModel: "Test Camera",
+                    kCGImagePropertyTIFFOrientation: 1
+                ]
+            ]
+            try makeTestImage(
+                width: 320,
+                height: 160,
+                type: .jpeg,
+                detailed: true,
+                properties: metadata
+            ).write(to: source)
+
+            _ = try await ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("metadata-backups", isDirectory: true)
+            ).apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .jpeg,
+                        maxLongEdge: 128,
+                        jpegCompressionQuality: 0.95
+                    )
+                )],
+                transactionID: UUID()
+            )
+
+            let properties = try imageMetadata(source)
+            let exif = properties[kCGImagePropertyExifDictionary] as? [CFString: Any]
+            let gps = properties[kCGImagePropertyGPSDictionary] as? [CFString: Any]
+            let tiff = properties[kCGImagePropertyTIFFDictionary] as? [CFString: Any]
+            try expectEqual(exif?[kCGImagePropertyExifDateTimeOriginal] as? String, "2026:08:12 20:30:40")
+            try expectEqual(tiff?[kCGImagePropertyTIFFMake] as? String, "Test Camera Co.")
+            try expect(gps?[kCGImagePropertyGPSLatitude] != nil)
+            try expectEqual(properties[kCGImagePropertyPixelWidth] as? Int, 128)
+            try expectEqual(exif?[kCGImagePropertyExifPixelXDimension] as? Int, 128)
+        }
+    }
+
+    await runner.test("PNGへ書き出せる") {
+        try await withSandbox { sandbox in
+            let originalData = try makeTestPNG(width: 96, height: 48)
+            let backupRoot = sandbox.appendingPathComponent("format-backups", isDirectory: true)
+            let processor = ImageProcessor(backupRootURL: backupRoot)
+
+            for (format, type, name) in [
+                (ImageOutputFormat.png, UTType.png.identifier, "output.png")
+            ] {
+                let url = sandbox.appendingPathComponent(name)
+                try originalData.write(to: url)
+                _ = try await processor.apply(
+                    requests: [ImageEditRequest(
+                        url: url,
+                        configuration: ImageEditConfiguration(outputFormat: format, maxLongEdge: nil)
+                    )],
+                    transactionID: UUID()
+                )
+                try expectEqual(try imageProperties(url).type, type)
+            }
+        }
+    }
+
+    await runner.test("PNGの透明度を保持し、JPEGでは透明部分を白にする") {
+        try await withSandbox { sandbox in
+            let transparentData = try makeTestImage(
+                width: 40,
+                height: 20,
+                type: .png,
+                alpha: 64
+            )
+            let processor = ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("alpha-backups", isDirectory: true)
+            )
+
+            let png = sandbox.appendingPathComponent("alpha.png")
+            try transparentData.write(to: png)
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: png,
+                    configuration: ImageEditConfiguration(outputFormat: .png, maxLongEdge: 20)
+                )],
+                transactionID: UUID()
+            )
+            try expectEqual(try imageHasAlpha(png), true)
+
+            let jpeg = sandbox.appendingPathComponent("alpha.jpg")
+            try transparentData.write(to: jpeg)
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: jpeg,
+                    configuration: ImageEditConfiguration(outputFormat: .jpeg, maxLongEdge: nil)
+                )],
+                transactionID: UUID()
+            )
+            try expectEqual(try imageHasAlpha(jpeg), false)
+        }
+    }
+
+    await runner.test("指定した新規フォルダへリサイズ前の元画像を保存する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("photo.png")
+            let originals = sandbox.appendingPathComponent("任意の元画像", isDirectory: true)
+            let backupRoot = sandbox.appendingPathComponent("original-copy-backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 320, height: 160)
+            try originalData.write(to: source)
+
+            let processor = ImageProcessor(backupRootURL: backupRoot)
+            _ = try await processor.apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(outputFormat: .preserve, maxLongEdge: 128),
+                    originalCopyDirectory: originals,
+                    originalFileName: "photo.png"
+                )],
+                transactionID: UUID()
+            )
+
+            try expectEqual(
+                try Data(contentsOf: originals.appendingPathComponent("photo.png")),
+                originalData
+            )
+            try expectEqual(try imageProperties(source).width, 128)
+        }
+    }
+
+    await runner.test("形式変換のみでも変更前の元画像を保存する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("convert.jpg")
+            let originals = sandbox.appendingPathComponent("形式変換の元画像", isDirectory: true)
+            let originalData = try makeTestPNG(width: 96, height: 48, detailed: true)
+            try originalData.write(to: source)
+
+            _ = try await ImageProcessor(
+                backupRootURL: sandbox.appendingPathComponent("convert-backups", isDirectory: true)
+            ).apply(
+                requests: [ImageEditRequest(
+                    url: source,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .jpeg,
+                        maxLongEdge: nil,
+                        jpegCompressionQuality: 0.95
+                    ),
+                    originalCopyDirectory: originals,
+                    originalFileName: "convert.png"
+                )],
+                transactionID: UUID()
+            )
+
+            try expectEqual(
+                try Data(contentsOf: originals.appendingPathComponent("convert.png")),
+                originalData
+            )
+            try expectEqual(try imageProperties(source).type, UTType.jpeg.identifier)
+        }
+    }
+
+    await runner.test("同名の元画像保存フォルダがある場合は変更せず停止する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("photo.png")
+            let originals = sandbox.appendingPathComponent("元画像", isDirectory: true)
+            let backupRoot = sandbox.appendingPathComponent("collision-backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 320, height: 160)
+            try originalData.write(to: source)
+            try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: false)
+
+            let processor = ImageProcessor(backupRootURL: backupRoot)
+            try await expectThrows {
+                _ = try await processor.apply(
+                    requests: [ImageEditRequest(
+                        url: source,
+                        configuration: ImageEditConfiguration(outputFormat: .preserve, maxLongEdge: 128),
+                        originalCopyDirectory: originals,
+                        originalFileName: "photo.png"
+                    )],
+                    transactionID: UUID()
+                )
+            }
+            try expectEqual(try Data(contentsOf: source), originalData)
+        }
+    }
+
+    await runner.test("57件目で失敗しても変更画像と原本コピーをすべて戻す") {
+        try await withSandbox { sandbox in
+            let originals = sandbox.appendingPathComponent("元画像一括", isDirectory: true)
+            let backupRoot = sandbox.appendingPathComponent("batch-backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 16, height: 8, detailed: true)
+            var requests: [ImageEditRequest] = []
+            var existingURLs: [URL] = []
+            for index in 0..<100 {
+                let url = sandbox.appendingPathComponent(String(format: "photo-%03d.png", index))
+                if index != 56 {
+                    try originalData.write(to: url)
+                    existingURLs.append(url)
+                }
+                requests.append(ImageEditRequest(
+                    url: url,
+                    configuration: ImageEditConfiguration(
+                        outputFormat: .jpeg,
+                        maxLongEdge: nil,
+                        jpegCompressionQuality: 0.95
+                    ),
+                    originalCopyDirectory: originals,
+                    originalFileName: url.lastPathComponent
+                ))
+            }
+
+            try await expectThrows {
+                _ = try await ImageProcessor(backupRootURL: backupRoot).apply(
+                    requests: requests,
+                    transactionID: UUID()
+                )
+            }
+            for url in existingURLs {
+                try expectEqual(try Data(contentsOf: url), originalData)
+            }
+            try expect(!FileManager.default.fileExists(atPath: originals.path))
+        }
+    }
+
+    await runner.test("キャンセル時は変更と原本保存フォルダを残さない") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("cancel.png")
+            let originals = sandbox.appendingPathComponent("キャンセル原本", isDirectory: true)
+            let originalData = try makeTestPNG(width: 320, height: 160, detailed: true)
+            try originalData.write(to: source)
+            let task = Task {
+                try await ImageProcessor(
+                    backupRootURL: sandbox.appendingPathComponent("cancel-backups", isDirectory: true)
+                ).apply(
+                    requests: [ImageEditRequest(
+                        url: source,
+                        configuration: ImageEditConfiguration(outputFormat: .jpeg, maxLongEdge: 128),
+                        originalCopyDirectory: originals,
+                        originalFileName: "cancel.png"
+                    )],
+                    transactionID: UUID()
+                )
+            }
+            task.cancel()
+            try await expectThrows { _ = try await task.value }
+            try expectEqual(try Data(contentsOf: source), originalData)
+            try expect(!FileManager.default.fileExists(atPath: originals.path))
+        }
+    }
+
+    await runner.test("画像処理中に終了しても次回起動時に元画像へ復旧する") {
+        try await withSandbox { sandbox in
+            let source = sandbox.appendingPathComponent("interrupted.png")
+            let backupRoot = sandbox.appendingPathComponent("recovery-backups", isDirectory: true)
+            let journalDirectory = sandbox.appendingPathComponent("image-journals", isDirectory: true)
+            let originals = sandbox.appendingPathComponent("中断時の元画像", isDirectory: true)
+            let originalCopy = originals.appendingPathComponent("interrupted.png")
+            let backup = backupRoot.appendingPathComponent("batch/backup.png")
+            let originalData = try makeTestPNG(width: 80, height: 40, detailed: true)
+            let changedData = try makeTestPNG(width: 24, height: 12)
+
+            try FileManager.default.createDirectory(
+                at: backup.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: false)
+            try originalData.write(to: backup)
+            try originalData.write(to: originalCopy)
+            try changedData.write(to: source)
+
+            let store = ImageProcessingJournalStore(directoryURL: journalDirectory)
+            let journal = ImageProcessingJournal(
+                id: UUID(),
+                entries: [ImageProcessingJournalEntry(
+                    fileURL: source,
+                    backupURL: backup,
+                    originalCopyURL: originalCopy,
+                    backupIsReady: true
+                )],
+                createdOriginalDirectories: [originals],
+                renameMoves: [],
+                accessBookmarks: []
+            )
+            try store.save(journal)
+
+            let report = await ImageProcessor(
+                backupRootURL: backupRoot,
+                journalStore: store
+            ).recoverPendingTransactions()
+
+            try expectEqual(report.recoveredBatchCount, 1)
+            try expectEqual(report.recoveredFileCount, 1)
+            try expectEqual(try Data(contentsOf: source), originalData)
+            try expect(!FileManager.default.fileExists(atPath: originals.path))
+            try expect(store.loadAll().isEmpty)
+        }
+    }
+
+    runner.suite("ImageSettingsStore — JPEG品質の保持")
+
+    await runner.test("初回は95%で、最後の選択を再起動相当で読み戻す") {
+        let suiteName = "FileRenamerTests.ImageSettings.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            throw ExpectationFailure(message: "UserDefaultsスイートを作成できません", file: #fileID, line: #line)
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = ImageSettingsStore(userDefaults: defaults, keyPrefix: "test")
+        try expectEqual(store.loadJPEGQuality(), JPEGQualitySetting(preset: .high, customPercent: 95))
+
+        store.saveJPEGQuality(JPEGQualitySetting(preset: .custom, customPercent: 73))
+        let relaunchedStore = ImageSettingsStore(userDefaults: defaults, keyPrefix: "test")
+        try expectEqual(
+            relaunchedStore.loadJPEGQuality(),
+            JPEGQualitySetting(preset: .custom, customPercent: 73)
+        )
+    }
+
     runner.suite("RulePresetStore — プリセットの保存")
 
     await runner.test("保存したプリセットを読み戻せる") {
@@ -380,4 +862,82 @@ func runExecutorTests() async {
             try expectEqual(loaded.lastTransaction?.accessBookmarks, transaction.accessBookmarks)
         }
     }
+}
+
+private func makeTestPNG(width: Int, height: Int, detailed: Bool = false) throws -> Data {
+    try makeTestImage(width: width, height: height, type: .png, detailed: detailed)
+}
+
+private func makeTestImage(
+    width: Int,
+    height: Int,
+    type: UTType,
+    detailed: Bool = false,
+    properties: [CFString: Any] = [:],
+    alpha: UInt8 = 255
+) throws -> Data {
+    let bytesPerRow = width * 4
+    var pixels = Data(count: bytesPerRow * height)
+    pixels.withUnsafeMutableBytes { raw in
+        guard let bytes = raw.bindMemory(to: UInt8.self).baseAddress else { return }
+        for index in 0..<(width * height) {
+            let x = index % width
+            let y = index / width
+            bytes[index * 4] = detailed ? UInt8((x * 17 + y * 3) % 256) : 40
+            bytes[index * 4 + 1] = detailed ? UInt8((x * 5 + y * 19) % 256) : 120
+            bytes[index * 4 + 2] = detailed ? UInt8((x * 11 + y * 7) % 256) : 220
+            bytes[index * 4 + 3] = alpha
+        }
+    }
+    guard let provider = CGDataProvider(data: pixels as CFData),
+          let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+          let image = CGImage(
+              width: width,
+              height: height,
+              bitsPerComponent: 8,
+              bitsPerPixel: 32,
+              bytesPerRow: bytesPerRow,
+              space: colorSpace,
+              bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue),
+              provider: provider,
+              decode: nil,
+              shouldInterpolate: false,
+              intent: .defaultIntent
+          )
+    else { throw ExpectationFailure(message: "テスト画像を作成できません", file: #fileID, line: #line) }
+
+    let data = NSMutableData()
+    guard let destination = CGImageDestinationCreateWithData(
+        data,
+        type.identifier as CFString,
+        1,
+        nil
+    ) else { throw ExpectationFailure(message: "テスト画像の出力先を作成できません", file: #fileID, line: #line) }
+    CGImageDestinationAddImage(destination, image, properties as CFDictionary)
+    guard CGImageDestinationFinalize(destination) else {
+        throw ExpectationFailure(message: "テスト画像を確定できません", file: #fileID, line: #line)
+    }
+    return data as Data
+}
+
+private func imageMetadata(_ url: URL) throws -> [CFString: Any] {
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+    else { throw ExpectationFailure(message: "画像メタデータを取得できません", file: #fileID, line: #line) }
+    return properties
+}
+
+private func imageHasAlpha(_ url: URL) throws -> Bool {
+    let properties = try imageMetadata(url)
+    return properties[kCGImagePropertyHasAlpha] as? Bool ?? false
+}
+
+private func imageProperties(_ url: URL) throws -> (width: Int, height: Int, type: String) {
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let width = properties[kCGImagePropertyPixelWidth] as? Int,
+          let height = properties[kCGImagePropertyPixelHeight] as? Int,
+          let type = CGImageSourceGetType(source) as String?
+    else { throw ExpectationFailure(message: "画像情報を取得できません", file: #fileID, line: #line) }
+    return (width, height, type)
 }

@@ -27,6 +27,26 @@ struct StatusBar: View {
                     issues: model.issues(errorsOnly: false)
                 )
             }
+            if model.isScanningSimilarImages {
+                ProgressView()
+                    .controlSize(.small)
+                Text("類似画像を確認中")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if model.similarImagePairCount > 0 {
+                Button {
+                    model.showFirstSimilarImageGroup()
+                } label: {
+                    Label(
+                        "\(model.similarImagePairCount) 組の類似候補",
+                        systemImage: "square.on.square"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(Palette.warning)
+                }
+                .buttonStyle(.plain)
+                .help("類似している可能性のある画像を比較します")
+            }
             if model.isValidatingDestinations {
                 ProgressView()
                     .controlSize(.small)
@@ -51,7 +71,7 @@ struct StatusBar: View {
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(!model.canRename)
-            .help(model.errorCount > 0 ? "エラーを解消すると実行できます" : "変更後の名前でリネームします")
+            .help(model.errorCount > 0 ? "エラーを解消すると実行できます" : "名前・拡張子・画像サイズの変更を実行します")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -66,7 +86,7 @@ struct StatusBar: View {
     }
 
     private var renameButtonTitle: String {
-        model.changedCount > 0 ? "\(model.changedCount) 件をリネーム" : "リネーム"
+        model.changedCount > 0 ? "\(model.changedCount) 件を変更" : "変更を実行"
     }
 }
 
