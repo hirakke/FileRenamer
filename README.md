@@ -184,12 +184,14 @@ macOS 26 以降では `glassEffect`、それ以前ではマテリアル + ヘア
 - Version: `1.0.0` / Build `1`
 - App Icon: `Resources/Assets.xcassets/AppIcon.appiconset`
 - Privacy Manifest: 追跡なし・収集データなし。ユーザーが選択したファイルの日時／メタデータ取得を `3B52.1`、アプリ内設定の保存を `CA92.1` で申告
-- プライバシーポリシー: 設定画面から表示可能。公開用原稿は `PRIVACY.md`
+- プライバシーポリシー: 設定画面から表示可能。公開URLは
+  `https://hirakke.github.io/FileRenamer/privacy.html`、原稿は `PRIVACY.md`
 - 暗号化: 非免除暗号化の使用なし
 
 提出前にはXcodeのSigning & Capabilitiesで実際のApple Developer Teamを選び、
 App Store Connect側で同じBundle IDを登録してください。スクリーンショット、説明文、
-サポートURL、プライバシーポリシーURLはリポジトリ外の情報なので別途入力が必要です。
+App Store ConnectのサポートURLには `https://github.com/hirakke/FileRenamer/issues`、
+プライバシーポリシーURLには上記GitHub PagesのURLを入力してください。
 
 ## 主なキーボード操作
 

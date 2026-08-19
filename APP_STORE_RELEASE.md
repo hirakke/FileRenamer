@@ -27,5 +27,10 @@
 - App Privacy: 追跡なし、収集データなし（実装を変更した場合は再確認）
 - 年齢区分、価格、配信地域、輸出コンプライアンス
 
+公開URL:
+
+- サポート: `https://github.com/hirakke/FileRenamer/issues`
+- プライバシーポリシー: `https://hirakke.github.io/FileRenamer/privacy.html`
+
 署名証明書、Team、App Store Connectの登録情報、公開URLは開発者アカウント固有のため、
 このリポジトリには固定していません。
