@@ -222,6 +222,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+private enum MainWindow {
+    static let id = "main-window"
+}
+
+/// Keeps a permanent way back to the main workspace after its last window was
+/// closed. This is intentionally in the standard Window menu, matching macOS
+/// conventions and App Store review expectations.
+private struct MainWindowCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(after: .windowList) {
+            Divider()
+            Button("FileRenamerを開く") {
+                openWindow(id: MainWindow.id)
+            }
+        }
+    }
+}
+
 @main
 struct FileRenamerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -237,7 +257,7 @@ struct FileRenamerApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("FileRenamer", id: MainWindow.id) {
             ContentView()
                 .environmentObject(workspace.activeModel)
                 .environmentObject(workspace)
@@ -246,6 +266,8 @@ struct FileRenamerApp: App {
         }
         .windowToolbarStyle(.unified)
         .commands {
+            MainWindowCommands()
+
             CommandGroup(after: .appInfo) {
                 Button("アップデートを確認…") { updateController.checkForUpdates() }
                     .disabled(!updateController.canCheckForUpdates)
