@@ -1,5 +1,6 @@
 # File Renamer
-<img width="512" height="512" alt="Image" src="https://github.com/user-attachments/assets/3e35dbc6-ba55-4fff-8490-2243c07b14ed" />
+<img width="256" height="256" alt="Image" src="https://github.com/user-attachments/assets/3e35dbc6-ba55-4fff-8490-2243c07b14ed" />
+<br>
 macOS 向けの一括リネームアプリ。中心にあるのは「連番を入力する」のではなく
 **ファイルを並べると番号が決まる** という体験です。
 
