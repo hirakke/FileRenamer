@@ -284,9 +284,13 @@ struct FileGridView: View {
             Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
         }
         Divider()
+        Button("ゴミ箱に移動…", role: .destructive) {
+            model.requestMoveToTrash(ids: ids)
+        }
+        Divider()
         Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
         Divider()
-        Button("リストから除外") {
+        Button("\(ids.count) 件をリストから除外") {
             model.selection = ids
             model.removeSelected()
         }

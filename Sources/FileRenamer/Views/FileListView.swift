@@ -5,13 +5,14 @@ import RenameKit
 /// get, the original name and the resulting name. Dragging a row renumbers everything.
 struct FileListView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var selectionAnchor: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
             ScrollViewReader { proxy in
-                List(selection: $model.selection) {
+                List {
                     ForEach(model.items) { item in
                         HStack(spacing: 8) {
                             let preview = model.preview(for: item)
@@ -25,15 +26,26 @@ struct FileListView: View {
                             )
                             OrderStepper(id: item.id, axis: .vertical)
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            handleTap(on: item)
+                        }
                         .onForceClick {
                             model.selection = [item.id]
+                            selectionAnchor = item.id
                             model.quickLookURL = item.originalURL
                         }
                         .simultaneousGesture(
                             TapGesture(count: 2).onEnded {
                                 model.selection = [item.id]
+                                selectionAnchor = item.id
                                 model.quickLookURL = item.originalURL
                             }
+                        )
+                        .listRowBackground(
+                            model.selection.contains(item.id)
+                                ? Palette.accent.opacity(0.20)
+                                : Color.clear
                         )
                         .id(item.id)
                         .contextMenu { rowMenu(for: item) }
@@ -58,6 +70,31 @@ struct FileListView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// List rows use the same explicit selection model as the grid. SwiftUI's
+    /// automatic List selection becomes unreliable once a row contains controls,
+    /// drag handles, and custom gestures.
+    private func handleTap(on item: RenameItem) {
+        let modifiers = NSEvent.modifierFlags
+        if modifiers.contains(.shift),
+           let anchor = selectionAnchor,
+           let anchorIndex = model.index(of: anchor),
+           let clickedIndex = model.index(of: item.id) {
+            let range = min(anchorIndex, clickedIndex)...max(anchorIndex, clickedIndex)
+            let ids = Set(range.map { model.items[$0].id })
+            model.selection = modifiers.contains(.command) ? model.selection.union(ids) : ids
+        } else if modifiers.contains(.command) {
+            if model.selection.contains(item.id) {
+                model.selection.remove(item.id)
+            } else {
+                model.selection.insert(item.id)
+            }
+            selectionAnchor = item.id
+        } else {
+            model.selection = [item.id]
+            selectionAnchor = item.id
         }
     }
 
@@ -115,9 +152,13 @@ struct FileListView: View {
         Button("Finder で表示") { model.revealInFinder(ids: ids) }
         Button("クイックルック") { model.quickLookURL = item.originalURL }
         Divider()
+        Button("ゴミ箱に移動…", role: .destructive) {
+            model.requestMoveToTrash(ids: ids)
+        }
+        Divider()
         Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
         Divider()
-        Button("リストから除外") {
+        Button("\(ids.count) 件をリストから除外") {
             model.selection = ids
             model.removeSelected()
         }

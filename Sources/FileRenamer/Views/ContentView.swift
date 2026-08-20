@@ -107,7 +107,19 @@ struct ContentView: View {
             .interactiveDismissDisabled()
         }
         .alert(item: $model.alertMessage) { message in
-            Alert(title: Text(message.title), message: Text(message.detail), dismissButton: .default(Text("OK")))
+            switch message.action {
+            case .addWorkingFolder:
+                Alert(
+                    title: Text(message.title),
+                    message: Text(message.detail),
+                    primaryButton: .default(Text(message.actionTitle ?? "フォルダを選択…")) {
+                        model.presentFolderAccessPanel()
+                    },
+                    secondaryButton: .cancel()
+                )
+            case nil:
+                Alert(title: Text(message.title), message: Text(message.detail), dismissButton: .default(Text("OK")))
+            }
         }
         .alert("リネームを元に戻しますか？", isPresented: $model.isUndoConfirmationPresented) {
             Button("キャンセル", role: .cancel) {}
@@ -116,6 +128,23 @@ struct ContentView: View {
             }
         } message: {
             Text(model.undoConfirmationMessage)
+        }
+        .confirmationDialog(
+            "\(model.trashConfirmationItems.count) 件をゴミ箱に移動しますか？",
+            isPresented: Binding(
+                get: { model.trashConfirmation != nil },
+                set: { if !$0 { model.cancelMoveToTrashConfirmation() } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("ゴミ箱に移動", role: .destructive) {
+                model.confirmMoveToTrash()
+            }
+            Button("キャンセル", role: .cancel) {
+                model.cancelMoveToTrashConfirmation()
+            }
+        } message: {
+            Text(trashConfirmationDetail)
         }
         .confirmationDialog(
             "変更前の元画像を残しますか？",
@@ -158,6 +187,13 @@ struct ContentView: View {
         return model.workingDirectories.count == 1
             ? first.lastPathComponent
             : "\(first.lastPathComponent) ほか\(model.workingDirectories.count - 1)か所"
+    }
+
+    private var trashConfirmationDetail: String {
+        let items = model.trashConfirmationItems
+        let names = items.prefix(5).map(\.displayName).joined(separator: "\n")
+        let remainder = items.count > 5 ? "\nほか \(items.count - 5) 件" : ""
+        return "ファイルはFinderのゴミ箱へ移動され、Finderから元に戻せます。\n\n\(names)\(remainder)"
     }
 
     @ViewBuilder
@@ -1119,7 +1155,7 @@ private struct SimilarImageReviewView: View {
                 .font(.callout)
                 .foregroundStyle(selectedIDs.isEmpty ? .secondary : .primary)
 
-            Button("リストから除外") {
+            Button("\(selectedIDs.count) 件をリストから除外") {
                 model.removeFromList(ids: selectedIDs)
                 dismiss()
             }

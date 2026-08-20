@@ -799,6 +799,19 @@ func runExecutorTests() async {
         }
     }
 
+    await runner.test("納品プリセットは標準搭載され、01納品が規定値") {
+        let presets = RenameRulePreset.builtIns
+        try expectEqual(presets.prefix(2).map(\.name), ["01納品", "001納品"])
+        try expectEqual(RenameRule.default, presets[0].rule)
+
+        let items = [
+            RenameItem(originalURL: folder.appendingPathComponent("a.jpg")),
+            RenameItem(originalURL: folder.appendingPathComponent("b.jpg"))
+        ]
+        let previews = RenameEngine().makePreviews(items: items, rule: presets[0].rule)
+        try expectEqual(previews.map(\.proposedBaseName), ["Day1_01", "Day1_02"])
+    }
+
     await runner.test("プリセットを書き出して再読込できる") {
         try await withSandbox { sandbox in
             let store = RulePresetStore(fileURL: sandbox.appendingPathComponent("presets.json"))

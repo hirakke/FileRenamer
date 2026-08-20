@@ -466,12 +466,18 @@ public struct RenameRule: Hashable, Sendable, Codable {
         tokens.contains { if case .counter = $0 { return true } else { return false } }
     }
 
-    /// `[日付] [_] [Event] [_] [001]`
+    /// `[Day1_] [01]` — also the app's first built-in delivery preset.
     public static let `default` = RenameRule(tokens: [
-        .date(DateConfiguration(source: .creation, preset: .compact)),
-        .separator(SeparatorConfiguration(value: "_")),
-        .text(TextConfiguration(value: "Event")),
-        .separator(SeparatorConfiguration(value: "_")),
-        .counter(CounterConfiguration(start: 1, digits: 3))
+        .text(TextConfiguration(
+            id: UUID(uuidString: "C3E1927A-0071-4F28-9471-6244A089163B")!,
+            value: "Day1_"
+        )),
+        .counter(CounterConfiguration(
+            id: UUID(uuidString: "00794301-10E5-4F14-BEA7-CCA4BA754164")!,
+            start: 1,
+            digits: 2,
+            step: 1,
+            resetMode: .never
+        ))
     ])
 }

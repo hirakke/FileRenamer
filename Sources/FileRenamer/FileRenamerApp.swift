@@ -276,7 +276,7 @@ struct FileRenamerApp: App {
             CommandGroup(after: .pasteboard) {
                 Button("すべて選択") { workspace.activeModel.selectAll() }
                     .keyboardShortcut("a", modifiers: .command)
-                Button("リストから除外") { workspace.activeModel.removeSelected() }
+                Button("\(workspace.activeModel.selection.count) 件をリストから除外") { workspace.activeModel.removeSelected() }
                     .keyboardShortcut(.delete, modifiers: [])
                     .disabled(workspace.activeModel.selection.isEmpty)
             }

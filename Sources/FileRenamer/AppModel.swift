@@ -109,6 +109,7 @@ final class AppModel: ObservableObject {
     @Published var resultMessage: ResultMessage?
     @Published var quickLookURL: URL?
     @Published var renameConfirmation: RenameConfirmation?
+    @Published var trashConfirmation: TrashConfirmation?
     @Published var isUndoConfirmationPresented = false
     @Published var isImageResizeOriginalChoicePresented = false
     @Published var isOriginalImagesFolderNamePresented = false
@@ -151,11 +152,18 @@ final class AppModel: ObservableObject {
     /// Folder grants are kept for the session and copied into rename history so
     /// Undo can still reach the files after a relaunch.
     private var folderAccess: [String: FolderAccess] = [:]
+    private var pendingFolderAccessDirectory: URL?
 
     struct AlertMessage: Identifiable {
+        enum Action {
+            case addWorkingFolder
+        }
+
         let id = UUID()
         var title: String
         var detail: String
+        var action: Action?
+        var actionTitle: String?
     }
 
     struct ResultMessage: Identifiable {
@@ -186,6 +194,11 @@ final class AppModel: ObservableObject {
         let changesName: Bool
         let imageChange: String?
         let warning: String?
+    }
+
+    struct TrashConfirmation: Identifiable {
+        let id = UUID()
+        let itemIDs: Set<UUID>
     }
 
     /// One cluster of pictures that resemble each other.
@@ -438,6 +451,7 @@ final class AppModel: ObservableObject {
 
     func importURLs(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
+        requestFolderAccessForIndividuallyImportedFiles(in: urls)
         guard beginBusy("読み込み中…", cancellable: true) else { return }
         let transientAccess = beginImportAccess(for: urls)
         // Resolve directory metadata only after opening the security-scoped URLs;
@@ -529,6 +543,73 @@ final class AppModel: ObservableObject {
         importURLs(panel.urls)
     }
 
+    func presentFolderAccessPanel() {
+        guard let directory = pendingFolderAccessDirectory else { return }
+        defer { pendingFolderAccessDirectory = nil }
+        _ = requestFolderAccess(to: directory, reportsErrors: true)
+    }
+
+    /// A folder selected through the import command already carries a directory
+    /// grant. Files selected one by one only carry file-level access, so request
+    /// their containing folder immediately rather than interrupting Rename later.
+    private func requestFolderAccessForIndividuallyImportedFiles(in urls: [URL]) {
+        let fileDirectories = urls.compactMap { url -> URL? in
+            let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
+            return isDirectory ? nil : url.deletingLastPathComponent()
+        }
+
+        for directory in uniqueDirectories(fileDirectories) {
+            guard !hasFolderAccess(covering: directory),
+                  !canWriteWithoutAdditionalGrant(to: directory)
+            else { continue }
+            guard requestFolderAccess(to: directory, reportsErrors: false) else { break }
+        }
+    }
+
+    @discardableResult
+    private func requestFolderAccess(to directory: URL, reportsErrors: Bool) -> Bool {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.directoryURL = directory.deletingLastPathComponent()
+        panel.title = "「\(directory.lastPathComponent)」へのアクセスを許可"
+        panel.prompt = "アクセスを許可"
+        panel.message = "「\(directory.lastPathComponent)」または親フォルダへのアクセスを許可してください。"
+
+        guard panel.runModal() == .OK, let selected = panel.url else { return false }
+        guard selected.standardizedFileURL == directory.standardizedFileURL
+                || isAncestor(selected, of: directory) else {
+            if reportsErrors {
+                alertMessage = AlertMessage(
+                    title: "「\(directory.lastPathComponent)」を選択してください",
+                    detail: "このフォルダ、または親フォルダを選択してください。"
+                )
+            }
+            return false
+        }
+
+        let started = selected.startAccessingSecurityScopedResource()
+        guard let bookmark = try? selected.bookmarkData(
+            options: .withSecurityScope,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        ) else {
+            if started { selected.stopAccessingSecurityScopedResource() }
+            if reportsErrors {
+                alertMessage = AlertMessage(
+                    title: "アクセスを許可できませんでした",
+                    detail: "もう一度お試しください。"
+                )
+            }
+            return false
+        }
+
+        registerFolderAccess(url: selected, bookmark: bookmark, isActive: started)
+        return true
+    }
+
     /// Starts the short-lived scope needed to read imported file metadata. Directory
     /// selections are retained as reusable write grants; individual file scopes are
     /// released when importing finishes to avoid exhausting the system scope limit.
@@ -583,49 +664,16 @@ final class AppModel: ObservableObject {
             if hasFolderAccess(covering: directory) || canWriteWithoutAdditionalGrant(to: directory) {
                 continue
             }
-
-            let panel = NSOpenPanel()
-            panel.canChooseFiles = false
-            panel.canChooseDirectories = true
-            panel.allowsMultipleSelection = false
-            panel.canCreateDirectories = false
-            panel.directoryURL = directory.deletingLastPathComponent()
-            panel.prompt = "アクセスを許可"
-            panel.message = "「\(directory.lastPathComponent)」内のファイル名を変更するため、このフォルダ（または親フォルダ）を選択してください。"
-
-            guard panel.runModal() == .OK, let selected = panel.url else {
-                if showCancellationAlert {
-                    alertMessage = AlertMessage(
-                        title: "フォルダへのアクセスが必要です",
-                        detail: "リネーム前に「\(directory.lastPathComponent)」への書き込みを許可してください。ファイルはまだ変更されていません。"
-                    )
-                }
-                return false
-            }
-
-            guard selected.standardizedFileURL == directory.standardizedFileURL
-                    || isAncestor(selected, of: directory) else {
+            if showCancellationAlert {
+                pendingFolderAccessDirectory = directory
                 alertMessage = AlertMessage(
-                    title: "別のフォルダが選択されました",
-                    detail: "「\(directory.lastPathComponent)」または、その親フォルダを選択してください。"
+                    title: "「\(directory.lastPathComponent)」へのアクセスを許可",
+                    detail: "リネームを続けるには、現在読み込んでいるフォルダへのアクセスを許可してください。",
+                    action: .addWorkingFolder,
+                    actionTitle: "「\(directory.lastPathComponent)」を選択…"
                 )
-                return false
             }
-
-            let started = selected.startAccessingSecurityScopedResource()
-            guard let bookmark = try? selected.bookmarkData(
-                options: .withSecurityScope,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            ) else {
-                if started { selected.stopAccessingSecurityScopedResource() }
-                alertMessage = AlertMessage(
-                    title: "アクセス許可を保存できませんでした",
-                    detail: "フォルダをもう一度選択してください。"
-                )
-                return false
-            }
-            registerFolderAccess(url: selected, bookmark: bookmark, isActive: started)
+            return false
         }
         return true
     }
@@ -749,6 +797,32 @@ final class AppModel: ObservableObject {
     func moveToTrash(ids: Set<UUID>) {
         guard !ids.isEmpty else { return }
         Task { await performTrash(ids: ids) }
+    }
+
+    /// Finder-style contextual actions operate on the current multi-selection when
+    /// the clicked item is already selected; otherwise they affect just that item.
+    /// Destructive actions always pause for an explicit confirmation.
+    func requestMoveToTrash(ids: Set<UUID>) {
+        guard !isBusy else { return }
+        let targets = effectiveTargets(for: ids)
+        guard !targets.isEmpty else { return }
+        selection = targets
+        trashConfirmation = TrashConfirmation(itemIDs: targets)
+    }
+
+    func confirmMoveToTrash() {
+        guard let request = trashConfirmation else { return }
+        trashConfirmation = nil
+        moveToTrash(ids: request.itemIDs)
+    }
+
+    func cancelMoveToTrashConfirmation() {
+        trashConfirmation = nil
+    }
+
+    var trashConfirmationItems: [RenameItem] {
+        guard let request = trashConfirmation else { return [] }
+        return items.filter { request.itemIDs.contains($0.id) }
     }
 
     private func performTrash(ids: Set<UUID>) async {
