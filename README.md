@@ -16,8 +16,6 @@
   <a href="https://github.com/hirakke/FileRenamer/issues">サポート</a>
 </p>
 
-![FileRenamerで変更前後のファイル名を確認している画面](AppStoreAssets/Screenshots/01-batch-rename.png)
-
 FileRenamerは、複数のファイルを見やすく並べ、日付・固定文字・連番などを組み合わせて名前をまとめて変更するmacOSアプリです。
 
 たとえば、ばらばらな写真名を次のように統一できます。
@@ -173,7 +171,7 @@ JPEGは保存時に再圧縮されます。JPEG品質100%、JPEGのまま、リ�
 
 Xcodeでのビルド、テスト、ソース構成については [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
 
-App Store提出手順は [APP_STORE_RELEASE.md](APP_STORE_RELEASE.md)、Developer ID署名とDMG配布手順は [DMG_DISTRIBUTION.md](DMG_DISTRIBUTION.md) に分けています。
+Developer ID署名とDMG配布手順は [DMG_DISTRIBUTION.md](DMG_DISTRIBUTION.md) を参照してください。
 
 ---
 

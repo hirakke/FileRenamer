@@ -20,4 +20,4 @@ FileRenamerは、ユーザーが選択したファイルをMac内で処理しま
 
 ## お問い合わせ
 
-お問い合わせは、App StoreのFileRenamer製品ページに記載されたサポート窓口からご連絡ください。
+お問い合わせは、[GitHubのサポートページ](https://github.com/hirakke/FileRenamer/issues)からご連絡ください。

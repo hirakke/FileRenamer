@@ -50,7 +50,6 @@ Sources/
 
 ## 配布
 
-- Mac App Store：[APP_STORE_RELEASE.md](APP_STORE_RELEASE.md)
 - Developer ID署名、Apple公証、DMG：[DMG_DISTRIBUTION.md](DMG_DISTRIBUTION.md)
 
 署名証明書、秘密鍵、App用パスワード、個人用の素材はリポジトリへ追加しないでください。

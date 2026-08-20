@@ -14,7 +14,5 @@ __pycache__/
 *.xcuserstate
 xcuserdata/
 
-# Local source photos and generated marketing previews are not release sources.
-AppStoreAssets/CaptureInput/
-AppStoreAssets/SamplePhotos/
-AppStoreAssets/Preview/
+# App Store marketing materials remain local and must not be published.
+AppStoreAssets/
