@@ -89,6 +89,7 @@ done
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 WORK_DIR="$(/usr/bin/mktemp -d /private/tmp/FileRenamer-dmg.XXXXXX)"
 ARCHIVE_PATH="$WORK_DIR/FileRenamer.xcarchive"
+DERIVED_DATA_PATH="$WORK_DIR/DerivedData"
 STAGING_DIR="$WORK_DIR/staging"
 MOUNT_POINT="$WORK_DIR/mount"
 IS_MOUNTED=0
@@ -109,6 +110,7 @@ DEVELOPER_DIR="$DEVELOPER_DIR_PATH" "$XCODEBUILD" \
     -scheme "$SCHEME" \
     -configuration Release \
     -destination 'generic/platform=macOS' \
+    -derivedDataPath "$DERIVED_DATA_PATH" \
     -archivePath "$ARCHIVE_PATH" \
     DEVELOPMENT_TEAM="$TEAM_ID" \
     CODE_SIGN_STYLE=Manual \
@@ -129,8 +131,17 @@ printf '%s\n' "$SIGNING_INFO" | /usr/bin/grep -Fq "Authority=$IDENTITY" || {
 
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
 BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
+ICON_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$APP/Contents/Info.plist")"
 SAFE_VERSION="$(printf '%s' "$VERSION" | /usr/bin/tr -cd '[:alnum:]._-')"
 [ -n "$SAFE_VERSION" ] || { echo "invalid app version: $VERSION" >&2; exit 1; }
+[ "$ICON_NAME" = "FileRenamer" ] || {
+    echo "unexpected app icon: $ICON_NAME (expected FileRenamer.icon)" >&2
+    exit 1
+}
+[ -f "$APP/Contents/Resources/FileRenamer.icns" ] || {
+    echo "FileRenamer.icon was not compiled into the archived app" >&2
+    exit 1
+}
 
 /bin/mkdir -p "$STAGING_DIR"
 /usr/bin/ditto "$APP" "$STAGING_DIR/FileRenamer.app"
@@ -180,7 +191,11 @@ else
     IS_MOUNTED=0
 fi
 
-/usr/bin/shasum -a 256 "$DMG" > "$DMG.sha256"
+(
+    cd "$OUTPUT_DIR"
+    DMG_NAME="$(/usr/bin/basename "$DMG")"
+    /usr/bin/shasum -a 256 "$DMG_NAME" > "$DMG_NAME.sha256"
+)
 
 echo "==> Complete"
 echo "    App version: $VERSION ($BUILD)"
