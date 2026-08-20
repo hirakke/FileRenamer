@@ -2,7 +2,6 @@ import SwiftUI
 import AppKit
 import Combine
 import RenameKit
-import Sparkle
 
 @MainActor
 final class AppPreferences: ObservableObject {
@@ -247,13 +246,11 @@ struct FileRenamerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var preferences: AppPreferences
     @StateObject private var workspace: WorkspaceModel
-    @StateObject private var updateController: UpdateController
 
     init() {
         let preferences = AppPreferences()
         _preferences = StateObject(wrappedValue: preferences)
         _workspace = StateObject(wrappedValue: WorkspaceModel(preferences: preferences))
-        _updateController = StateObject(wrappedValue: UpdateController())
     }
 
     var body: some Scene {
@@ -267,11 +264,6 @@ struct FileRenamerApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             MainWindowCommands()
-
-            CommandGroup(after: .appInfo) {
-                Button("アップデートを確認…") { updateController.checkForUpdates() }
-                    .disabled(!updateController.canCheckForUpdates)
-            }
 
             CommandGroup(replacing: .newItem) {
                 Button("新規タブ") { workspace.addTab() }
@@ -335,14 +327,12 @@ struct FileRenamerApp: App {
         Settings {
             PreferencesView()
                 .environmentObject(preferences)
-                .environmentObject(updateController)
         }
     }
 }
 
 private struct PreferencesView: View {
     @EnvironmentObject private var preferences: AppPreferences
-    @EnvironmentObject private var updateController: UpdateController
     @State private var showsPrivacyPolicy = false
 
     var body: some View {
@@ -419,25 +409,6 @@ private struct PreferencesView: View {
                 }
 
                 Toggle("ウィンドウを開いたときにサイドバーを表示", isOn: $preferences.opensSidebarOnLaunch)
-            }
-
-            Section("アップデート") {
-                Toggle(
-                    "起動後にアップデートを自動確認",
-                    isOn: Binding(
-                        get: { updateController.automaticallyChecksForUpdates },
-                        set: { updateController.setAutomaticallyChecksForUpdates($0) }
-                    )
-                )
-
-                Button("アップデートを確認…") {
-                    updateController.checkForUpdates()
-                }
-                .disabled(!updateController.canCheckForUpdates)
-
-                Text("更新情報の確認時も、ファイルや画像は送信しません。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("プライバシー") {

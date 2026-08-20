@@ -28,15 +28,5 @@
 	<string>public.app-category.utilities</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Keiju Hiramoto. All rights reserved.</string>
-	<key>SUEnableAutomaticChecks</key>
-	<false/>
-	<key>SUEnableInstallerLauncherService</key>
-	<true/>
-	<key>SUFeedURL</key>
-	<string>https://hirakke.github.io/FileRenamer/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>Enkm/bYIWo1edjVWd1DEzisxqQMfjGbEijYd8HXIm9g=</string>
-	<key>SUVerifyUpdateBeforeExtraction</key>
-	<true/>
 </dict>
 </plist>

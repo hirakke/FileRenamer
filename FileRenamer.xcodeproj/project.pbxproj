@@ -10,7 +10,6 @@
 		4A0000000000000000000001 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
 		4A0000000000000000000002 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
 		6F27EE15302C7D0700497B26 /* FileRenamer.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6F27EE14302C7D0700497B26 /* FileRenamer.icon */; };
-		B70000000000000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B70000000000000000000003 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,7 +61,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				4A0000000000000000000001 /* libRenameKit.a in Frameworks */,
-				B70000000000000000000001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,7 +107,6 @@
 				A00000000000000000000040 /* Sources */,
 				A00000000000000000000041 /* Frameworks */,
 				A00000000000000000000042 /* Resources */,
-				B70000000000000000000007 /* Sign Sparkle Helpers for Distribution */,
 			);
 			buildRules = (
 			);
@@ -120,9 +117,6 @@
 				A00000000000000000000004 /* Sources/FileRenamer */,
 			);
 			name = FileRenamer;
-			packageProductDependencies = (
-				B70000000000000000000003 /* Sparkle */,
-			);
 			productName = FileRenamer;
 			productReference = A00000000000000000000060 /* FileRenamer.app */;
 			productType = "com.apple.product-type.application";
@@ -195,9 +189,6 @@
 				Base,
 			);
 			mainGroup = A00000000000000000000002;
-			packageReferences = (
-				B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A00000000000000000000003 /* Products */;
 			projectDirPath = "";
@@ -220,47 +211,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		B70000000000000000000007 /* Sign Sparkle Helpers for Distribution */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Sign Sparkle Helpers for Distribution";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"$ACTION\" != \"install\" ]; then\n  exit 0\nfi\n\nSPARKLE_FRAMEWORK=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework\"\nif [ ! -d \"$SPARKLE_FRAMEWORK\" ]; then\n  echo \"Sparkle.framework was not embedded\" >&2\n  exit 1\nfi\n\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Installer.xpc\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime --preserve-metadata=entitlements \"$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Downloader.xpc\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/Autoupdate\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/Updater.app\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.4;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		B70000000000000000000003 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A00000000000000000000040 /* Sources */ = {
@@ -316,7 +266,10 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -342,7 +295,10 @@
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Config/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -467,6 +423,7 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
 	};
 	rootObject = A00000000000000000000001 /* Project object */;
 }
