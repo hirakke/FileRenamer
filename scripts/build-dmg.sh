@@ -21,6 +21,8 @@ IDENTITY="${DEVELOPER_ID_APPLICATION:-Developer ID Application: Keiju Hiramoto (
 NOTARY_PROFILE="${NOTARY_PROFILE:-FileRenamer-Notary}"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT/build/distribution}"
 SKIP_NOTARIZATION=0
+UPDATE_DOWNLOAD_URL_PREFIX="${UPDATE_DOWNLOAD_URL_PREFIX:-https://github.com/hirakke/FileRenamer/releases/download}"
+RELEASE_NOTES_URL="${RELEASE_NOTES_URL:-https://hirakke.github.io/FileRenamer/release-notes.html}"
 
 DEVELOPER_DIR_PATH="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 XCODEBUILD="$DEVELOPER_DIR_PATH/usr/bin/xcodebuild"
@@ -41,6 +43,8 @@ Environment overrides:
   DEVELOPER_ID_APPLICATION
   NOTARY_PROFILE
   OUTPUT_DIR
+  UPDATE_DOWNLOAD_URL_PREFIX
+  RELEASE_NOTES_URL
   DEVELOPER_DIR
 USAGE
 }
@@ -197,7 +201,36 @@ fi
     /usr/bin/shasum -a 256 "$DMG_NAME" > "$DMG_NAME.sha256"
 )
 
+if [ "$SKIP_NOTARIZATION" -eq 0 ]; then
+    SPARKLE_GENERATE_APPCAST="$DERIVED_DATA_PATH/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
+    [ -x "$SPARKLE_GENERATE_APPCAST" ] || {
+        echo "Sparkle's generate_appcast tool was not found in the resolved package artifacts." >&2
+        exit 1
+    }
+
+    APPCAST_WORK_DIR="$WORK_DIR/appcast"
+    /bin/mkdir -p "$APPCAST_WORK_DIR"
+    DMG_NAME="$(/usr/bin/basename "$DMG")"
+    DMG_BASENAME="${DMG_NAME%.dmg}"
+    /usr/bin/ditto "$DMG" "$APPCAST_WORK_DIR/$DMG_NAME"
+    /usr/bin/ditto "$ROOT/docs/release-notes.md" "$APPCAST_WORK_DIR/$DMG_BASENAME.md"
+
+    echo "==> Signing update feed"
+    "$SPARKLE_GENERATE_APPCAST" \
+        --download-url-prefix "$UPDATE_DOWNLOAD_URL_PREFIX/v$VERSION/" \
+        --full-release-notes-url "$RELEASE_NOTES_URL" \
+        --link "https://hirakke.github.io/FileRenamer/" \
+        --embed-release-notes \
+        -o "$APPCAST_WORK_DIR/appcast.xml" \
+        "$APPCAST_WORK_DIR"
+    /usr/bin/ditto "$APPCAST_WORK_DIR/appcast.xml" "$ROOT/docs/appcast.xml"
+fi
+
 echo "==> Complete"
 echo "    App version: $VERSION ($BUILD)"
 echo "    DMG: $DMG"
 echo "    SHA-256: $DMG.sha256"
+if [ "$SKIP_NOTARIZATION" -eq 0 ]; then
+    echo "    Appcast: $ROOT/docs/appcast.xml"
+    echo "    Publish the DMG as GitHub Release asset v$VERSION, then push docs/appcast.xml."
+fi

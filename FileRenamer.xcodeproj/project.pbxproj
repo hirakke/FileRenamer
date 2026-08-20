@@ -3,60 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1A0000000000000000000001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000001 /* AppModel.swift */; };
-		1A0000000000000000000002 /* FileRenamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000002 /* FileRenamerApp.swift */; };
-		1A0000000000000000000003 /* Support/FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000003 /* Support/FlowLayout.swift */; };
-		1A0000000000000000000004 /* Support/GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000004 /* Support/GlassStyle.swift */; };
-		1A0000000000000000000005 /* Support/InlineTextRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000005 /* Support/InlineTextRun.swift */; };
-		1A0000000000000000000006 /* Support/ListScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000006 /* Support/ListScrollController.swift */; };
-		1A0000000000000000000007 /* Support/Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000007 /* Support/Palette.swift */; };
-		1A0000000000000000000008 /* Support/SortValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000008 /* Support/SortValueFormatter.swift */; };
-		1A0000000000000000000009 /* Support/ThumbnailProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000000000000000000009 /* Support/ThumbnailProvider.swift */; };
-		E10000000000000000000001 /* Support/SimilarImageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000001 /* Support/SimilarImageDetector.swift */; };
-		1A000000000000000000000A /* Views/BlockFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000A /* Views/BlockFace.swift */; };
-		1A000000000000000000000B /* Views/ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000B /* Views/ContentView.swift */; };
-		1A000000000000000000000C /* Views/FileGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000C /* Views/FileGridView.swift */; };
-		1A000000000000000000000D /* Views/FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000D /* Views/FileListView.swift */; };
-		1A000000000000000000000E /* Views/NamingRuleBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000E /* Views/NamingRuleBar.swift */; };
-		1A000000000000000000000F /* Views/OrderStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A000000000000000000000F /* Views/OrderStepper.swift */; };
-		2A0000000000000000000001 /* Engine/FileNameSanitizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */; };
-		2A0000000000000000000002 /* Engine/ItemSorter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000002 /* Engine/ItemSorter.swift */; };
-		2A0000000000000000000003 /* Engine/RenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000003 /* Engine/RenameEngine.swift */; };
-		2A0000000000000000000004 /* Engine/RenameValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000004 /* Engine/RenameValidator.swift */; };
-		2A0000000000000000000005 /* IO/FileImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000005 /* IO/FileImporter.swift */; };
-		2A0000000000000000000006 /* IO/FileKinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000006 /* IO/FileKinds.swift */; };
-		2A0000000000000000000007 /* IO/MetadataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000007 /* IO/MetadataLoader.swift */; };
-		2A0000000000000000000008 /* IO/RenameExecutor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000008 /* IO/RenameExecutor.swift */; };
-		2A0000000000000000000009 /* IO/RenameHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A0000000000000000000009 /* IO/RenameHistory.swift */; };
-		2A000000000000000000000A /* IO/RulePresetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000A /* IO/RulePresetStore.swift */; };
-		2A000000000000000000000B /* Models/FileMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000B /* Models/FileMetadata.swift */; };
-		2A000000000000000000000C /* Models/RenameItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000C /* Models/RenameItem.swift */; };
-		2A000000000000000000000D /* Models/RenamePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000D /* Models/RenamePreview.swift */; };
-		2A000000000000000000000E /* Models/RenameRule+TextEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */; };
-		2A000000000000000000000F /* Models/RenameRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A000000000000000000000F /* Models/RenameRule.swift */; };
-		3A0000000000000000000001 /* EngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000001 /* EngineTests.swift */; };
-		3A0000000000000000000002 /* SafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000002 /* SafetyTests.swift */; };
-		3A0000000000000000000003 /* TestHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000003 /* TestHarness.swift */; };
-		3A0000000000000000000004 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000000000000000000004 /* main.swift */; };
 		4A0000000000000000000001 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
 		4A0000000000000000000002 /* libRenameKit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000000061 /* libRenameKit.a */; };
 		6F27EE15302C7D0700497B26 /* FileRenamer.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6F27EE14302C7D0700497B26 /* FileRenamer.icon */; };
-		B00000000000000000000010 /* Views/PresetMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000010 /* Views/PresetMenu.swift */; };
-		B00000000000000000000011 /* Views/RuleTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000011 /* Views/RuleTextField.swift */; };
-		B00000000000000000000012 /* Views/StatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000012 /* Views/StatusBar.swift */; };
-		B00000000000000000000013 /* Views/TokenEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000013 /* Views/TokenEditor.swift */; };
-		B00000000000000000000014 /* Views/TokenInsertPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00000000000000000000014 /* Views/TokenInsertPanel.swift */; };
-		C00000000000000000000010 /* Models/RenameRulePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000010 /* Models/RenameRulePreset.swift */; };
-		C00000000000000000000011 /* IO/RenameJournalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000011 /* IO/RenameJournalStore.swift */; };
-		C00000000000000000000012 /* IO/RenameHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000012 /* IO/RenameHistoryStore.swift */; };
-		C00000000000000000000013 /* IO/ImageProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000013 /* IO/ImageProcessor.swift */; };
-		C00000000000000000000014 /* IO/ImageSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60000000000000000000014 /* IO/ImageSettingsStore.swift */; };
-		D00000000000000000000001 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D60000000000000000000001 /* Resources/Assets.xcassets */; };
-		D00000000000000000000002 /* Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */; };
+		B70000000000000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B70000000000000000000003 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,59 +31,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		5A0000000000000000000001 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		5A0000000000000000000002 /* FileRenamerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileRenamerApp.swift; sourceTree = "<group>"; };
-		5A0000000000000000000003 /* Support/FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/FlowLayout.swift; sourceTree = "<group>"; };
-		5A0000000000000000000004 /* Support/GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/GlassStyle.swift; sourceTree = "<group>"; };
-		5A0000000000000000000005 /* Support/InlineTextRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/InlineTextRun.swift; sourceTree = "<group>"; };
-		5A0000000000000000000006 /* Support/ListScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/ListScrollController.swift; sourceTree = "<group>"; };
-		5A0000000000000000000007 /* Support/Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Palette.swift; sourceTree = "<group>"; };
-		5A0000000000000000000008 /* Support/SortValueFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/SortValueFormatter.swift; sourceTree = "<group>"; };
-		5A0000000000000000000009 /* Support/ThumbnailProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/ThumbnailProvider.swift; sourceTree = "<group>"; };
-		E50000000000000000000001 /* Support/SimilarImageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/SimilarImageDetector.swift; sourceTree = "<group>"; };
-		5A000000000000000000000A /* Views/BlockFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/BlockFace.swift; sourceTree = "<group>"; };
-		5A000000000000000000000B /* Views/ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ContentView.swift; sourceTree = "<group>"; };
-		5A000000000000000000000C /* Views/FileGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/FileGridView.swift; sourceTree = "<group>"; };
-		5A000000000000000000000D /* Views/FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/FileListView.swift; sourceTree = "<group>"; };
-		5A000000000000000000000E /* Views/NamingRuleBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/NamingRuleBar.swift; sourceTree = "<group>"; };
-		5A000000000000000000000F /* Views/OrderStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/OrderStepper.swift; sourceTree = "<group>"; };
-		6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/FileNameSanitizer.swift; sourceTree = "<group>"; };
-		6A0000000000000000000002 /* Engine/ItemSorter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/ItemSorter.swift; sourceTree = "<group>"; };
-		6A0000000000000000000003 /* Engine/RenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/RenameEngine.swift; sourceTree = "<group>"; };
-		6A0000000000000000000004 /* Engine/RenameValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine/RenameValidator.swift; sourceTree = "<group>"; };
-		6A0000000000000000000005 /* IO/FileImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/FileImporter.swift; sourceTree = "<group>"; };
-		6A0000000000000000000006 /* IO/FileKinds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/FileKinds.swift; sourceTree = "<group>"; };
-		6A0000000000000000000007 /* IO/MetadataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/MetadataLoader.swift; sourceTree = "<group>"; };
-		6A0000000000000000000008 /* IO/RenameExecutor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameExecutor.swift; sourceTree = "<group>"; };
-		6A0000000000000000000009 /* IO/RenameHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameHistory.swift; sourceTree = "<group>"; };
-		6A000000000000000000000A /* IO/RulePresetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RulePresetStore.swift; sourceTree = "<group>"; };
-		6A000000000000000000000B /* Models/FileMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/FileMetadata.swift; sourceTree = "<group>"; };
-		6A000000000000000000000C /* Models/RenameItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameItem.swift; sourceTree = "<group>"; };
-		6A000000000000000000000D /* Models/RenamePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenamePreview.swift; sourceTree = "<group>"; };
-		6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/RenameRule+TextEditing.swift"; sourceTree = "<group>"; };
-		6A000000000000000000000F /* Models/RenameRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameRule.swift; sourceTree = "<group>"; };
 		6F27EE14302C7D0700497B26 /* FileRenamer.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = FileRenamer.icon; sourceTree = "<group>"; };
-		7A0000000000000000000001 /* EngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTests.swift; sourceTree = "<group>"; };
-		7A0000000000000000000002 /* SafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyTests.swift; sourceTree = "<group>"; };
-		7A0000000000000000000003 /* TestHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestHarness.swift; sourceTree = "<group>"; };
-		7A0000000000000000000004 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		A00000000000000000000060 /* FileRenamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FileRenamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000061 /* libRenameKit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRenameKit.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000062 /* RenameKitTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RenameKitTests; sourceTree = BUILT_PRODUCTS_DIR; };
-		A60000000000000000000010 /* Models/RenameRulePreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/RenameRulePreset.swift; sourceTree = "<group>"; };
-		A60000000000000000000011 /* IO/RenameJournalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameJournalStore.swift; sourceTree = "<group>"; };
-		A60000000000000000000012 /* IO/RenameHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/RenameHistoryStore.swift; sourceTree = "<group>"; };
-		A60000000000000000000013 /* IO/ImageProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/ImageProcessor.swift; sourceTree = "<group>"; };
-		A60000000000000000000014 /* IO/ImageSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IO/ImageSettingsStore.swift; sourceTree = "<group>"; };
-		D60000000000000000000001 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
-		D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		D60000000000000000000003 /* Config/FileRenamer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Config/FileRenamer.entitlements; sourceTree = SOURCE_ROOT; };
-		F00000000000000000000010 /* Views/PresetMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/PresetMenu.swift; sourceTree = "<group>"; };
-		F00000000000000000000011 /* Views/RuleTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RuleTextField.swift; sourceTree = "<group>"; };
-		F00000000000000000000012 /* Views/StatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/StatusBar.swift; sourceTree = "<group>"; };
-		F00000000000000000000013 /* Views/TokenEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TokenEditor.swift; sourceTree = "<group>"; };
-		F00000000000000000000014 /* Views/TokenInsertPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/TokenInsertPanel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A00000000000000000000004 /* Sources/FileRenamer */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Sources/FileRenamer;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000005 /* Sources/RenameKit */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Sources/RenameKit;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000006 /* Sources/RenameKitTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Sources/RenameKitTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A00000000000000000000041 /* Frameworks */ = {
@@ -137,6 +62,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4A0000000000000000000001 /* libRenameKit.a in Frameworks */,
+				B70000000000000000000001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,9 +82,9 @@
 			children = (
 				6F27EE14302C7D0700497B26 /* FileRenamer.icon */,
 				D60000000000000000000003 /* Config/FileRenamer.entitlements */,
-				A00000000000000000000004 /* FileRenamer */,
-				A00000000000000000000005 /* RenameKit */,
-				A00000000000000000000006 /* RenameKitTests */,
+				A00000000000000000000004 /* Sources/FileRenamer */,
+				A00000000000000000000005 /* Sources/RenameKit */,
+				A00000000000000000000006 /* Sources/RenameKitTests */,
 				A00000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -173,77 +99,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A00000000000000000000004 /* FileRenamer */ = {
-			isa = PBXGroup;
-			children = (
-				5A0000000000000000000001 /* AppModel.swift */,
-				5A0000000000000000000002 /* FileRenamerApp.swift */,
-				5A0000000000000000000003 /* Support/FlowLayout.swift */,
-				5A0000000000000000000004 /* Support/GlassStyle.swift */,
-				5A0000000000000000000005 /* Support/InlineTextRun.swift */,
-				5A0000000000000000000006 /* Support/ListScrollController.swift */,
-				5A0000000000000000000007 /* Support/Palette.swift */,
-				5A0000000000000000000008 /* Support/SortValueFormatter.swift */,
-				5A0000000000000000000009 /* Support/ThumbnailProvider.swift */,
-				E50000000000000000000001 /* Support/SimilarImageDetector.swift */,
-				5A000000000000000000000A /* Views/BlockFace.swift */,
-				5A000000000000000000000B /* Views/ContentView.swift */,
-				5A000000000000000000000C /* Views/FileGridView.swift */,
-				5A000000000000000000000D /* Views/FileListView.swift */,
-				5A000000000000000000000E /* Views/NamingRuleBar.swift */,
-				5A000000000000000000000F /* Views/OrderStepper.swift */,
-				F00000000000000000000010 /* Views/PresetMenu.swift */,
-				F00000000000000000000011 /* Views/RuleTextField.swift */,
-				F00000000000000000000012 /* Views/StatusBar.swift */,
-				F00000000000000000000013 /* Views/TokenEditor.swift */,
-				F00000000000000000000014 /* Views/TokenInsertPanel.swift */,
-				D60000000000000000000001 /* Resources/Assets.xcassets */,
-				D60000000000000000000002 /* Resources/PrivacyInfo.xcprivacy */,
-			);
-			name = FileRenamer;
-			path = Sources/FileRenamer;
-			sourceTree = SOURCE_ROOT;
-		};
-		A00000000000000000000005 /* RenameKit */ = {
-			isa = PBXGroup;
-			children = (
-				6A0000000000000000000001 /* Engine/FileNameSanitizer.swift */,
-				6A0000000000000000000002 /* Engine/ItemSorter.swift */,
-				6A0000000000000000000003 /* Engine/RenameEngine.swift */,
-				6A0000000000000000000004 /* Engine/RenameValidator.swift */,
-				6A0000000000000000000005 /* IO/FileImporter.swift */,
-				6A0000000000000000000006 /* IO/FileKinds.swift */,
-				6A0000000000000000000007 /* IO/MetadataLoader.swift */,
-				6A0000000000000000000008 /* IO/RenameExecutor.swift */,
-				6A0000000000000000000009 /* IO/RenameHistory.swift */,
-				6A000000000000000000000A /* IO/RulePresetStore.swift */,
-				6A000000000000000000000B /* Models/FileMetadata.swift */,
-				6A000000000000000000000C /* Models/RenameItem.swift */,
-				6A000000000000000000000D /* Models/RenamePreview.swift */,
-				6A000000000000000000000E /* Models/RenameRule+TextEditing.swift */,
-				6A000000000000000000000F /* Models/RenameRule.swift */,
-				A60000000000000000000010 /* Models/RenameRulePreset.swift */,
-				A60000000000000000000011 /* IO/RenameJournalStore.swift */,
-				A60000000000000000000012 /* IO/RenameHistoryStore.swift */,
-				A60000000000000000000013 /* IO/ImageProcessor.swift */,
-				A60000000000000000000014 /* IO/ImageSettingsStore.swift */,
-			);
-			name = RenameKit;
-			path = Sources/RenameKit;
-			sourceTree = SOURCE_ROOT;
-		};
-		A00000000000000000000006 /* RenameKitTests */ = {
-			isa = PBXGroup;
-			children = (
-				7A0000000000000000000001 /* EngineTests.swift */,
-				7A0000000000000000000002 /* SafetyTests.swift */,
-				7A0000000000000000000003 /* TestHarness.swift */,
-				7A0000000000000000000004 /* main.swift */,
-			);
-			name = RenameKitTests;
-			path = Sources/RenameKitTests;
-			sourceTree = SOURCE_ROOT;
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -254,13 +109,20 @@
 				A00000000000000000000040 /* Sources */,
 				A00000000000000000000041 /* Frameworks */,
 				A00000000000000000000042 /* Resources */,
+				B70000000000000000000007 /* Sign Sparkle Helpers for Distribution */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				A00000000000000000000050 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				A00000000000000000000004 /* Sources/FileRenamer */,
+			);
 			name = FileRenamer;
+			packageProductDependencies = (
+				B70000000000000000000003 /* Sparkle */,
+			);
 			productName = FileRenamer;
 			productReference = A00000000000000000000060 /* FileRenamer.app */;
 			productType = "com.apple.product-type.application";
@@ -274,6 +136,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A00000000000000000000005 /* Sources/RenameKit */,
 			);
 			name = RenameKit;
 			productName = RenameKit;
@@ -291,6 +156,9 @@
 			);
 			dependencies = (
 				A00000000000000000000051 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A00000000000000000000006 /* Sources/RenameKitTests */,
 			);
 			name = RenameKitTests;
 			productName = RenameKitTests;
@@ -319,7 +187,6 @@
 				};
 			};
 			buildConfigurationList = A00000000000000000000023 /* Build configuration list for PBXProject "FileRenamer" */;
-			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -328,6 +195,10 @@
 				Base,
 			);
 			mainGroup = A00000000000000000000002;
+			packageReferences = (
+				B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
 			productRefGroup = A00000000000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -345,39 +216,57 @@
 			buildActionMask = 2147483647;
 			files = (
 				6F27EE15302C7D0700497B26 /* FileRenamer.icon in Resources */,
-				D00000000000000000000001 /* Resources/Assets.xcassets in Resources */,
-				D00000000000000000000002 /* Resources/PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		B70000000000000000000007 /* Sign Sparkle Helpers for Distribution */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Sparkle Helpers for Distribution";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$ACTION\" != \"install\" ]; then\n  exit 0\nfi\n\nSPARKLE_FRAMEWORK=\"$TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/Sparkle.framework\"\nif [ ! -d \"$SPARKLE_FRAMEWORK\" ]; then\n  echo \"Sparkle.framework was not embedded\" >&2\n  exit 1\nfi\n\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Installer.xpc\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime --preserve-metadata=entitlements \"$SPARKLE_FRAMEWORK/Versions/B/XPCServices/Downloader.xpc\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/Autoupdate\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK/Versions/B/Updater.app\"\n/usr/bin/codesign --force --timestamp --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --options runtime \"$SPARKLE_FRAMEWORK\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B70000000000000000000003 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B70000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A00000000000000000000040 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A0000000000000000000001 /* AppModel.swift in Sources */,
-				1A0000000000000000000002 /* FileRenamerApp.swift in Sources */,
-				1A0000000000000000000003 /* Support/FlowLayout.swift in Sources */,
-				1A0000000000000000000004 /* Support/GlassStyle.swift in Sources */,
-				1A0000000000000000000005 /* Support/InlineTextRun.swift in Sources */,
-				1A0000000000000000000006 /* Support/ListScrollController.swift in Sources */,
-				1A0000000000000000000007 /* Support/Palette.swift in Sources */,
-				1A0000000000000000000008 /* Support/SortValueFormatter.swift in Sources */,
-				1A0000000000000000000009 /* Support/ThumbnailProvider.swift in Sources */,
-				E10000000000000000000001 /* Support/SimilarImageDetector.swift in Sources */,
-				1A000000000000000000000A /* Views/BlockFace.swift in Sources */,
-				1A000000000000000000000B /* Views/ContentView.swift in Sources */,
-				1A000000000000000000000C /* Views/FileGridView.swift in Sources */,
-				1A000000000000000000000D /* Views/FileListView.swift in Sources */,
-				1A000000000000000000000E /* Views/NamingRuleBar.swift in Sources */,
-				1A000000000000000000000F /* Views/OrderStepper.swift in Sources */,
-				B00000000000000000000010 /* Views/PresetMenu.swift in Sources */,
-				B00000000000000000000011 /* Views/RuleTextField.swift in Sources */,
-				B00000000000000000000012 /* Views/StatusBar.swift in Sources */,
-				B00000000000000000000013 /* Views/TokenEditor.swift in Sources */,
-				B00000000000000000000014 /* Views/TokenInsertPanel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -385,26 +274,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2A0000000000000000000001 /* Engine/FileNameSanitizer.swift in Sources */,
-				2A0000000000000000000002 /* Engine/ItemSorter.swift in Sources */,
-				2A0000000000000000000003 /* Engine/RenameEngine.swift in Sources */,
-				2A0000000000000000000004 /* Engine/RenameValidator.swift in Sources */,
-				2A0000000000000000000005 /* IO/FileImporter.swift in Sources */,
-				2A0000000000000000000006 /* IO/FileKinds.swift in Sources */,
-				2A0000000000000000000007 /* IO/MetadataLoader.swift in Sources */,
-				2A0000000000000000000008 /* IO/RenameExecutor.swift in Sources */,
-				2A0000000000000000000009 /* IO/RenameHistory.swift in Sources */,
-				2A000000000000000000000A /* IO/RulePresetStore.swift in Sources */,
-				2A000000000000000000000B /* Models/FileMetadata.swift in Sources */,
-				2A000000000000000000000C /* Models/RenameItem.swift in Sources */,
-				2A000000000000000000000D /* Models/RenamePreview.swift in Sources */,
-				2A000000000000000000000E /* Models/RenameRule+TextEditing.swift in Sources */,
-				2A000000000000000000000F /* Models/RenameRule.swift in Sources */,
-				C00000000000000000000010 /* Models/RenameRulePreset.swift in Sources */,
-				C00000000000000000000011 /* IO/RenameJournalStore.swift in Sources */,
-				C00000000000000000000012 /* IO/RenameHistoryStore.swift in Sources */,
-				C00000000000000000000013 /* IO/ImageProcessor.swift in Sources */,
-				C00000000000000000000014 /* IO/ImageSettingsStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -412,10 +281,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3A0000000000000000000001 /* EngineTests.swift in Sources */,
-				3A0000000000000000000002 /* SafetyTests.swift in Sources */,
-				3A0000000000000000000003 /* TestHarness.swift in Sources */,
-				3A0000000000000000000004 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -444,18 +309,14 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 6HY8YSMK7C;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
-				INFOPLIST_KEY_CFBundleDisplayName = FileRenamer;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Keiju Hiramoto. All rights reserved.";
-				MARKETING_VERSION = 1.0.0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -473,18 +334,14 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 6HY8YSMK7C;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
-				INFOPLIST_KEY_CFBundleDisplayName = FileRenamer;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Keiju Hiramoto. All rights reserved.";
-				MARKETING_VERSION = 1.0.0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.keiju.FileRenamer;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

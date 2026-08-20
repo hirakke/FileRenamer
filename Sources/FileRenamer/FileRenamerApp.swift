@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import Combine
 import RenameKit
+import Sparkle
 
 @MainActor
 final class AppPreferences: ObservableObject {
@@ -226,11 +227,13 @@ struct FileRenamerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var preferences: AppPreferences
     @StateObject private var workspace: WorkspaceModel
+    @StateObject private var updateController: UpdateController
 
     init() {
         let preferences = AppPreferences()
         _preferences = StateObject(wrappedValue: preferences)
         _workspace = StateObject(wrappedValue: WorkspaceModel(preferences: preferences))
+        _updateController = StateObject(wrappedValue: UpdateController())
     }
 
     var body: some Scene {
@@ -243,6 +246,11 @@ struct FileRenamerApp: App {
         }
         .windowToolbarStyle(.unified)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("アップデートを確認…") { updateController.checkForUpdates() }
+                    .disabled(!updateController.canCheckForUpdates)
+            }
+
             CommandGroup(replacing: .newItem) {
                 Button("新規タブ") { workspace.addTab() }
                     .keyboardShortcut("t", modifiers: .command)
@@ -305,12 +313,14 @@ struct FileRenamerApp: App {
         Settings {
             PreferencesView()
                 .environmentObject(preferences)
+                .environmentObject(updateController)
         }
     }
 }
 
 private struct PreferencesView: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @EnvironmentObject private var updateController: UpdateController
     @State private var showsPrivacyPolicy = false
 
     var body: some View {
@@ -389,6 +399,25 @@ private struct PreferencesView: View {
                 Toggle("ウィンドウを開いたときにサイドバーを表示", isOn: $preferences.opensSidebarOnLaunch)
             }
 
+            Section("アップデート") {
+                Toggle(
+                    "起動後にアップデートを自動確認",
+                    isOn: Binding(
+                        get: { updateController.automaticallyChecksForUpdates },
+                        set: { updateController.setAutomaticallyChecksForUpdates($0) }
+                    )
+                )
+
+                Button("アップデートを確認…") {
+                    updateController.checkForUpdates()
+                }
+                .disabled(!updateController.canCheckForUpdates)
+
+                Text("更新情報の確認時も、ファイルや画像は送信しません。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("プライバシー") {
                 LabeledContent("データの処理") {
                     Text("このMac内のみ")
@@ -425,7 +454,7 @@ private struct PrivacyPolicyView: View {
                     )
                     policySection(
                         "ファイルへのアクセス",
-                        "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、Undo、失敗時の復旧にだけ使用します。"
+                        "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。"
                     )
                     policySection(
                         "このMacに保存する情報",
@@ -433,7 +462,7 @@ private struct PrivacyPolicyView: View {
                     )
                     policySection(
                         "追跡と第三者提供",
-                        "広告、分析、ユーザー追跡を行わず、データを第三者へ提供しません。"
+                        "広告、分析、ユーザー追跡を行わず、データを第三者へ提供しません。更新確認を有効にした場合は、最新バージョンの有無を確認するため更新情報サーバーへ接続しますが、ファイル、画像、利用状況は送信しません。"
                     )
                     Text("制定日：2026年8月13日")
                         .font(.caption)

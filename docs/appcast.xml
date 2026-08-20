@@ -1,0 +1,23 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>FileRenamer</title>
+        <item>
+            <title>1.1.0</title>
+            <pubDate>Thu, 20 Aug 2026 23:20:13 +0900</pubDate>
+            <link>https://hirakke.github.io/FileRenamer/</link>
+            <sparkle:fullReleaseNotesLink>https://hirakke.github.io/FileRenamer/release-notes.html</sparkle:fullReleaseNotesLink>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.0
+
+- 類似画像の確認画面から、選んだファイルだけをFinderのゴミ箱へ移動できるようになりました。
+- RAW＋JPEGなどの関連ファイルは、まとめて安全に扱います。
+- 個別に追加したファイルでも、プレビューとゴミ箱への移動を安定して行えるようになりました。
+- メニューからアップデートを確認できるようになりました。
+]]></description>
+            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.0/FileRenamer-1.1.0.dmg" length="6576184" type="application/octet-stream" sparkle:edSignature="fvyWTeNWYxlzEFd30fqlVuaIZ3k+y9Z+6Crir3VpIVHNJ1GS9LCXj6C2vbWkic0SA6+zB9ONap3qxABTvZ1PBA=="/>
+        </item>
+    </channel>
+</rss>

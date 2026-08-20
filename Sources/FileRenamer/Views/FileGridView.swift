@@ -281,7 +281,7 @@ struct FileGridView: View {
         Button("Finder で表示") { model.revealInFinder(ids: ids) }
         Button("クイックルック") { model.quickLookURL = item.originalURL }
         if model.similarityBadge(for: item.id) != nil {
-            Button("類似候補を比較") { model.showSimilarImages(for: item.id) }
+            Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
         }
         Divider()
         Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
@@ -412,7 +412,12 @@ private struct GridCell: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 4)
-                        .background(Palette.warning, in: Capsule())
+                        .background(
+                            similarityBadge.containsExactMatch
+                                ? Palette.duplicateExact
+                                : Palette.duplicateSimilar,
+                            in: Capsule()
+                        )
                     }
                     .buttonStyle(.plain)
                     .padding(6)
@@ -421,7 +426,7 @@ private struct GridCell: View {
                             ? "同一または類似している画像を比較"
                             : "類似している可能性のある画像を比較"
                     )
-                    .accessibilityLabel("\(similarityBadge.count)件の類似画像候補")
+                    .accessibilityLabel("\(similarityBadge.count)件の重複候補")
                 }
             }
 

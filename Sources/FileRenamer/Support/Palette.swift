@@ -29,6 +29,13 @@ enum Palette {
 
     // MARK: Roles
 
+    /// Duplicate review has two verdicts and they deserve distinct colours: an exact
+    /// match is a fact about the bytes, a similar match is only a suggestion. Both are
+    /// kept clear of the system alert colours so "identical file" never reads as
+    /// "rename error", and "looks alike" never reads as "something is wrong".
+    static let duplicateExact = jalapenoRed
+    static let duplicateSimilar = dupain
+
     static let error = Color(nsColor: .systemRed)
     static let warning = Color(nsColor: .systemOrange)
     static let ok = Color(nsColor: .systemGreen)

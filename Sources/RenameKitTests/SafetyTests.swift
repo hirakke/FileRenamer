@@ -826,6 +826,85 @@ func runExecutorTests() async {
         }
     }
 
+    runner.suite("FileTrasher — 重複の削除")
+
+    await runner.test("空の入力では何もしない") {
+        let outcome = await FileTrasher().moveToTrash(groups: [])
+        try expect(outcome.isEmpty)
+    }
+
+    await runner.test("既に存在しないファイルは失敗として扱わない") {
+        try await withSandbox { sandbox in
+            let ghost = sandbox.appendingPathComponent("ghost.jpg")
+            let outcome = await FileTrasher().moveToTrash(groups: [[ghost, ghost]])
+            try expect(outcome.failures.isEmpty)
+            try expect(outcome.trashedURLs.isEmpty)
+        }
+    }
+
+    await runner.test("複数ファイルの項目は一緒にゴミ箱へ移動する") {
+        try await withSandbox { sandbox in
+            let fixture = sandbox.appendingPathComponent("photo.jpg")
+            let fakeTrash = sandbox.appendingPathComponent("Trash", isDirectory: true)
+            try FileManager.default.createDirectory(at: fakeTrash, withIntermediateDirectories: true)
+            try Data("image".utf8).write(to: fixture)
+
+            let operations = FileTrashOperations(
+                fileExists: { FileManager.default.fileExists(atPath: $0.path) },
+                moveToTrash: { url in
+                    let destination = fakeTrash.appendingPathComponent(url.lastPathComponent)
+                    try FileManager.default.moveItem(at: url, to: destination)
+                    return destination
+                },
+                restore: { trashURL, originalURL in
+                    try FileManager.default.moveItem(at: trashURL, to: originalURL)
+                }
+            )
+            let outcome = await FileTrasher(operations: operations)
+                .moveToTrash(groups: [[fixture, fixture]])
+
+            try expect(outcome.failures.isEmpty)
+            try expectEqual(outcome.trashedFiles.count, 1)
+            try expect(!FileManager.default.fileExists(atPath: fixture.path))
+            try expect(FileManager.default.fileExists(atPath: outcome.trashedFiles[0].trashURL.path))
+        }
+    }
+
+    await runner.test("途中で失敗したRAW＋JPEGは既に移動したファイルを戻す") {
+        try await withSandbox { sandbox in
+            let raw = sandbox.appendingPathComponent("photo.raw")
+            let jpeg = sandbox.appendingPathComponent("photo.jpg")
+            let fakeTrash = sandbox.appendingPathComponent("Trash", isDirectory: true)
+            try FileManager.default.createDirectory(at: fakeTrash, withIntermediateDirectories: true)
+            try Data("raw".utf8).write(to: raw)
+            try Data("jpeg".utf8).write(to: jpeg)
+
+            let operations = FileTrashOperations(
+                fileExists: { FileManager.default.fileExists(atPath: $0.path) },
+                moveToTrash: { url in
+                    if url == jpeg {
+                        throw NSError(domain: "FileTrasherTests", code: 1, userInfo: [
+                            NSLocalizedDescriptionKey: "意図した失敗"
+                        ])
+                    }
+                    let destination = fakeTrash.appendingPathComponent(url.lastPathComponent)
+                    try FileManager.default.moveItem(at: url, to: destination)
+                    return destination
+                },
+                restore: { trashURL, originalURL in
+                    try FileManager.default.moveItem(at: trashURL, to: originalURL)
+                }
+            )
+            let outcome = await FileTrasher(operations: operations)
+                .moveToTrash(groups: [[raw, jpeg]])
+
+            try expect(!outcome.failures.isEmpty)
+            try expect(outcome.trashedFiles.isEmpty)
+            try expect(FileManager.default.fileExists(atPath: raw.path))
+            try expect(FileManager.default.fileExists(atPath: jpeg.path))
+        }
+    }
+
     runner.suite("RenameHistory — Undo スタック")
 
     await runner.test("記録した順に Undo / Redo できる") {

@@ -128,6 +128,7 @@ final class AppModel: ObservableObject {
     private let previewWorker = PreviewGenerationWorker()
     private let destinationWorker = DestinationValidationWorker()
     private let importer = FileImporter()
+    private let trasher = FileTrasher()
     private let executor = RenameExecutor()
     private let imageProcessor = ImageProcessor()
     private let presetStore: RulePresetStore
@@ -187,17 +188,27 @@ final class AppModel: ObservableObject {
         let warning: String?
     }
 
-    struct SimilarityReview: Identifiable {
-        let id = UUID()
-        let source: RenameItem
-        let candidates: [SimilarityReviewCandidate]
+    /// One cluster of pictures that resemble each other.
+    ///
+    /// Similarity is transitive in practice — if A matches B and B matches C, the
+    /// three are one burst, not two separate pairs — so groups are the connected
+    /// components of the match graph rather than raw pairs. Reviewing a burst of five
+    /// as one group is the difference between one decision and ten.
+    struct DuplicateGroup: Identifiable {
+        let id: UUID
+        let items: [RenameItem]
+        let containsExactMatch: Bool
+
+        var count: Int { items.count }
+
+        /// All-exact groups are safe to sweep; mixed ones need looking at.
+        var isEntirelyExact: Bool { containsExactMatch }
     }
 
-    struct SimilarityReviewCandidate: Identifiable {
-        var id: UUID { item.id }
-        let item: RenameItem
-        let kind: SimilarImageMatchKind
-        let featureDistance: Float?
+    struct SimilarityReview: Identifiable {
+        let id = UUID()
+        let groups: [DuplicateGroup]
+        let focusedGroupID: UUID
     }
 
     struct SimilarityBadge {
@@ -242,9 +253,6 @@ final class AppModel: ObservableObject {
     }
     var canUndo: Bool { !isBusy && history.canUndo }
     var canRedo: Bool { !isBusy && history.canRedo }
-    var similarImagePairCount: Int {
-        similarImageMatchesByItemID.values.reduce(0) { $0 + $1.count } / 2
-    }
     var showsJPEGQualitySetting: Bool {
         rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
     }
@@ -319,29 +327,84 @@ final class AppModel: ObservableObject {
         )
     }
 
-    func showSimilarImages(for itemID: UUID) {
-        guard let source = items.first(where: { $0.id == itemID }),
-              let matches = similarImageMatchesByItemID[itemID],
-              !matches.isEmpty
-        else { return }
+    /// Connected components of the match graph, in list order.
+    ///
+    /// Rebuilt on demand rather than cached: the input is at most a few hundred
+    /// items, and a stale group list would be far worse than a recomputation.
+    var duplicateGroups: [DuplicateGroup] {
+        guard !similarImageMatchesByItemID.isEmpty else { return [] }
 
-        let candidates = matches.compactMap { match -> SimilarityReviewCandidate? in
-            guard let item = items.first(where: { $0.id == match.otherItemID }) else { return nil }
-            return SimilarityReviewCandidate(
-                item: item,
-                kind: match.kind,
-                featureDistance: match.featureDistance
-            )
+        var parent: [UUID: UUID] = [:]
+        func find(_ id: UUID) -> UUID {
+            var root = id
+            while let next = parent[root], next != root { root = next }
+            // Path compression keeps repeated lookups flat.
+            var cursor = id
+            while let next = parent[cursor], next != root {
+                parent[cursor] = root
+                cursor = next
+            }
+            return root
         }
-        guard !candidates.isEmpty else { return }
-        similarityReview = SimilarityReview(source: source, candidates: candidates)
+        func union(_ lhs: UUID, _ rhs: UUID) {
+            let left = find(lhs)
+            let right = find(rhs)
+            guard left != right else { return }
+            parent[left] = right
+        }
+
+        for (itemID, matches) in similarImageMatchesByItemID {
+            parent[itemID] = parent[itemID] ?? itemID
+            for match in matches {
+                parent[match.otherItemID] = parent[match.otherItemID] ?? match.otherItemID
+                union(itemID, match.otherItemID)
+            }
+        }
+
+        // Walking `items` rather than the dictionary keeps groups, and the pictures
+        // inside them, in the order the user already sees.
+        var membersByRoot: [UUID: [RenameItem]] = [:]
+        var rootOrder: [UUID] = []
+        for item in items where parent[item.id] != nil {
+            let root = find(item.id)
+            if membersByRoot[root] == nil { rootOrder.append(root) }
+            membersByRoot[root, default: []].append(item)
+        }
+
+        return rootOrder.compactMap { root in
+            guard let members = membersByRoot[root], members.count > 1 else { return nil }
+            let memberIDs = Set(members.map(\.id))
+            let containsExact = members.contains { item in
+                (similarImageMatchesByItemID[item.id] ?? []).contains {
+                    $0.kind == .exact && memberIDs.contains($0.otherItemID)
+                }
+            }
+            return DuplicateGroup(id: root, items: members, containsExactMatch: containsExact)
+        }
+    }
+
+    var duplicateGroupCount: Int { duplicateGroups.count }
+
+    /// True when at least one group is byte-identical rather than merely alike.
+    /// Drives the colour of the aggregate badge: the stronger verdict wins.
+    var hasExactDuplicates: Bool {
+        similarImageMatchesByItemID.values.contains { matches in
+            matches.contains { $0.kind == .exact }
+        }
+    }
+
+    func showSimilarImages(for itemID: UUID) {
+        let groups = duplicateGroups
+        guard let focused = groups.first(where: { group in
+            group.items.contains { $0.id == itemID }
+        }) else { return }
+        similarityReview = SimilarityReview(groups: groups, focusedGroupID: focused.id)
     }
 
     func showFirstSimilarImageGroup() {
-        guard let itemID = items.lazy.map(\.id).first(where: {
-            !(similarImageMatchesByItemID[$0] ?? []).isEmpty
-        }) else { return }
-        showSimilarImages(for: itemID)
+        let groups = duplicateGroups
+        guard let first = groups.first else { return }
+        similarityReview = SimilarityReview(groups: groups, focusedGroupID: first.id)
     }
 
     /// One row's validation problem, flattened for the status-bar popover.
@@ -663,6 +726,75 @@ final class AppModel: ObservableObject {
         selection.removeAll()
         refreshPreviews()
         scheduleSimilarityScan()
+    }
+
+    /// Drops rows without touching the files. The safe half of duplicate review:
+    /// the picture stays on disk, it just stops being part of this rename.
+    func removeFromList(ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        items = ItemSorter.reindexed(items.filter { !ids.contains($0.id) })
+        if items.isEmpty { importedFolderRoots = [] }
+        workingDirectories = calculateWorkingDirectories()
+        selection.subtract(ids)
+        refreshPreviews()
+        scheduleSimilarityScan()
+    }
+
+    /// Moves the chosen rows' files to the Trash and drops them from the list.
+    ///
+    /// Every file of an item goes together — a RAW+JPEG pair is one picture, and
+    /// leaving half of it behind would be a worse outcome than leaving both.
+    /// Files go to the Trash rather than being erased, so a mistaken pick during a
+    /// side-by-side comparison is always recoverable from the Finder.
+    func moveToTrash(ids: Set<UUID>) {
+        guard !ids.isEmpty else { return }
+        Task { await performTrash(ids: ids) }
+    }
+
+    private func performTrash(ids: Set<UUID>) async {
+        let targets = items.filter { ids.contains($0.id) }
+        guard !targets.isEmpty else { return }
+        let directories = targets
+            .flatMap(\.allURLs)
+            .map { $0.deletingLastPathComponent() }
+        guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
+
+        guard beginBusy("ゴミ箱に移動中…", critical: true) else { return }
+        let outcome = await trasher.moveToTrash(groups: targets.map(\.allURLs))
+        endBusy()
+
+        // Only rows whose files actually left are dropped; anything that failed stays
+        // visible so the problem is not silently swallowed.
+        let failedPaths = Set(outcome.failures.map(\.url.standardizedFileURL.path))
+        let removedIDs = Set(
+            targets
+                .filter { item in !item.allURLs.contains { failedPaths.contains($0.standardizedFileURL.path) } }
+                .map(\.id)
+        )
+        if !removedIDs.isEmpty {
+            removeFromList(ids: removedIDs)
+        }
+
+        if outcome.failures.isEmpty {
+            let fileCount = outcome.trashedURLs.count
+            let itemCount = removedIDs.count
+            resultMessage = ResultMessage(
+                text: fileCount == 0
+                    ? "既に見つからない \(itemCount) 件をリストから除外しました"
+                    : itemCount == fileCount
+                        ? "\(itemCount) 件をゴミ箱に移動しました"
+                        : "\(itemCount) 件（\(fileCount) ファイル）をゴミ箱に移動しました"
+            )
+        } else {
+            let detail = outcome.failures
+                .prefix(5)
+                .map { "\($0.url.lastPathComponent): \($0.message)" }
+                .joined(separator: "\n")
+            alertMessage = AlertMessage(
+                title: "ゴミ箱に移動できないファイルがあります",
+                detail: detail
+            )
+        }
     }
 
     func removeAll() {

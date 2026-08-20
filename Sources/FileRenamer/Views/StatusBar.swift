@@ -33,19 +33,21 @@ struct StatusBar: View {
                 Text("類似画像を確認中")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            } else if model.similarImagePairCount > 0 {
+            } else if model.duplicateGroupCount > 0 {
                 Button {
                     model.showFirstSimilarImageGroup()
                 } label: {
                     Label(
-                        "\(model.similarImagePairCount) 組の類似候補",
+                        "\(model.duplicateGroupCount) 組の重複候補",
                         systemImage: "square.on.square"
                     )
                     .font(.callout)
-                    .foregroundStyle(Palette.warning)
+                    .foregroundStyle(model.hasExactDuplicates
+                                     ? Palette.duplicateExact
+                                     : Palette.duplicateSimilar)
                 }
                 .buttonStyle(.plain)
-                .help("類似している可能性のある画像を比較します")
+                .help("重複している可能性のある画像を確認して削除します")
             }
             if model.isValidatingDestinations {
                 ProgressView()
@@ -101,6 +103,9 @@ private struct IssueSummaryButton: View {
     let issues: [AppModel.Issue]
 
     @State private var isShowing = false
+    @State private var contentHeight: CGFloat = 0
+
+    private static let maximumPopoverHeight: CGFloat = 360
 
     var body: some View {
         Button {
@@ -113,34 +118,44 @@ private struct IssueSummaryButton: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isShowing, arrowEdge: .top) {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(issues) { issue in
-                    Button {
-                        model.revealIssue(issue.id)
-                        isShowing = false
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(issue.name)
-                                .font(.system(.callout, design: .monospaced))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Text(issue.message)
-                                .font(.caption)
-                                .foregroundStyle(issue.isError ? Palette.error : Palette.warning)
-                                .fixedSize(horizontal: false, vertical: true)
+            // A long batch can produce far more issues than fit on screen. The list
+            // scrolls, and the popover is only as tall as it needs to be: measuring
+            // the content keeps a two-item list from opening at full height.
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(issues) { issue in
+                        Button {
+                            model.revealIssue(issue.id)
+                            isShowing = false
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(issue.name)
+                                    .font(.system(.callout, design: .monospaced))
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Text(issue.message)
+                                    .font(.caption)
+                                    .foregroundStyle(issue.isError ? Palette.error : Palette.warning)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
+                            .contentShape(Rectangle())
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 6)
-                        .padding(.horizontal, 12)
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        Divider()
                     }
-                    .buttonStyle(.plain)
-                    Divider()
+                }
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear
+                            .onAppear { contentHeight = geometry.size.height }
+                            .onChange(of: geometry.size.height) { _, height in contentHeight = height }
+                    }
                 }
             }
-            .frame(width: 420)
-            .frame(maxHeight: 320)
-            .fixedSize(horizontal: false, vertical: true)
+            .frame(width: 420, height: min(max(contentHeight, 44), Self.maximumPopoverHeight))
         }
     }
 }

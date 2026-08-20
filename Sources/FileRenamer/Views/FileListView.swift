@@ -19,7 +19,9 @@ struct FileListView: View {
                                 item: item,
                                 preview: preview,
                                 sortField: model.sortOption.field,
-                                imageChangeSummary: model.imageChangeSummary(for: item, preview: preview)
+                                imageChangeSummary: model.imageChangeSummary(for: item, preview: preview),
+                                similarityBadge: model.similarityBadge(for: item.id),
+                                onShowSimilarity: { model.showSimilarImages(for: item.id) }
                             )
                             OrderStepper(id: item.id, axis: .vertical)
                         }
@@ -66,6 +68,7 @@ struct FileListView: View {
             Text("#").frame(width: 44, alignment: .trailing)
             Text("").frame(width: 36)
             Text("元のファイル名").frame(maxWidth: .infinity, alignment: .leading)
+            Text("").frame(width: 42)
 
             Button {
                 model.applySort(SortDescriptorOption(
@@ -104,6 +107,10 @@ struct FileListView: View {
             .disabled(!model.canShift(ids: ids, by: 1))
         Button("先頭へ移動") { model.moveToEdge(ids: ids, toStart: true) }
         Button("末尾へ移動") { model.moveToEdge(ids: ids, toStart: false) }
+        if model.similarityBadge(for: item.id) != nil {
+            Divider()
+            Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
+        }
         Divider()
         Button("Finder で表示") { model.revealInFinder(ids: ids) }
         Button("クイックルック") { model.quickLookURL = item.originalURL }
@@ -122,6 +129,8 @@ struct FileRow: View {
     let preview: RenamePreview?
     var sortField: SortField = .fileName
     var imageChangeSummary: String?
+    var similarityBadge: AppModel.SimilarityBadge?
+    var onShowSimilarity: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 12) {
@@ -139,6 +148,8 @@ struct FileRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            similarityColumn
 
             sortValueColumn
 
@@ -165,6 +176,47 @@ struct FileRow: View {
             ValidationBadge(item: item, preview: preview)
         }
         .padding(.vertical, 3)
+    }
+
+    /// Marks a row that has a duplicate or near-duplicate elsewhere in the list.
+    ///
+    /// The slot is always present, empty rows included: a badge that changes the
+    /// column widths from row to row would make the whole list harder to scan than
+    /// the duplicates are worth.
+    private var similarityColumn: some View {
+        Group {
+            if let similarityBadge {
+                Button(action: onShowSimilarity) {
+                    Label(
+                        "\(similarityBadge.count)",
+                        systemImage: similarityBadge.containsExactMatch
+                            ? "doc.on.doc.fill"
+                            : "square.on.square.intersection.dashed"
+                    )
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        similarityBadge.containsExactMatch
+                            ? Palette.duplicateExact
+                            : Palette.duplicateSimilar,
+                        in: Capsule()
+                    )
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(
+                    similarityBadge.containsExactMatch
+                        ? "同一または類似している画像を確認"
+                        : "類似している可能性のある画像を確認"
+                )
+                .accessibilityLabel("\(similarityBadge.count)件の重複候補")
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: 42)
     }
 
     /// The value the list is currently sorted by. Dimmed dash when the file has none
