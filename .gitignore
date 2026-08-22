@@ -6,6 +6,7 @@ build/
 .release-*/
 .capture-*/
 .module-cache/
+.worktrees/
 .swiftpm-build/
 .swiftpm/
 __pycache__/
