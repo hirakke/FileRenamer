@@ -19,12 +19,20 @@ struct NamingRuleBar: View {
                 samplePreview
             }
 
-            RuleTextField(rule: $model.rule, context: editingContext, editorPresentation: .popover)
+            RuleTextField(
+                rule: $model.rule,
+                context: editingContext,
+                editorPresentation: .popover,
+                onEditingChanged: { model.isRuleTextEditing = $0 }
+            )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .raisedWorkSurface(opacity: 0.97)
         .zIndex(1)
+        .onDisappear {
+            model.isRuleTextEditing = false
+        }
     }
 
     private func insertBlock(_ token: RenameToken) {

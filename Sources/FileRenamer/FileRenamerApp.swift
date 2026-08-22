@@ -246,14 +246,8 @@ private struct MainWindowCommands: Commands {
 /// selector preserves normal typing Undo; otherwise the same shortcut reverts the
 /// in-memory file ordering.
 private enum UndoCommandRouter {
-    static var isEditingText: Bool {
-        var responder = NSApp.keyWindow?.firstResponder
-        for _ in 0..<12 {
-            guard let current = responder else { return false }
-            if current is NSTextView { return true }
-            responder = current.nextResponder
-        }
-        return false
+    static var hasNativeTextEditorFocus: Bool {
+        (NSApp.keyWindow?.firstResponder as? NSTextView)?.isFieldEditor == true
     }
 
     static func performNativeUndo() {
@@ -312,21 +306,23 @@ struct FileRenamerApp: App {
             // Filesystem Undo deliberately remains ⌥⌘Z because it alters files.
             CommandGroup(replacing: .undoRedo) {
                 Button("取り消す") {
-                    if UndoCommandRouter.isEditingText {
+                    if workspace.activeModel.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeUndo()
                     } else {
                         workspace.activeModel.undoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: .command)
+                    .disabled(!workspace.activeModel.canUndoOrderChange && !workspace.activeModel.isRuleTextEditing)
                 Button("やり直す") {
-                    if UndoCommandRouter.isEditingText {
+                    if workspace.activeModel.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeRedo()
                     } else {
                         workspace.activeModel.redoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(!workspace.activeModel.canRedoOrderChange && !workspace.activeModel.isRuleTextEditing)
                 Divider()
                 Button("前回のリネームを元に戻す") { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])
