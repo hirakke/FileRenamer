@@ -264,9 +264,9 @@ struct ContentView: View {
             Button {
                 isWorkspaceSidebarVisible.toggle()
             } label: {
-                Label("命名作業ナビゲータ", systemImage: "sidebar.leading")
+                Label("TabBar", systemImage: "sidebar.leading")
             }
-            .help(isWorkspaceSidebarVisible ? "命名作業ナビゲータを隠す" : "命名作業ナビゲータを表示")
+            .help(isWorkspaceSidebarVisible ? "TabBarを隠す" : "TabBarを表示")
         }
 
         ToolbarItemGroup {
