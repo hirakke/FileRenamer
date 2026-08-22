@@ -224,4 +224,3 @@ Run RenameKitTests and a universal Release build in each branch. Confirm `main` 
 - [ ] **Step 5: Push branches without tagging an unreleased build**
 
 Push `develop`, `main`, and `app-store`. Create `v<version>-dmg` only after notarized DMG creation, and `v<version>-appstore` only after the submitted archive is final.
-
