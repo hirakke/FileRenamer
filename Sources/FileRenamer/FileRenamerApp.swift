@@ -276,8 +276,16 @@ struct FileRenamerApp: App {
             }
 
             // Keep the system Undo/Redo group intact so the field editor owns ⌘Z.
-            // Filesystem Undo is a separate domain and uses ⌥⌘Z.
+            // When no text field has an active native Undo action, ordering gets
+            // the standard shortcuts. Filesystem Undo remains a separate domain and
+            // uses ⌥⌘Z because it can alter files on disk.
             CommandGroup(after: .undoRedo) {
+                Button("並び替えを元に戻す") { workspace.activeModel.undoOrderChange() }
+                    .keyboardShortcut("z", modifiers: .command)
+                    .disabled(!workspace.activeModel.canUndoOrderChange)
+                Button("並び替えをやり直す") { workspace.activeModel.redoOrderChange() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(!workspace.activeModel.canRedoOrderChange)
                 Divider()
                 Button("前回のリネームを元に戻す") { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])
