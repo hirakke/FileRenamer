@@ -4,6 +4,7 @@ import RenameKit
 /// Bottom bar: what is loaded, what is wrong, and the single destructive action.
 struct StatusBar: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
 
     var body: some View {
         HStack(spacing: 12) {
@@ -13,7 +14,12 @@ struct StatusBar: View {
 
             if model.errorCount > 0 {
                 IssueSummaryButton(
-                    title: "\(model.errorCount) 件のエラー",
+                    title: L10n.format(
+                        "status.errorCount",
+                        defaultValue: "%lld Errors",
+                        arguments: [model.errorCount],
+                        language: preferences.resolvedLanguage
+                    ),
                     systemImage: "exclamationmark.octagon.fill",
                     tint: Palette.error,
                     issues: model.issues(errorsOnly: true)
@@ -21,7 +27,12 @@ struct StatusBar: View {
             }
             if model.warningCount > 0 {
                 IssueSummaryButton(
-                    title: "\(model.warningCount) 件の警告",
+                    title: L10n.format(
+                        "status.warningCount",
+                        defaultValue: "%lld Warnings",
+                        arguments: [model.warningCount],
+                        language: preferences.resolvedLanguage
+                    ),
                     systemImage: "exclamationmark.triangle.fill",
                     tint: Palette.warning,
                     issues: model.issues(errorsOnly: false)
@@ -30,7 +41,7 @@ struct StatusBar: View {
             if model.isScanningSimilarImages {
                 ProgressView()
                     .controlSize(.small)
-                Text("類似画像を確認中")
+                Text(L10n.string("status.checkingSimilarImages", defaultValue: "Checking Similar Images", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else if model.duplicateGroupCount > 0 {
@@ -38,7 +49,12 @@ struct StatusBar: View {
                     model.showFirstSimilarImageGroup()
                 } label: {
                     Label(
-                        "\(model.duplicateGroupCount) 組の重複候補",
+                        L10n.format(
+                            "status.duplicateGroups",
+                            defaultValue: "%lld Duplicate Groups",
+                            arguments: [model.duplicateGroupCount],
+                            language: preferences.resolvedLanguage
+                        ),
                         systemImage: "square.on.square"
                     )
                     .font(.callout)
@@ -47,12 +63,12 @@ struct StatusBar: View {
                                      : Palette.duplicateSimilar)
                 }
                 .buttonStyle(.plain)
-                .help("重複している可能性のある画像を確認して削除します")
+                .help(L10n.string("status.reviewDuplicatesHelp", defaultValue: "Review potentially duplicate images before removing any files.", language: preferences.resolvedLanguage))
             }
             if model.isValidatingDestinations {
                 ProgressView()
                     .controlSize(.small)
-                Text("保存先を確認中")
+                Text(L10n.string("status.checkingDestination", defaultValue: "Checking Destination", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -60,7 +76,7 @@ struct StatusBar: View {
             Spacer()
 
             if !model.isEmpty {
-                Button("リストを空にする") { model.removeAll() }
+                Button(L10n.string("action.clearList", defaultValue: "Clear List", language: preferences.resolvedLanguage)) { model.removeAll() }
                     .buttonStyle(.link)
             }
 
@@ -73,7 +89,9 @@ struct StatusBar: View {
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(!model.canRename)
-            .help(model.errorCount > 0 ? "エラーを解消すると実行できます" : "名前・拡張子・画像サイズの変更を実行します")
+            .help(model.errorCount > 0
+                  ? L10n.string("status.fixErrorsHelp", defaultValue: "Resolve the errors to continue.", language: preferences.resolvedLanguage)
+                  : L10n.string("status.renameHelp", defaultValue: "Change file names, extensions, and image size.", language: preferences.resolvedLanguage))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -81,14 +99,20 @@ struct StatusBar: View {
     }
 
     private var countSummary: String {
-        guard !model.isEmpty else { return "ファイルなし" }
+        guard !model.isEmpty else {
+            return L10n.string("status.noFiles", defaultValue: "No Files", language: preferences.resolvedLanguage)
+        }
         let items = model.items.count
         let files = model.fileCount
-        return files == items ? "\(items) 件" : "\(items) 件（\(files) ファイル）"
+        return files == items
+            ? L10n.format("status.itemCount", defaultValue: "%lld Items", arguments: [items], language: preferences.resolvedLanguage)
+            : L10n.format("status.itemAndFileCount", defaultValue: "%1$lld Items (%2$lld Files)", arguments: [items, files], language: preferences.resolvedLanguage)
     }
 
     private var renameButtonTitle: String {
-        model.changedCount > 0 ? "\(model.changedCount) 件を変更" : "変更を実行"
+        model.changedCount > 0
+            ? L10n.format("action.renameCount", defaultValue: "Rename %lld Items", arguments: [model.changedCount], language: preferences.resolvedLanguage)
+            : L10n.string("action.rename", defaultValue: "Rename", language: preferences.resolvedLanguage)
     }
 }
 

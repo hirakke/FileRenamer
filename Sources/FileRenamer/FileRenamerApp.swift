@@ -362,6 +362,7 @@ struct FileRenamerApp: App {
                 .environmentObject(workspace.activeModel)
                 .environmentObject(workspace)
                 .environmentObject(preferences)
+                .environment(\.locale, preferences.displayLocale)
                 .onAppear { appDelegate.workspace = workspace }
         }
         .windowToolbarStyle(.unified)
@@ -369,17 +370,17 @@ struct FileRenamerApp: App {
             MainWindowCommands()
 
             CommandGroup(after: .appInfo) {
-                Button("アップデートを確認…") { updateController.checkForUpdates() }
+                Button(localized("menu.checkForUpdates", defaultValue: "Check for Updates…")) { updateController.checkForUpdates() }
                     .disabled(!updateController.canCheckForUpdates)
             }
 
             CommandGroup(replacing: .newItem) {
-                Button("新規タブ") { workspace.addTab() }
+                Button(localized("menu.newTab", defaultValue: "New Tab")) { workspace.addTab() }
                     .keyboardShortcut("t", modifiers: .command)
                 Divider()
-                Button("ファイルを追加…") { workspace.activeModel.presentOpenPanel(directories: false) }
+                Button(localized("menu.addFiles", defaultValue: "Add Files…")) { workspace.activeModel.presentOpenPanel(directories: false) }
                     .keyboardShortcut("o", modifiers: .command)
-                Button("フォルダを追加…") { workspace.activeModel.presentOpenPanel(directories: true) }
+                Button(localized("menu.addFolder", defaultValue: "Add Folder…")) { workspace.activeModel.presentOpenPanel(directories: true) }
                     .keyboardShortcut("o", modifiers: [.command, .shift])
             }
 
@@ -388,7 +389,7 @@ struct FileRenamerApp: App {
             // their native Undo/Redo through the first-responder chain.
             // Filesystem Undo deliberately remains ⌥⌘Z because it alters files.
             CommandGroup(replacing: .undoRedo) {
-                Button("取り消す") {
+                Button(localized("menu.undo", defaultValue: "Undo")) {
                     if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeUndo()
                     } else {
@@ -397,7 +398,7 @@ struct FileRenamerApp: App {
                 }
                     .keyboardShortcut("z", modifiers: .command)
                     .disabled(!workspace.canUndoOrderChange && !workspace.isRuleTextEditing)
-                Button("やり直す") {
+                Button(localized("menu.redo", defaultValue: "Redo")) {
                     if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeRedo()
                     } else {
@@ -407,45 +408,50 @@ struct FileRenamerApp: App {
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .disabled(!workspace.canRedoOrderChange && !workspace.isRuleTextEditing)
                 Divider()
-                Button("前回のリネームを元に戻す") { workspace.activeModel.requestUndo() }
+                Button(localized("menu.undoRename", defaultValue: "Undo Last Rename")) { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])
                     .disabled(!workspace.canUndoRename)
-                Button("前回のリネームをやり直す") { workspace.activeModel.redo() }
+                Button(localized("menu.redoRename", defaultValue: "Redo Last Rename")) { workspace.activeModel.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .option, .shift])
                     .disabled(!workspace.canRedoRename)
             }
 
             CommandGroup(after: .pasteboard) {
-                Button("すべて選択") { workspace.activeModel.selectAll() }
+                Button(localized("menu.selectAll", defaultValue: "Select All")) { workspace.activeModel.selectAll() }
                     .keyboardShortcut("a", modifiers: .command)
-                Button("\(workspace.activeModel.selection.count) 件をリストから除外") { workspace.activeModel.removeSelected() }
+                Button(L10n.format(
+                    "menu.removeSelection",
+                    defaultValue: "Remove %lld from List",
+                    arguments: [workspace.activeModel.selection.count],
+                    language: preferences.resolvedLanguage
+                )) { workspace.activeModel.removeSelected() }
                     .keyboardShortcut(.delete, modifiers: [])
                     .disabled(!workspace.hasSelection)
             }
 
-            CommandMenu("並べ替え") {
-                Button("1つ前へ") { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: -1) }
+            CommandMenu(localized("menu.sort", defaultValue: "Sort")) {
+                Button(localized("menu.moveEarlier", defaultValue: "Move Earlier")) { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: -1) }
                     .keyboardShortcut(.upArrow, modifiers: .command)
                     .disabled(!workspace.canShiftSelectionEarlier)
-                Button("1つ後ろへ") { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: 1) }
+                Button(localized("menu.moveLater", defaultValue: "Move Later")) { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: 1) }
                     .keyboardShortcut(.downArrow, modifiers: .command)
                     .disabled(!workspace.canShiftSelectionLater)
-                Button("先頭へ移動") { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: true) }
+                Button(localized("menu.moveToStart", defaultValue: "Move to Start")) { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: true) }
                     .keyboardShortcut(.upArrow, modifiers: [.command, .option])
                     .disabled(!workspace.hasSelection)
-                Button("末尾へ移動") { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: false) }
+                Button(localized("menu.moveToEnd", defaultValue: "Move to End")) { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: false) }
                     .keyboardShortcut(.downArrow, modifiers: [.command, .option])
                     .disabled(!workspace.hasSelection)
                 Divider()
                 ForEach(SortField.allCases, id: \.self) { field in
-                    Menu(field.displayName) {
-                        Button("昇順") { workspace.activeModel.applySort(SortDescriptorOption(field: field, ascending: true)) }
-                        Button("降順") { workspace.activeModel.applySort(SortDescriptorOption(field: field, ascending: false)) }
+                    Menu(field.localizedDisplayName(in: preferences.resolvedLanguage)) {
+                        Button(localized("sort.ascending", defaultValue: "Ascending")) { workspace.activeModel.applySort(SortDescriptorOption(field: field, ascending: true)) }
+                        Button(localized("sort.descending", defaultValue: "Descending")) { workspace.activeModel.applySort(SortDescriptorOption(field: field, ascending: false)) }
                     }
                 }
                 Divider()
-                Button("並びを反転") { workspace.activeModel.reverseOrder() }
-                Button("選択項目の位置を固定 / 解除") {
+                Button(localized("menu.reverseOrder", defaultValue: "Reverse Order")) { workspace.activeModel.reverseOrder() }
+                Button(localized("menu.togglePositionLock", defaultValue: "Lock / Unlock Position")) {
                     workspace.activeModel.toggleLock(ids: workspace.activeModel.selection)
                 }
                     .keyboardShortcut("l", modifiers: .command)
@@ -456,7 +462,12 @@ struct FileRenamerApp: App {
             PreferencesView()
                 .environmentObject(preferences)
                 .environmentObject(updateController)
+                .environment(\.locale, preferences.displayLocale)
         }
+    }
+
+    private func localized(_ key: String, defaultValue: String) -> String {
+        L10n.string(key, defaultValue: defaultValue, language: preferences.resolvedLanguage)
     }
 }
 
@@ -501,7 +512,7 @@ private struct PreferencesView: View {
 
                 Picker("検出感度", selection: $preferences.similarImageSensitivity) {
                     ForEach(SimilarImageSensitivity.allCases) { sensitivity in
-                        Text(sensitivity.displayName).tag(sensitivity)
+                        Text(sensitivity.localizedDisplayName(in: preferences.resolvedLanguage)).tag(sensitivity)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -516,9 +527,19 @@ private struct PreferencesView: View {
             }
 
             Section("表示") {
+                Picker("表示言語", selection: $preferences.displayLanguage) {
+                    Text(AppLanguage.system.localizedDisplayName(in: preferences.resolvedLanguage)).tag(AppLanguage.system)
+                    Text(AppLanguage.japanese.localizedDisplayName(in: preferences.resolvedLanguage)).tag(AppLanguage.japanese)
+                    Text("English").tag(AppLanguage.english)
+                }
+
+                Text("日本語以外のシステム言語では英語で表示します。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Picker("標準の表示形式", selection: $preferences.defaultViewMode) {
                     ForEach(ViewMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
+                        Text(mode.localizedDisplayName(in: preferences.resolvedLanguage)).tag(mode)
                     }
                 }
                 .pickerStyle(.segmented)
