@@ -242,6 +242,29 @@ private struct MainWindowCommands: Commands {
     }
 }
 
+/// The Edit menu owns ⌘Z. When the focus is in a native text editor, forwarding the
+/// selector preserves normal typing Undo; otherwise the same shortcut reverts the
+/// in-memory file ordering.
+private enum UndoCommandRouter {
+    static var isEditingText: Bool {
+        var responder = NSApp.keyWindow?.firstResponder
+        for _ in 0..<12 {
+            guard let current = responder else { return false }
+            if current is NSTextView { return true }
+            responder = current.nextResponder
+        }
+        return false
+    }
+
+    static func performNativeUndo() {
+        NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+    }
+
+    static func performNativeRedo() {
+        NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+    }
+}
+
 @main
 struct FileRenamerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -283,17 +306,27 @@ struct FileRenamerApp: App {
                     .keyboardShortcut("o", modifiers: [.command, .shift])
             }
 
-            // Keep the system Undo/Redo group intact so the field editor owns ⌘Z.
-            // When no text field has an active native Undo action, ordering gets
-            // the standard shortcuts. Filesystem Undo remains a separate domain and
-            // uses ⌥⌘Z because it can alter files on disk.
-            CommandGroup(after: .undoRedo) {
-                Button("並び替えを元に戻す") { workspace.activeModel.undoOrderChange() }
+            // Replace the stock commands so ⌘Z reaches ordering changes instead of
+            // being consumed by an empty window Undo manager. Text fields retain
+            // their native Undo/Redo through the first-responder chain.
+            // Filesystem Undo deliberately remains ⌥⌘Z because it alters files.
+            CommandGroup(replacing: .undoRedo) {
+                Button("取り消す") {
+                    if UndoCommandRouter.isEditingText {
+                        UndoCommandRouter.performNativeUndo()
+                    } else {
+                        workspace.activeModel.undoOrderChange()
+                    }
+                }
                     .keyboardShortcut("z", modifiers: .command)
-                    .disabled(!workspace.activeModel.canUndoOrderChange)
-                Button("並び替えをやり直す") { workspace.activeModel.redoOrderChange() }
+                Button("やり直す") {
+                    if UndoCommandRouter.isEditingText {
+                        UndoCommandRouter.performNativeRedo()
+                    } else {
+                        workspace.activeModel.redoOrderChange()
+                    }
+                }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(!workspace.activeModel.canRedoOrderChange)
                 Divider()
                 Button("前回のリネームを元に戻す") { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])
