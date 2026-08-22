@@ -95,7 +95,7 @@ private struct ImageOptionsControl: View {
                 title: "画像形式",
                 selection: $model.rule.imageOutputFormat,
                 options: ImageOutputFormat.allCases
-            ) { $0.displayName }
+            ) { $0.localizedDisplayName(in: preferences.resolvedLanguage) }
 
             if model.showsJPEGQualitySetting {
                 jpegQualityControl
@@ -127,7 +127,7 @@ private struct ImageOptionsControl: View {
 
             Picker("JPEG品質", selection: $model.jpegQualitySetting.preset) {
                 ForEach(JPEGQualityPreset.allCases, id: \.self) { preset in
-                    Text(preset.displayName).tag(preset)
+                    Text(preset.localizedDisplayName(in: preferences.resolvedLanguage)).tag(preset)
                 }
             }
             .labelsHidden()
@@ -265,7 +265,7 @@ private struct ImageOptionsControl: View {
     private var resizeSummary: String {
         model.rule.imageResize.isEnabled
             ? "\(model.rule.imageResize.normalizedLongEdge) px"
-            : "オフ"
+            : L10n.string("imageResize.off", defaultValue: "Off", language: preferences.resolvedLanguage)
     }
 
     private func sanitizeLongEdgeText(_ text: String) {

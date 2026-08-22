@@ -181,7 +181,7 @@
 				};
 			};
 			buildConfigurationList = A00000000000000000000023 /* Build configuration list for PBXProject "FileRenamer" */;
-			developmentRegion = ja;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				ja,

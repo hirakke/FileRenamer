@@ -11,12 +11,16 @@
 <p align="center">
   <a href="https://github.com/hirakke/FileRenamer/releases/latest"><strong>最新版をダウンロード</strong></a>
   ・
+  <a href="https://apps.apple.com/us/app/filerenamer/id6800803707?mt=12"><strong>App Store for Macからダウンロード</strong></a>
+  ・
   <a href="https://hirakke.github.io/FileRenamer/privacy.html">プライバシーポリシー</a>
   ・
   <a href="https://github.com/hirakke/FileRenamer/issues">サポート</a>
 </p>
 
 FileRenamerは、複数のファイルを見やすく並べ、日付・固定文字・連番などを組み合わせて名前をまとめて変更するmacOSアプリです。
+
+[English README](README.en.md)
 
 たとえば、ばらばらな写真名を次のように統一できます。
 
@@ -27,6 +31,10 @@ IMG_3014.jpg  →  20260820_Event_003.jpg
 ```
 
 変更後の名前は実行前に一覧で確認できます。名前の重複や保存先との衝突がある場合は、そのまま実行せず理由を表示します。
+
+## 表示言語
+
+表示言語は、macOSメニューバーの **FileRenamer → 設定…** から「システム設定に従う」「日本語」「English」を選べます。「システム設定に従う」では、macOSの優先言語が日本語の場合だけ日本語で表示し、それ以外は英語で表示します。ファイル名、命名規則の固定文字、作成したプリセット名は翻訳されません。
 
 ## アイコンビュー
 

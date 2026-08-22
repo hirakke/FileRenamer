@@ -12,7 +12,7 @@
 
 1. `main`と`app-store`の`MARKETING_VERSION`と`CURRENT_PROJECT_VERSION`を同じ値にする。
 2. `develop`の共通修正が両方の配布ブランチに反映されていることを確認する。
-3. 両方で安全性テスト、Releaseビルド、手動の基本操作確認を行う。
+3. 両方で安全性テスト、Releaseビルド、手動の基本操作確認を行う。表示言語は日本語・English・システム設定（日本語以外はEnglish）を確認する。
 4. DMG版は署名、公証、Gatekeeper確認後にappcastとGitHub Releaseを更新する。
 5. App Store版はArchiveを検証してからApp Store Connectへアップロードする。
 6. 配布または提出に使用した各コミットへ、`v<version>-dmg`と`v<version>-appstore`のタグを付ける。

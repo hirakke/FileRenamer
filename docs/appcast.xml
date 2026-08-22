@@ -3,22 +3,18 @@
     <channel>
         <title>FileRenamer</title>
         <item>
-            <title>1.1.2</title>
-            <pubDate>Fri, 21 Aug 2026 00:55:25 +0900</pubDate>
+            <title>1.1.3</title>
+            <pubDate>Fri, 21 Aug 2026 08:40:11 +0900</pubDate>
             <link>https://hirakke.github.io/FileRenamer/</link>
             <sparkle:fullReleaseNotesLink>https://hirakke.github.io/FileRenamer/release-notes.html</sparkle:fullReleaseNotesLink>
-            <sparkle:version>4</sparkle:version>
-            <sparkle:shortVersionString>1.1.2</sparkle:shortVersionString>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>1.1.3</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.2
+            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.3
 
-- リストとグリッドで、クリック・⌘クリック・⇧クリックによる複数選択に対応しました。
-- 複数選択時は、ゴミ箱への移動やリストからの除外に対象件数を表示します。
-- 右クリックから、選択した複数のファイルをまとめてFinderのゴミ箱へ移動できます。
-- 個別ファイルを追加した直後に、リネームに必要なフォルダアクセスを許可できるようにしました。
-- 標準プリセットに「01納品」「001納品」を追加し、「01納品」を既定にしました。
+- メインウインドウを閉じた後も、「ウインドウ」メニューからFileRenamerを再表示できるようにしました。
 ]]></description>
-            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.2/FileRenamer-1.1.2.dmg" length="6598650" type="application/octet-stream" sparkle:edSignature="PMqNEdYLZafaUpnnnbE2L0E+N03vDstTif8M3HPDI7Tgm3XvuH57Dyp2wsY1ojeM5iw+UjnqXoZg6TlcrErzBw=="/>
+            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.3/FileRenamer-1.1.3.dmg" length="6602013" type="application/octet-stream" sparkle:edSignature="BaAH3iiq5w+G3ASTlhO3L8x9GRbx9EJZhaKq5hGOatW0F9Haur4yxO8ZBnsQQ/YvtFBEwA0WOH46WZ4C0sfmBg=="/>
         </item>
     </channel>
 </rss>
