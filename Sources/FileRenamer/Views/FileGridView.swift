@@ -88,7 +88,14 @@ struct FileGridView: View {
                                 .id(item.id)
                                 .contextMenu { cellMenu(for: item) }
                                 .accessibilityElement(children: .combine)
-                                .accessibilityLabel("\(item.displayName)、\(index + 1)番目")
+                                .accessibilityLabel(
+                                    L10n.format(
+                                        "grid.position",
+                                        defaultValue: "%@, item %d",
+                                        arguments: [item.displayName, index + 1],
+                                        language: preferences.resolvedLanguage
+                                    )
+                                )
                                 .accessibilityValue(model.preview(for: item)?.proposedName ?? item.displayName)
                                 .accessibilityHint("クリックして選択。ダブルクリックまたはスペースキーでプレビュー")
                             }

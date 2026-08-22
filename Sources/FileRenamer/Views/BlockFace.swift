@@ -39,11 +39,16 @@ extension Binding where Value == RenameRule {
 /// The face is the *format* (`YYYYMMDD`, `001`), so the field reads as the shape of
 /// the name rather than as one file's particular result.
 struct BlockFace: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let token: RenameToken
     var isSelected: Bool = false
 
     var body: some View {
-        RuleBlockFace(label: BlockLabel.text(for: token), tint: token.tint, isSelected: isSelected)
+        RuleBlockFace(
+            label: BlockLabel.text(for: token, language: preferences.resolvedLanguage),
+            tint: token.tint,
+            isSelected: isSelected
+        )
     }
 }
 
@@ -92,16 +97,19 @@ private struct RuleBlockFace: View {
 /// would read as a literal string that happens to be there, when the point is that
 /// this part of the name is derived per file.
 enum BlockLabel {
-    static func text(for token: RenameToken) -> String {
+    static func text(for token: RenameToken, language: ResolvedAppLanguage) -> String {
         switch token {
         case .counter(let config):
             return config.formatted(at: 0)
         case .date(let config):
             return displayPattern(config.pattern)
         case .originalName(let config):
-            return config.transform == .none ? "元のファイル名" : "元のファイル名(\(config.transform.displayName))"
+            let originalName = L10n.string("block.originalName", defaultValue: "Original Name", language: language)
+            return config.transform == .none
+                ? originalName
+                : "\(originalName) (\(config.transform.localizedDisplayName(in: language)))"
         case .metadata(let config):
-            return config.field.displayName
+            return config.field.localizedDisplayName(in: language)
         case .text(let config):
             return config.value
         case .separator(let config):
