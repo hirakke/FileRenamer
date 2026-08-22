@@ -92,3 +92,46 @@ extension SortField {
         }
     }
 }
+
+extension CaseTransform {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .none:
+            return L10n.string("caseTransform.none", defaultValue: "Keep", language: language)
+        case .lowercase:
+            return L10n.string("caseTransform.lowercase", defaultValue: "Lowercase", language: language)
+        case .uppercase:
+            return L10n.string("caseTransform.uppercase", defaultValue: "Uppercase", language: language)
+        }
+    }
+}
+
+extension ImageOutputFormat {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .preserve:
+            return L10n.string("imageFormat.preserve", defaultValue: "Keep Original", language: language)
+        case .jpeg:
+            return "JPEG"
+        case .png:
+            return "PNG"
+        }
+    }
+}
+
+extension JPEGQualityPreset {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .maximum:
+            return L10n.string("jpegQuality.maximum", defaultValue: "Maximum — 100%", language: language)
+        case .high:
+            return L10n.string("jpegQuality.high", defaultValue: "High — 95% (Recommended)", language: language)
+        case .standard:
+            return L10n.string("jpegQuality.standard", defaultValue: "Standard — 90%", language: language)
+        case .compact:
+            return L10n.string("jpegQuality.compact", defaultValue: "Compact — 80%", language: language)
+        case .custom:
+            return L10n.string("jpegQuality.custom", defaultValue: "Custom", language: language)
+        }
+    }
+}

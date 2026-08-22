@@ -103,7 +103,27 @@
     "status.itemCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Items" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件" } } } },
     "status.itemAndFileCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld Items (%2$lld Files)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld 件（%2$lld ファイル）" } } } },
     "action.renameCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename %lld Items" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件を変更" } } } },
-    "action.rename" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更を実行" } } } }
+    "action.rename" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更を実行" } } } },
+    "caseTransform.none" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "そのまま" } } } },
+    "caseTransform.lowercase" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Lowercase" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "小文字" } } } },
+    "caseTransform.uppercase" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Uppercase" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "大文字" } } } },
+    "imageFormat.preserve" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep Original" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更しない" } } } },
+    "jpegQuality.maximum" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Maximum — 100%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "最高品質 — 100%" } } } },
+    "jpegQuality.high" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "High — 95% (Recommended)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "高品質 — 95%（推奨）" } } } },
+    "jpegQuality.standard" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Standard — 90%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "標準 — 90%" } } } },
+    "jpegQuality.compact" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Compact — 80%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "軽量 — 80%" } } } },
+    "jpegQuality.custom" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "カスタム" } } } },
+    "画像形式" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image Format" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像形式" } } } },
+    "画像形式と画像サイズを設定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Set image format and dimensions" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像形式と画像サイズを設定" } } } },
+    "JPEGカスタム品質" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom JPEG Quality" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEGカスタム品質" } } } },
+    "100%・JPEG同形式・リサイズなしでは再圧縮しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "JPEG files are not recompressed at 100% when format and size are unchanged." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "100%・JPEG同形式・リサイズなしでは再圧縮しません。" } } } },
+    "JPEGは保存時に再圧縮されます。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "JPEG files are recompressed when saved." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEGは保存時に再圧縮されます。" } } } },
+    "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image conversion and resizing support JPEG and PNG. Transparent areas become white in JPEG." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。" } } } },
+    "リサイズを有効にする" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable Resizing" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リサイズを有効にする" } } } },
+    "統一する長辺" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Maximum Long Edge" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "統一する長辺" } } } },
+    "元画像より小さい場合は拡大しない" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Do Not Upscale Smaller Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "元画像より小さい場合は拡大しない" } } } },
+    "オフ" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } } } },
+    "imageResize.off" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } } } }
   },
   "version" : "1.0"
 }

@@ -147,6 +147,7 @@ struct RuleTextField: View {
 /// as a fixed final block makes the complete output name legible at a glance.
 private struct ExtensionBlockToken: View {
     @Binding var rule: RenameRule
+    @EnvironmentObject private var preferences: AppPreferences
     @State private var isShowingPopover = false
     @State private var isHovered = false
 
@@ -170,7 +171,7 @@ private struct ExtensionBlockToken: View {
 
                 Picker("大文字・小文字", selection: $rule.extensionTransform) {
                     ForEach(CaseTransform.allCases, id: \.self) { transform in
-                        Text(transform.displayName).tag(transform)
+                        Text(transform.localizedDisplayName(in: preferences.resolvedLanguage)).tag(transform)
                     }
                 }
                 .labelsHidden()
