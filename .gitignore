@@ -14,5 +14,9 @@ __pycache__/
 *.xcuserstate
 xcuserdata/
 
+# The App Store branch has no Swift package dependencies. Xcode can leave the
+# direct-distribution branch's generated lockfile behind when switching branches.
+FileRenamer.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
 # App Store marketing materials remain local and must not be published.
 AppStoreAssets/
