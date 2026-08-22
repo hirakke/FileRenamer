@@ -19,6 +19,7 @@ final class AppPreferences: ObservableObject {
         static let similarImageSensitivity = "preferences.similarImageSensitivity"
         static let detectsOnlyExactDuplicates = "preferences.detectsOnlyExactDuplicates"
         static let excludesRAWJPEGFromSimilarity = "preferences.excludesRAWJPEGFromSimilarity"
+        static let displayLanguage = "preferences.displayLanguage"
     }
 
     private let defaults: UserDefaults
@@ -66,6 +67,9 @@ final class AppPreferences: ObservableObject {
     @Published var excludesRAWJPEGFromSimilarity: Bool {
         didSet { defaults.set(excludesRAWJPEGFromSimilarity, forKey: Key.excludesRAWJPEGFromSimilarity) }
     }
+    @Published var displayLanguage: AppLanguage {
+        didSet { defaults.set(displayLanguage.rawValue, forKey: Key.displayLanguage) }
+    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -81,7 +85,8 @@ final class AppPreferences: ObservableObject {
             Key.detectsSimilarImages: true,
             Key.similarImageSensitivity: SimilarImageSensitivity.standard.rawValue,
             Key.detectsOnlyExactDuplicates: false,
-            Key.excludesRAWJPEGFromSimilarity: true
+            Key.excludesRAWJPEGFromSimilarity: true,
+            Key.displayLanguage: AppLanguage.system.rawValue
         ])
         confirmsRenameChanges = defaults.bool(forKey: Key.confirmsRenameChanges)
         confirmsOriginalProtection = defaults.bool(forKey: Key.confirmsOriginalProtection)
@@ -97,6 +102,8 @@ final class AppPreferences: ObservableObject {
             .flatMap(SimilarImageSensitivity.init(rawValue:)) ?? .standard
         detectsOnlyExactDuplicates = defaults.bool(forKey: Key.detectsOnlyExactDuplicates)
         excludesRAWJPEGFromSimilarity = defaults.bool(forKey: Key.excludesRAWJPEGFromSimilarity)
+        displayLanguage = defaults.string(forKey: Key.displayLanguage)
+            .flatMap(AppLanguage.init(rawValue:)) ?? .system
     }
 
     var similarImageScanConfiguration: SimilarImageScanConfiguration {
@@ -105,6 +112,14 @@ final class AppPreferences: ObservableObject {
             sensitivity: similarImageSensitivity,
             excludesRAWJPEGCompanions: excludesRAWJPEGFromSimilarity
         )
+    }
+
+    var resolvedLanguage: ResolvedAppLanguage {
+        displayLanguage.resolved(preferredLanguageIdentifier: Locale.preferredLanguages.first ?? "en")
+    }
+
+    var displayLocale: Locale {
+        Locale(identifier: resolvedLanguage.localeIdentifier)
     }
 }
 

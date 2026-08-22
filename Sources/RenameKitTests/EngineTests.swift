@@ -560,3 +560,25 @@ func runPerformanceTests() async {
         try expect(elapsed < .seconds(5), "10,000件に \(elapsed) かかりました")
     }
 }
+
+@MainActor
+func runLocalizationTests() async {
+    let runner = TestRunner.shared
+    runner.suite("Localization — 表示言語")
+
+    await runner.test("システム設定の日本語系ロケールは日本語になる") {
+        try expectEqual(AppLanguage.system.resolved(preferredLanguageIdentifier: "ja-JP"), .japanese)
+        try expectEqual(AppLanguage.system.resolved(preferredLanguageIdentifier: "ja"), .japanese)
+    }
+
+    await runner.test("システム設定の日本語以外は英語になる") {
+        try expectEqual(AppLanguage.system.resolved(preferredLanguageIdentifier: "en-US"), .english)
+        try expectEqual(AppLanguage.system.resolved(preferredLanguageIdentifier: "fr-FR"), .english)
+        try expectEqual(AppLanguage.system.resolved(preferredLanguageIdentifier: "ko-KR"), .english)
+    }
+
+    await runner.test("明示した表示言語はシステム設定より優先される") {
+        try expectEqual(AppLanguage.japanese.resolved(preferredLanguageIdentifier: "en-US"), .japanese)
+        try expectEqual(AppLanguage.english.resolved(preferredLanguageIdentifier: "ja-JP"), .english)
+    }
+}
