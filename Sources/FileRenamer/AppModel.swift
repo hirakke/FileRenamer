@@ -160,8 +160,9 @@ final class AppModel: ObservableObject {
         let after: OrderSnapshot
     }
 
-    private var orderUndoStack: [OrderChange] = []
-    private var orderRedoStack: [OrderChange] = []
+    // Notify the Edit menu when a file order becomes undoable.
+    @Published private var orderUndoStack: [OrderChange] = []
+    @Published private var orderRedoStack: [OrderChange] = []
     private let maximumOrderHistoryCount = 50
 
     private struct FolderAccess {
