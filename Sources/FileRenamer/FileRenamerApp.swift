@@ -116,9 +116,30 @@ final class WorkspaceModel: ObservableObject {
     }
 
     @Published private(set) var tabs: [Tab]
-    @Published var selectedTabID: UUID
+    @Published var selectedTabID: UUID {
+        didSet { observeActiveModel() }
+    }
+
+    /// Mirrors of the active model's Edit-menu state.
+    ///
+    /// `Commands` is part of the `App`, which observes this workspace — not the
+    /// `AppModel` inside it. Reading `activeModel.canUndoOrderChange` directly from a
+    /// command therefore samples it once and never again, so the menu item keeps
+    /// whatever enabled state it had at launch (disabled) and ⌘Z does nothing no
+    /// matter how many times the list is rearranged. Republishing the three flags the
+    /// menu needs puts them on the object the menu is actually subscribed to.
+    @Published private(set) var canUndoOrderChange = false
+    @Published private(set) var canRedoOrderChange = false
+    @Published private(set) var isRuleTextEditing = false
+    @Published private(set) var canUndoRename = false
+    @Published private(set) var canRedoRename = false
+    @Published private(set) var hasSelection = false
+    @Published private(set) var canShiftSelectionEarlier = false
+    @Published private(set) var canShiftSelectionLater = false
+
     private let preferences: AppPreferences
     private var preferenceCancellables: Set<AnyCancellable> = []
+    private var activeModelCancellable: AnyCancellable?
 
     init(preferences: AppPreferences) {
         self.preferences = preferences
@@ -150,6 +171,52 @@ final class WorkspaceModel: ObservableObject {
             self?.tabs.forEach { $0.model.similarityPreferencesDidChange() }
         }
         .store(in: &preferenceCancellables)
+
+        observeActiveModel()
+    }
+
+    /// Follows whichever tab is in front. `objectWillChange` fires *before* the
+    /// change lands, so the state is read on the next run-loop pass, and only a real
+    /// difference is republished — otherwise every keystroke in the rule field would
+    /// invalidate the whole scene.
+    private func observeActiveModel() {
+        let model = activeModel
+        refreshEditMenuState(from: model)
+        activeModelCancellable = model.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak model] in
+                guard let self, let model else { return }
+                self.refreshEditMenuState(from: model)
+            }
+    }
+
+    private func refreshEditMenuState(from model: AppModel) {
+        let undo = model.canUndoOrderChange
+        let redo = model.canRedoOrderChange
+        let editing = model.isRuleTextEditing
+        let undoRename = model.canUndo
+        let redoRename = model.canRedo
+        let selected = !model.selection.isEmpty
+        let earlier = model.canShift(ids: model.selection, by: -1)
+        let later = model.canShift(ids: model.selection, by: 1)
+        guard undo != canUndoOrderChange
+                || redo != canRedoOrderChange
+                || editing != isRuleTextEditing
+                || undoRename != canUndoRename
+                || redoRename != canRedoRename
+                || selected != hasSelection
+                || earlier != canShiftSelectionEarlier
+                || later != canShiftSelectionLater
+        else { return }
+
+        canUndoOrderChange = undo
+        canRedoOrderChange = redo
+        isRuleTextEditing = editing
+        canUndoRename = undoRename
+        canRedoRename = redoRename
+        hasSelection = selected
+        canShiftSelectionEarlier = earlier
+        canShiftSelectionLater = later
     }
 
     var activeModel: AppModel {
@@ -173,6 +240,7 @@ final class WorkspaceModel: ObservableObject {
         )
         tabs.append(Tab(id: id, model: model))
         selectedTabID = id
+        observeActiveModel()
     }
 
     func selectTab(_ id: UUID) {
@@ -306,30 +374,30 @@ struct FileRenamerApp: App {
             // Filesystem Undo deliberately remains ⌥⌘Z because it alters files.
             CommandGroup(replacing: .undoRedo) {
                 Button("取り消す") {
-                    if workspace.activeModel.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
+                    if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeUndo()
                     } else {
                         workspace.activeModel.undoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: .command)
-                    .disabled(!workspace.activeModel.canUndoOrderChange && !workspace.activeModel.isRuleTextEditing)
+                    .disabled(!workspace.canUndoOrderChange && !workspace.isRuleTextEditing)
                 Button("やり直す") {
-                    if workspace.activeModel.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
+                    if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeRedo()
                     } else {
                         workspace.activeModel.redoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(!workspace.activeModel.canRedoOrderChange && !workspace.activeModel.isRuleTextEditing)
+                    .disabled(!workspace.canRedoOrderChange && !workspace.isRuleTextEditing)
                 Divider()
                 Button("前回のリネームを元に戻す") { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])
-                    .disabled(!workspace.activeModel.canUndo)
+                    .disabled(!workspace.canUndoRename)
                 Button("前回のリネームをやり直す") { workspace.activeModel.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .option, .shift])
-                    .disabled(!workspace.activeModel.canRedo)
+                    .disabled(!workspace.canRedoRename)
             }
 
             CommandGroup(after: .pasteboard) {
@@ -337,22 +405,22 @@ struct FileRenamerApp: App {
                     .keyboardShortcut("a", modifiers: .command)
                 Button("\(workspace.activeModel.selection.count) 件をリストから除外") { workspace.activeModel.removeSelected() }
                     .keyboardShortcut(.delete, modifiers: [])
-                    .disabled(workspace.activeModel.selection.isEmpty)
+                    .disabled(!workspace.hasSelection)
             }
 
             CommandMenu("並べ替え") {
                 Button("1つ前へ") { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: -1) }
                     .keyboardShortcut(.upArrow, modifiers: .command)
-                    .disabled(!workspace.activeModel.canShift(ids: workspace.activeModel.selection, by: -1))
+                    .disabled(!workspace.canShiftSelectionEarlier)
                 Button("1つ後ろへ") { workspace.activeModel.shift(ids: workspace.activeModel.selection, by: 1) }
                     .keyboardShortcut(.downArrow, modifiers: .command)
-                    .disabled(!workspace.activeModel.canShift(ids: workspace.activeModel.selection, by: 1))
+                    .disabled(!workspace.canShiftSelectionLater)
                 Button("先頭へ移動") { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: true) }
                     .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-                    .disabled(workspace.activeModel.selection.isEmpty)
+                    .disabled(!workspace.hasSelection)
                 Button("末尾へ移動") { workspace.activeModel.moveToEdge(ids: workspace.activeModel.selection, toStart: false) }
                     .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-                    .disabled(workspace.activeModel.selection.isEmpty)
+                    .disabled(!workspace.hasSelection)
                 Divider()
                 ForEach(SortField.allCases, id: \.self) { field in
                     Menu(field.displayName) {

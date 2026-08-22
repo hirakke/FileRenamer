@@ -160,8 +160,11 @@ final class AppModel: ObservableObject {
         let after: OrderSnapshot
     }
 
-    private var orderUndoStack: [OrderChange] = []
-    private var orderRedoStack: [OrderChange] = []
+    // Published so the Edit menu learns that something became undoable. Without this
+    // the history could change without the model emitting anything — clearing the
+    // stacks touches no other published state.
+    @Published private var orderUndoStack: [OrderChange] = []
+    @Published private var orderRedoStack: [OrderChange] = []
     private let maximumOrderHistoryCount = 50
 
     private struct FolderAccess {
