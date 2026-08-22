@@ -143,6 +143,23 @@ final class AppModel: ObservableObject {
     private var previewRevision = 0
     private var similarityRevision = 0
 
+    /// Ordering is intentionally separate from filesystem Undo. It only remembers
+    /// the row sequence (and selection), so ⌘Z can immediately correct an accidental
+    /// drag without implying that files on disk have been touched.
+    private struct OrderSnapshot {
+        let itemIDs: [UUID]
+        let selection: Set<UUID>
+    }
+
+    private struct OrderChange {
+        let before: OrderSnapshot
+        let after: OrderSnapshot
+    }
+
+    private var orderUndoStack: [OrderChange] = []
+    private var orderRedoStack: [OrderChange] = []
+    private let maximumOrderHistoryCount = 50
+
     private struct FolderAccess {
         let url: URL
         let bookmark: Data
@@ -266,6 +283,8 @@ final class AppModel: ObservableObject {
     }
     var canUndo: Bool { !isBusy && history.canUndo }
     var canRedo: Bool { !isBusy && history.canRedo }
+    var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
+    var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
     var showsJPEGQualitySetting: Bool {
         rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
     }
@@ -501,6 +520,7 @@ final class AppModel: ObservableObject {
         }
 
         items = ItemSorter.reindexed(items + fresh)
+        invalidateOrderHistory()
         if !result.items.isEmpty {
             recordImportedFolderRoots(folderRoots)
         }
@@ -528,6 +548,7 @@ final class AppModel: ObservableObject {
         guard previous.groupCompanionFiles != importOptions.groupCompanionFiles, !items.isEmpty else { return }
         let urls = items.flatMap(\.allURLs)
         items = []
+        invalidateOrderHistory()
         clearSimilarityResults()
         importURLs(urls)
     }
@@ -769,6 +790,7 @@ final class AppModel: ObservableObject {
     func removeSelected() {
         guard !selection.isEmpty else { return }
         items = ItemSorter.reindexed(items.filter { !selection.contains($0.id) })
+        invalidateOrderHistory()
         if items.isEmpty { importedFolderRoots = [] }
         workingDirectories = calculateWorkingDirectories()
         selection.removeAll()
@@ -781,6 +803,7 @@ final class AppModel: ObservableObject {
     func removeFromList(ids: Set<UUID>) {
         guard !ids.isEmpty else { return }
         items = ItemSorter.reindexed(items.filter { !ids.contains($0.id) })
+        invalidateOrderHistory()
         if items.isEmpty { importedFolderRoots = [] }
         workingDirectories = calculateWorkingDirectories()
         selection.subtract(ids)
@@ -873,6 +896,7 @@ final class AppModel: ObservableObject {
 
     func removeAll() {
         items = []
+        invalidateOrderHistory()
         importedFolderRoots = []
         workingDirectories = []
         selection.removeAll()
@@ -886,14 +910,16 @@ final class AppModel: ObservableObject {
 
     /// Drag & drop in the list.
     func move(fromOffsets offsets: IndexSet, toOffset destination: Int) {
-        items = ItemSorter.move(items, fromOffsets: offsets, toOffset: destination)
-        refreshPreviews()
+        applyOrderChange {
+            ItemSorter.move($0, fromOffsets: offsets, toOffset: destination)
+        }
     }
 
     /// Drag & drop in the grid, where a drop lands on a cell instead of a gap.
     func move(ids: Set<UUID>, toIndex index: Int) {
-        items = ItemSorter.move(items, ids: ids, toIndex: index)
-        refreshPreviews()
+        applyOrderChange {
+            ItemSorter.move($0, ids: ids, toIndex: index)
+        }
     }
 
     /// Backs the per-row ◀ ▶ buttons and the ⌘↑ / ⌘↓ shortcuts.
@@ -901,8 +927,9 @@ final class AppModel: ObservableObject {
     func shift(ids: Set<UUID>, by delta: Int) {
         let targets = effectiveTargets(for: ids)
         guard !targets.isEmpty else { return }
-        items = ItemSorter.shift(items, ids: targets, by: delta)
-        refreshPreviews()
+        applyOrderChange {
+            ItemSorter.shift($0, ids: targets, by: delta)
+        }
     }
 
     /// Row that should remain visible after a single-step move or issue selection.
@@ -914,10 +941,11 @@ final class AppModel: ObservableObject {
         let targets = effectiveTargets(for: [id])
         guard !targets.isEmpty, ItemSorter.canShift(items, ids: targets, by: delta) else { return }
 
-        items = ItemSorter.shift(items, ids: targets, by: delta)
-        selection = targets
+        applyOrderChange(
+            { ItemSorter.shift($0, ids: targets, by: delta) },
+            selectionAfterChange: targets
+        )
         requestScroll(towards: delta, among: targets)
-        refreshPreviews()
     }
 
     /// Follows the leading edge of the moving block — the bottom row when going down,
@@ -942,8 +970,9 @@ final class AppModel: ObservableObject {
     func moveToEdge(ids: Set<UUID>, toStart: Bool) {
         let targets = effectiveTargets(for: ids)
         guard !targets.isEmpty else { return }
-        items = ItemSorter.moveToEdge(items, ids: targets, toStart: toStart)
-        refreshPreviews()
+        applyOrderChange {
+            ItemSorter.moveToEdge($0, ids: targets, toStart: toStart)
+        }
     }
 
     func canShift(ids: Set<UUID>, by delta: Int) -> Bool {
@@ -959,13 +988,74 @@ final class AppModel: ObservableObject {
 
     func applySort(_ option: SortDescriptorOption) {
         sortOption = option
-        items = ItemSorter.sorted(items, by: option)
-        refreshPreviews()
+        applyOrderChange { ItemSorter.sorted($0, by: option) }
     }
 
     func reverseOrder() {
-        items = ItemSorter.reindexed(items.reversed())
+        applyOrderChange { ItemSorter.reindexed($0.reversed()) }
+    }
+
+    func undoOrderChange() {
+        guard !isBusy, let change = orderUndoStack.popLast() else { return }
+        guard applyOrderSnapshot(change.before) else {
+            invalidateOrderHistory()
+            return
+        }
+        orderRedoStack.append(change)
+    }
+
+    func redoOrderChange() {
+        guard !isBusy, let change = orderRedoStack.popLast() else { return }
+        guard applyOrderSnapshot(change.after) else {
+            invalidateOrderHistory()
+            return
+        }
+        orderUndoStack.append(change)
+    }
+
+    private func applyOrderChange(
+        _ transform: ([RenameItem]) -> [RenameItem],
+        selectionAfterChange: Set<UUID>? = nil
+    ) {
+        let before = makeOrderSnapshot()
+        let updatedItems = transform(items)
+        let updatedIDs = updatedItems.map(\.id)
+        guard updatedIDs != before.itemIDs else { return }
+
+        items = updatedItems
+        if let selectionAfterChange {
+            selection = selectionAfterChange
+        }
+
+        let change = OrderChange(before: before, after: makeOrderSnapshot())
+        orderUndoStack.append(change)
+        if orderUndoStack.count > maximumOrderHistoryCount {
+            orderUndoStack.removeFirst(orderUndoStack.count - maximumOrderHistoryCount)
+        }
+        orderRedoStack.removeAll()
         refreshPreviews()
+    }
+
+    private func makeOrderSnapshot() -> OrderSnapshot {
+        OrderSnapshot(itemIDs: items.map(\.id), selection: selection)
+    }
+
+    /// Restoring by IDs, rather than storing whole `RenameItem` values, preserves
+    /// fresh URLs and metadata if a successful rename happened after a reorder.
+    private func applyOrderSnapshot(_ snapshot: OrderSnapshot) -> Bool {
+        guard snapshot.itemIDs.count == items.count else { return false }
+        let itemsByID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        guard snapshot.itemIDs.allSatisfy({ itemsByID[$0] != nil }) else { return false }
+
+        items = ItemSorter.reindexed(snapshot.itemIDs.compactMap { itemsByID[$0] })
+        selection = snapshot.selection.intersection(Set(snapshot.itemIDs))
+        refreshPreviews()
+        return true
+    }
+
+    private func invalidateOrderHistory() {
+        orderUndoStack.removeAll()
+        orderRedoStack.removeAll()
     }
 
     func toggleLock(ids: Set<UUID>) {
