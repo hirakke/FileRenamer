@@ -21,6 +21,8 @@ struct TranslucentWindowBackground: NSViewRepresentable {
     }
 
     private final class WindowEffectView: NSVisualEffectView {
+        private var didSetInitialToolbarDisplayMode = false
+
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             configureWindowIfNeeded()
@@ -40,12 +42,25 @@ struct TranslucentWindowBackground: NSViewRepresentable {
             window.titlebarSeparatorStyle = .none
             window.toolbarStyle = .unified
             window.toolbar?.showsBaselineSeparator = false
+            setInitialToolbarDisplayModeIfNeeded(window)
             window.styleMask.insert(.fullSizeContentView)
 
             // SwiftUI's hosting view otherwise retains the standard opaque
             // window fill even when NSWindow itself has a clear background.
             window.contentView?.wantsLayer = true
             window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+        }
+
+        /// Match the standard Finder/Xcode-friendly initial toolbar presentation
+        /// without overriding a display mode the person chooses later from the
+        /// toolbar's context menu.
+        private func setInitialToolbarDisplayModeIfNeeded(_ window: NSWindow) {
+            guard !didSetInitialToolbarDisplayMode,
+                  let toolbar = window.toolbar
+            else { return }
+
+            toolbar.displayMode = .iconAndLabel
+            didSetInitialToolbarDisplayMode = true
         }
     }
 }
@@ -76,8 +91,12 @@ struct PlainWindowTitle: NSViewRepresentable {
 
         func applyTitle() {
             guard let window else { return }
-            window.title = title
-            window.titleVisibility = title.isEmpty ? .hidden : .visible
+            // Keep the native title slot present from launch. Toggling title
+            // visibility after an import makes AppKit recalculate the toolbar and
+            // visibly shifts its controls. A blank title keeps the bar clean while
+            // reserving exactly the same layout role as a directory title.
+            window.title = title.isEmpty ? " " : title
+            window.titleVisibility = .visible
             // A represented URL adds a proxy icon; keep this title text-only.
             window.representedURL = nil
         }
