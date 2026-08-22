@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import RenameKit
 
 /// The main "Arrange" surface: rows in list order, each showing the number it will
@@ -6,6 +7,10 @@ import RenameKit
 struct FileListView: View {
     @EnvironmentObject private var model: AppModel
     @State private var selectionAnchor: UUID?
+    /// Captured at drag start, so a multi-selection moves as one contiguous block.
+    @State private var draggingIDs: Set<UUID> = []
+    /// Gap in the pre-move list where the dragged rows will be inserted.
+    @State private var insertionIndex: Int?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,7 +18,7 @@ struct FileListView: View {
             Divider()
             ScrollViewReader { proxy in
                 List {
-                    ForEach(model.items) { item in
+                    ForEach(Array(model.items.enumerated()), id: \.element.id) { index, item in
                         HStack(spacing: 8) {
                             let preview = model.preview(for: item)
                             FileRow(
@@ -27,6 +32,14 @@ struct FileListView: View {
                             OrderStepper(id: item.id, axis: .vertical)
                         }
                         .contentShape(Rectangle())
+                        .overlay(alignment: .top) {
+                            ListInsertionMarker(isActive: insertionIndex == index)
+                        }
+                        .overlay(alignment: .bottom) {
+                            ListInsertionMarker(
+                                isActive: index == model.items.count - 1 && insertionIndex == model.items.count
+                            )
+                        }
                         .onTapGesture {
                             handleTap(on: item)
                         }
@@ -42,6 +55,27 @@ struct FileListView: View {
                                 model.quickLookURL = item.originalURL
                             }
                         )
+                        .onDrag {
+                            beginDrag(from: item)
+                            return NSItemProvider(object: item.id.uuidString as NSString)
+                        } preview: {
+                            ListDragPreview(item: item, count: draggingIDs.count)
+                        }
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onDrop(
+                                        of: Self.reorderTypes,
+                                        delegate: ListRowDropDelegate(
+                                            index: index,
+                                            rowHeight: geometry.size.height,
+                                            insertionIndex: $insertionIndex,
+                                            isReordering: !draggingIDs.isEmpty,
+                                            commit: { target in reorder(to: target) }
+                                        )
+                                    )
+                            }
+                        }
                         .listRowBackground(
                             model.selection.contains(item.id)
                                 ? Palette.accent.opacity(0.20)
@@ -49,9 +83,6 @@ struct FileListView: View {
                         )
                         .id(item.id)
                         .contextMenu { rowMenu(for: item) }
-                    }
-                    .onMove { offsets, destination in
-                        model.move(fromOffsets: offsets, toOffset: destination)
                     }
                 }
                 .listStyle(.inset)
@@ -77,6 +108,11 @@ struct FileListView: View {
     /// automatic List selection becomes unreliable once a row contains controls,
     /// drag handles, and custom gestures.
     private func handleTap(on item: RenameItem) {
+        // A drop outside the list does not call `performDrop`; reset its visual
+        // state on the next normal interaction instead of leaving a stale marker.
+        draggingIDs = []
+        insertionIndex = nil
+
         let modifiers = NSEvent.modifierFlags
         if modifiers.contains(.shift),
            let anchor = selectionAnchor,
@@ -95,6 +131,31 @@ struct FileListView: View {
         } else {
             model.selection = [item.id]
             selectionAnchor = item.id
+        }
+    }
+
+    static let reorderTypes: [UTType] = [.text, .plainText, .utf8PlainText]
+
+    /// Matches Finder: dragging any member of a multi-selection carries the whole
+    /// selection; otherwise the dragged row becomes the sole selection.
+    private func beginDrag(from item: RenameItem) {
+        if model.selection.contains(item.id), model.selection.count > 1 {
+            draggingIDs = model.selection
+        } else {
+            draggingIDs = [item.id]
+            model.selection = [item.id]
+            selectionAnchor = item.id
+        }
+    }
+
+    private func reorder(to target: Int) {
+        let moving = draggingIDs
+        draggingIDs = []
+        insertionIndex = nil
+        guard !moving.isEmpty else { return }
+
+        withAnimation(.snappy(duration: 0.22)) {
+            model.move(ids: moving, toIndex: target)
         }
     }
 
@@ -162,6 +223,85 @@ struct FileListView: View {
             model.selection = ids
             model.removeSelected()
         }
+    }
+}
+
+/// A thin, non-interactive gap marker makes it unambiguous whether the rows will
+/// land before or after the hovered row.
+private struct ListInsertionMarker: View {
+    let isActive: Bool
+
+    var body: some View {
+        Rectangle()
+            .fill(Palette.accent)
+            .frame(height: 3)
+            .opacity(isActive ? 1 : 0)
+            .animation(.easeOut(duration: 0.12), value: isActive)
+            .allowsHitTesting(false)
+    }
+}
+
+private struct ListDragPreview: View {
+    let item: RenameItem
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ThumbnailView(url: item.originalURL, size: 44)
+            Text(item.displayName)
+                .lineLimit(1)
+                .frame(maxWidth: 260, alignment: .leading)
+        }
+        .padding(8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            if count > 1 {
+                Text("\(count)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Palette.accent, in: Capsule())
+                    .offset(x: 6, y: -6)
+            }
+        }
+    }
+}
+
+/// A row is split into an upper and lower half, representing the gaps immediately
+/// before and after it. `destinationIndex` remains in pre-move coordinates, exactly
+/// matching `ItemSorter.move` and the grid implementation.
+private struct ListRowDropDelegate: DropDelegate {
+    let index: Int
+    let rowHeight: CGFloat
+    @Binding var insertionIndex: Int?
+    let isReordering: Bool
+    let commit: (Int) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool { isReordering }
+
+    func dropEntered(info: DropInfo) {
+        insertionIndex = gap(for: info)
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        insertionIndex = gap(for: info)
+        return DropProposal(operation: .move)
+    }
+
+    func dropExited(info: DropInfo) {
+        if insertionIndex == index || insertionIndex == index + 1 {
+            insertionIndex = nil
+        }
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        commit(gap(for: info))
+        return true
+    }
+
+    private func gap(for info: DropInfo) -> Int {
+        info.location.y > rowHeight / 2 ? index + 1 : index
     }
 }
 
