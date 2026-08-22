@@ -3,18 +3,20 @@
     <channel>
         <title>FileRenamer</title>
         <item>
-            <title>1.1.3</title>
-            <pubDate>Fri, 21 Aug 2026 08:40:11 +0900</pubDate>
+            <title>1.1.4</title>
+            <pubDate>Sat, 22 Aug 2026 18:27:10 +0900</pubDate>
             <link>https://hirakke.github.io/FileRenamer/</link>
             <sparkle:fullReleaseNotesLink>https://hirakke.github.io/FileRenamer/release-notes.html</sparkle:fullReleaseNotesLink>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>1.1.3</sparkle:shortVersionString>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>1.1.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.3
+            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.4
 
-- メインウインドウを閉じた後も、「ウインドウ」メニューからFileRenamerを再表示できるようにしました。
+- 表示言語を日本語・English・システム設定から選べるようにしました。システム設定では、日本語以外の言語を英語で表示します。
+- メニュー、表示設定、画像設定、JPEG品質、処理状況を英語表示に対応しました。
+- 英語版のREADMEを追加しました。
 ]]></description>
-            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.3/FileRenamer-1.1.3.dmg" length="6602013" type="application/octet-stream" sparkle:edSignature="BaAH3iiq5w+G3ASTlhO3L8x9GRbx9EJZhaKq5hGOatW0F9Haur4yxO8ZBnsQQ/YvtFBEwA0WOH46WZ4C0sfmBg=="/>
+            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.4/FileRenamer-1.1.4.dmg" length="6654184" type="application/octet-stream" sparkle:edSignature="fOePQiqQbzM/EN6muRoje8n8Tc0MX6WLjMf3excFFT1cUA8YWh4aRjdTov7VWsCXDEuWZu7FwpLfVIKQWbwvAQ=="/>
         </item>
     </channel>
 </rss>
