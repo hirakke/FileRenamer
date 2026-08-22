@@ -11,6 +11,8 @@
 <p align="center">
   <a href="https://github.com/hirakke/FileRenamer/releases/latest"><strong>最新版をダウンロード</strong></a>
   ・
+  <a href="https://apps.apple.com/us/app/filerenamer/id6800803707?mt=12"><strong>App Store for Macからダウンロード</strong></a>
+  ・
   <a href="https://hirakke.github.io/FileRenamer/privacy.html">プライバシーポリシー</a>
   ・
   <a href="https://github.com/hirakke/FileRenamer/issues">サポート</a>
