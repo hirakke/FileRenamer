@@ -95,6 +95,10 @@ final class AppModel: ObservableObject {
     @Published var selection: Set<UUID> = []
     @Published var viewMode: ViewMode = .list
     @Published var sortOption = SortDescriptorOption(field: .fileName, ascending: true)
+    /// Set only while the inline naming-rule text editor is actively editing. This
+    /// distinguishes a deliberate text edit from the stale field editor AppKit can
+    /// leave as first responder after the user starts arranging files.
+    @Published var isRuleTextEditing = false
 
     @Published private(set) var isBusy = false
     @Published private(set) var busyLabel = ""
@@ -1022,6 +1026,7 @@ final class AppModel: ObservableObject {
         let updatedIDs = updatedItems.map(\.id)
         guard updatedIDs != before.itemIDs else { return }
 
+        endRuleTextEditing()
         items = updatedItems
         if let selectionAfterChange {
             selection = selectionAfterChange
@@ -1056,6 +1061,18 @@ final class AppModel: ObservableObject {
     private func invalidateOrderHistory() {
         orderUndoStack.removeAll()
         orderRedoStack.removeAll()
+    }
+
+    private func endRuleTextEditing() {
+        guard isRuleTextEditing
+                || (NSApp.keyWindow?.firstResponder as? NSTextView)?.isFieldEditor == true
+        else { return }
+
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        // AppKit normally sends `controlTextDidEndEditing` synchronously. Set this
+        // here as well so the command menu cannot see a stale editing state during
+        // the same drag/drop event cycle.
+        isRuleTextEditing = false
     }
 
     func toggleLock(ids: Set<UUID>) {

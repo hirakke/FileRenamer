@@ -18,6 +18,7 @@ struct RuleTextField: View {
     @Binding var rule: RenameRule
     let context: RuleEditingContext
     var editorPresentation: EditorPresentation = .inline
+    var onEditingChanged: (Bool) -> Void = { _ in }
 
     @State private var editingTokenID: UUID?
     @State private var focusRequest: RuleFocusRequest?
@@ -49,7 +50,8 @@ struct RuleTextField: View {
                         focusRequest: focusRequest,
                         onDeleteBackwardAtStart: { deleteBlock(before: config.id) },
                         onDeleteForwardAtEnd: { deleteBlock(after: config.id) },
-                        onFocusRequestHandled: { focusRequest = nil }
+                        onFocusRequestHandled: { focusRequest = nil },
+                        onEditingChanged: onEditingChanged
                     )
                     .frame(height: 24)
 

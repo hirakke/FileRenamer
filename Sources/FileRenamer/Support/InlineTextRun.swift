@@ -54,6 +54,7 @@ struct InlineTextRun: NSViewRepresentable {
     var onDeleteBackwardAtStart: () -> Bool = { false }
     var onDeleteForwardAtEnd: () -> Bool = { false }
     var onFocusRequestHandled: () -> Void = {}
+    var onEditingChanged: (Bool) -> Void = { _ in }
 
     func makeNSView(context nsContext: Context) -> AutoWidthTextField {
         let field = AutoWidthTextField()
@@ -123,6 +124,7 @@ struct InlineTextRun: NSViewRepresentable {
         func controlTextDidBeginEditing(_ notification: Notification) {
             guard let field = notification.object as? NSTextField else { return }
             (field.currentEditor() as? NSTextView)?.allowsUndo = true
+            parent.onEditingChanged(true)
             observeSelection(of: field)
             record(from: field)
         }
@@ -152,6 +154,7 @@ struct InlineTextRun: NSViewRepresentable {
             guard let field = notification.object as? NSTextField else { return }
             record(from: field)
             stopObservingSelection()
+            parent.onEditingChanged(false)
         }
 
         /// The caret is tracked live: a click into the middle of a run changes it
