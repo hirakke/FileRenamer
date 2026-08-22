@@ -545,6 +545,7 @@ private final class QuickLookWindowController: NSObject, ObservableObject, NSWin
             hostingController.rootView = content
             window.title = url.lastPathComponent
             window.representedURL = url
+            attachToPresentingWindowIfNeeded(window)
             startOutsideClickMonitoring(for: window)
             present(window)
             return
@@ -558,9 +559,17 @@ private final class QuickLookWindowController: NSObject, ObservableObject, NSWin
         window.titlebarAppearsTransparent = false
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: 640, height: 480)
-        window.collectionBehavior = [.fullScreenPrimary]
-        window.level = .floating
+        // A preview opened from a full-screen main window must join that Space as
+        // an auxiliary window. Treating it as another full-screen primary window
+        // leaves AppKit to manage two independent full-screen sessions, which can
+        // make closing the preview destabilize the original window.
+        window.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
         window.delegate = self
+
+        // Keep a real, separate preview window, but attach it to the main window
+        // while presented. This gives it the correct full-screen lifetime and keeps
+        // it in front without relying on a floating window level.
+        attachToPresentingWindowIfNeeded(window)
 
         let visibleFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1200, height: 800)
         let width = min(max(visibleFrame.width * 0.72, 760), 1320)
@@ -577,6 +586,7 @@ private final class QuickLookWindowController: NSObject, ObservableObject, NSWin
     func close(notify: Bool) {
         guard let window else { return }
         stopOutsideClickMonitoring()
+        window.parent?.removeChildWindow(window)
         window.orderOut(nil)
 
         let handler = notify ? closeHandler : nil
@@ -599,12 +609,25 @@ private final class QuickLookWindowController: NSObject, ObservableObject, NSWin
     private func present(_ window: NSWindow) {
         // A force-click release can make the main window key again later in the
         // current event cycle. Presenting on the next cycle avoids that race, while
-        // the floating level keeps the preview visually in front until a real click.
+        // making the preview key on the next cycle avoids that race while its parent
+        // relationship keeps it in the correct full-screen Space.
         DispatchQueue.main.async { [weak window] in
             guard let window else { return }
             window.makeKeyAndOrderFront(nil)
-            window.orderFrontRegardless()
         }
+    }
+
+    /// `close` intentionally keeps the Quick Look view alive, so reopening an
+    /// existing preview must attach it again. At that point the main window is key;
+    /// while an already-visible preview is updated it remains attached and is left
+    /// alone.
+    private func attachToPresentingWindowIfNeeded(_ previewWindow: NSWindow) {
+        guard previewWindow.parent == nil,
+              let presentingWindow = NSApp.keyWindow,
+              presentingWindow !== previewWindow
+        else { return }
+
+        presentingWindow.addChildWindow(previewWindow, ordered: .above)
     }
 
     private func startOutsideClickMonitoring(for previewWindow: NSWindow) {
