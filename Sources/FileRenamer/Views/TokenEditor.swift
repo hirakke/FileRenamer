@@ -4,13 +4,14 @@ import RenameKit
 /// Editor for one naming block. Writes back through the rule binding it was given,
 /// so it is identical whether the rule is the live one or a preset draft.
 struct TokenEditor: View {
+    @EnvironmentObject private var preferences: AppPreferences
     @Binding var rule: RenameRule
     let token: RenameToken
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Label(token.kindName, systemImage: token.systemImageName)
+                Label(token.localizedKindName(in: preferences.resolvedLanguage), systemImage: token.systemImageName)
                     .font(.headline)
                 Spacer()
                 Button(role: .destructive) {
@@ -46,7 +47,7 @@ private struct TextTokenEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("例: TEDxKeio", text: $config.value)
+            TextField("例: イベント名", text: $config.value)
                 .textFieldStyle(.roundedBorder)
         }
         .onChange(of: config) { _, new in commit(new) }
@@ -75,6 +76,7 @@ private struct SeparatorTokenEditor: View {
 }
 
 private struct CounterTokenEditor: View {
+    @EnvironmentObject private var preferences: AppPreferences
     @State var config: CounterConfiguration
     let commit: (CounterConfiguration) -> Void
 
@@ -99,7 +101,7 @@ private struct CounterTokenEditor: View {
             }
             Picker("番号のリセット", selection: $config.resetMode) {
                 ForEach(CounterResetMode.allCases, id: \.self) { mode in
-                    Text(mode.displayName).tag(mode)
+                    Text(mode.localizedDisplayName(in: preferences.resolvedLanguage)).tag(mode)
                 }
             }
         }
@@ -108,6 +110,7 @@ private struct CounterTokenEditor: View {
 }
 
 private struct DateTokenEditor: View {
+    @EnvironmentObject private var preferences: AppPreferences
     @State var config: DateConfiguration
     let commit: (DateConfiguration) -> Void
 
@@ -115,7 +118,7 @@ private struct DateTokenEditor: View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("種類", selection: $config.source) {
                 ForEach(DateSource.allCases, id: \.self) { source in
-                    Text(source.displayName).tag(source)
+                    Text(source.localizedDisplayName(in: preferences.resolvedLanguage)).tag(source)
                 }
             }
 
@@ -141,13 +144,14 @@ private struct DateTokenEditor: View {
 }
 
 private struct MetadataTokenEditor: View {
+    @EnvironmentObject private var preferences: AppPreferences
     @State var config: MetadataConfiguration
     let commit: (MetadataConfiguration) -> Void
 
     var body: some View {
         Picker("項目", selection: $config.field) {
             ForEach(MetadataField.allCases, id: \.self) { field in
-                Text(field.displayName).tag(field)
+                Text(field.localizedDisplayName(in: preferences.resolvedLanguage)).tag(field)
             }
         }
         .onChange(of: config) { _, new in commit(new) }
@@ -155,6 +159,7 @@ private struct MetadataTokenEditor: View {
 }
 
 private struct OriginalNameTokenEditor: View {
+    @EnvironmentObject private var preferences: AppPreferences
     @State var config: OriginalNameConfiguration
     let commit: (OriginalNameConfiguration) -> Void
 
@@ -162,7 +167,7 @@ private struct OriginalNameTokenEditor: View {
         VStack(alignment: .leading, spacing: 10) {
             Picker("大文字小文字", selection: $config.transform) {
                 ForEach(CaseTransform.allCases, id: \.self) { transform in
-                    Text(transform.displayName).tag(transform)
+                    Text(transform.localizedDisplayName(in: preferences.resolvedLanguage)).tag(transform)
                 }
             }
             TextField("検索（空なら置換なし）", text: $config.find)

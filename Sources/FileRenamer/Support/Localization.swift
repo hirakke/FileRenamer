@@ -93,6 +93,111 @@ extension SortField {
     }
 }
 
+extension CounterResetMode {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .never:
+            return L10n.string("counterReset.never", defaultValue: "Never", language: language)
+        case .folder:
+            return L10n.string("counterReset.folder", defaultValue: "Each Folder", language: language)
+        case .day:
+            return L10n.string("counterReset.day", defaultValue: "Each Date", language: language)
+        }
+    }
+}
+
+extension DateSource {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .creation:
+            return L10n.string("dateSource.creation", defaultValue: "Date Created", language: language)
+        case .modification:
+            return L10n.string("dateSource.modification", defaultValue: "Date Modified", language: language)
+        case .capture:
+            return L10n.string("dateSource.capture", defaultValue: "Date Taken", language: language)
+        }
+    }
+}
+
+extension MetadataField {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .cameraModel:
+            return L10n.string("metadata.cameraModel", defaultValue: "Camera Model", language: language)
+        case .lensModel:
+            return L10n.string("metadata.lensModel", defaultValue: "Lens", language: language)
+        case .iso:
+            return L10n.string("metadata.iso", defaultValue: "ISO", language: language)
+        case .focalLength:
+            return L10n.string("metadata.focalLength", defaultValue: "Focal Length", language: language)
+        case .aperture:
+            return L10n.string("metadata.aperture", defaultValue: "Aperture", language: language)
+        case .dimensions:
+            return L10n.string("metadata.dimensions", defaultValue: "Dimensions", language: language)
+        }
+    }
+}
+
+extension RenameToken {
+    func localizedKindName(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .text:
+            return L10n.string("tokenKind.text", defaultValue: "Text", language: language)
+        case .separator:
+            return L10n.string("tokenKind.separator", defaultValue: "Separator", language: language)
+        case .counter:
+            return L10n.string("tokenKind.counter", defaultValue: "Counter", language: language)
+        case .date:
+            return L10n.string("tokenKind.date", defaultValue: "Date", language: language)
+        case .originalName:
+            return L10n.string("tokenKind.originalName", defaultValue: "Original Name", language: language)
+        case .metadata:
+            return L10n.string("tokenKind.metadata", defaultValue: "Photo Info", language: language)
+        }
+    }
+
+    func localizedSummary(in language: ResolvedAppLanguage) -> String {
+        switch self {
+        case .text(let configuration):
+            return configuration.value.isEmpty
+                ? L10n.string("tokenSummary.empty", defaultValue: "(Empty)", language: language)
+                : configuration.value
+        case .separator(let configuration):
+            return configuration.value == " " ? "space" : configuration.value
+        case .counter(let configuration):
+            return configuration.formatted(at: 0)
+        case .date(let configuration):
+            return "\(configuration.source.localizedDisplayName(in: language)) \(configuration.pattern.uppercased())"
+        case .originalName(let configuration):
+            let originalName = L10n.string("block.originalName", defaultValue: "Original Name", language: language)
+            return configuration.transform == .none
+                ? originalName
+                : "\(originalName) (\(configuration.transform.localizedDisplayName(in: language)))"
+        case .metadata(let configuration):
+            return configuration.field.localizedDisplayName(in: language)
+        }
+    }
+}
+
+extension RenameRulePreset {
+    func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
+        guard isBuiltIn else { return name }
+        let keyAndDefault: (String, String)?
+        switch name {
+        case "01納品": keyAndDefault = ("preset.deliveryTwoDigits", "Delivery (01)")
+        case "001納品": keyAndDefault = ("preset.deliveryThreeDigits", "Delivery (001)")
+        case "日付 + イベント名 + 連番": keyAndDefault = ("preset.dateEventCounter", "Date + Event + Counter")
+        case "イベント名 + 連番": keyAndDefault = ("preset.eventCounter", "Event + Counter")
+        case "日付 + 連番": keyAndDefault = ("preset.dateCounter", "Date + Counter")
+        case "連番のみ": keyAndDefault = ("preset.counterOnly", "Counter Only")
+        case "元の名前 + 連番": keyAndDefault = ("preset.originalNameCounter", "Original Name + Counter")
+        default: keyAndDefault = nil
+        }
+        guard let keyAndDefault else { return name }
+        return L10n.string(keyAndDefault.0, defaultValue: keyAndDefault.1, language: language)
+    }
+}
+
 extension CaseTransform {
     func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
         switch self {

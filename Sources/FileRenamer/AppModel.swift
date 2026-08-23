@@ -274,7 +274,10 @@ final class AppModel: ObservableObject {
             selectedPresetID = first.id
         }
         if let recoveryMessage = loadedPresets.recoveryMessage {
-            alertMessage = AlertMessage(title: "プリセットを復旧しました", detail: recoveryMessage)
+            alertMessage = AlertMessage(
+                title: localized("preset.recovered.title", defaultValue: "Presets Recovered"),
+                detail: recoveryMessage
+            )
         }
         if recoversPendingRenames {
             Task { [weak self] in await self?.recoverPendingRenames() }
@@ -292,6 +295,19 @@ final class AppModel: ObservableObject {
     var canRedo: Bool { !isBusy && history.canRedo }
     var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
     var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
+
+    private var displayLanguage: ResolvedAppLanguage {
+        preferences.resolvedLanguage
+    }
+
+    private func localized(_ key: String, defaultValue: String) -> String {
+        L10n.string(key, defaultValue: defaultValue, language: displayLanguage)
+    }
+
+    private func localized(_ key: String, defaultValue: String, arguments: [CVarArg]) -> String {
+        L10n.format(key, defaultValue: defaultValue, arguments: arguments, language: displayLanguage)
+    }
+
     var showsJPEGQualitySetting: Bool {
         rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
     }
@@ -327,9 +343,13 @@ final class AppModel: ObservableObject {
     }
     var undoConfirmationMessage: String {
         guard let transaction = history.lastTransaction else {
-            return "元に戻せるリネーム履歴がありません。"
+            return localized("undo.unavailable", defaultValue: "There is no rename history to undo.")
         }
-        return "直前に変更した\(transaction.fileCount)ファイルを、元の状態に戻します。"
+        return localized(
+            "undo.confirmation.detail",
+            defaultValue: "The last change to %d file(s) will be undone.",
+            arguments: [transaction.fileCount]
+        )
     }
 
     func imageChangeSummary(for item: RenameItem, preview: RenamePreview?) -> String? {
@@ -344,7 +364,11 @@ final class AppModel: ObservableObject {
         let targetDimensions = "\(target.width)×\(target.height)"
         let targetFormat = preview.destinationURL.pathExtension.uppercased()
         return sourceDimensions == targetDimensions
-            ? "\(sourceDimensions) • \(targetFormat)へ再保存"
+            ? localized(
+                "imageChange.resaved",
+                defaultValue: "%@ • Re-saved as %@",
+                arguments: [sourceDimensions, targetFormat]
+            )
             : "\(sourceDimensions) → \(targetDimensions) • \(targetFormat)"
     }
 
@@ -478,7 +502,7 @@ final class AppModel: ObservableObject {
     func importURLs(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
         requestFolderAccessForIndividuallyImportedFiles(in: urls)
-        guard beginBusy("読み込み中…", cancellable: true) else { return }
+        guard beginBusy(localized("busy.loading", defaultValue: "Loading…"), cancellable: true) else { return }
         let transientAccess = beginImportAccess(for: urls)
         // Resolve directory metadata only after opening the security-scoped URLs;
         // external volumes and sandboxed drag-and-drop locations may require it.
@@ -512,11 +536,14 @@ final class AppModel: ObservableObject {
             try Task.checkCancellation()
         } catch is CancellationError {
             workingDirectories = calculateWorkingDirectories()
-            resultMessage = ResultMessage(text: "読み込みをキャンセルしました")
+            resultMessage = ResultMessage(text: localized("import.cancelled", defaultValue: "Loading was cancelled."))
             return
         } catch {
             workingDirectories = calculateWorkingDirectories()
-            alertMessage = AlertMessage(title: "読み込めませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("import.failed.title", defaultValue: "Couldn’t Load Files"),
+                detail: error.localizedDescription
+            )
             return
         }
 
@@ -539,12 +566,19 @@ final class AppModel: ObservableObject {
         scheduleSimilarityScan()
 
         if fresh.isEmpty && !result.items.isEmpty {
-            alertMessage = AlertMessage(title: "追加できるファイルがありません", detail: "すべて既にリストに含まれています。")
+            alertMessage = AlertMessage(
+                title: localized("import.none.title", defaultValue: "No Files to Add"),
+                detail: localized("import.none.detail", defaultValue: "All selected files are already in the list.")
+            )
         } else if !result.skippedPackages.isEmpty {
             let names = result.skippedPackages.prefix(5).map(\.lastPathComponent).joined(separator: ", ")
             alertMessage = AlertMessage(
-                title: "パッケージを除外しました",
-                detail: "アプリやパッケージ形式の書類は中身を壊す恐れがあるため対象外です: \(names)"
+                title: localized("import.packageExcluded.title", defaultValue: "Packages Were Excluded"),
+                detail: localized(
+                    "import.packageExcluded.detail",
+                    defaultValue: "Apps and package documents were excluded to avoid damaging their contents: %@",
+                    arguments: [names]
+                )
             )
         }
     }
@@ -565,8 +599,10 @@ final class AppModel: ObservableObject {
         panel.canChooseFiles = !directories
         panel.canChooseDirectories = directories
         panel.allowsMultipleSelection = true
-        panel.prompt = "追加"
-        panel.message = directories ? "追加するフォルダを選択" : "追加するファイルを選択"
+        panel.prompt = localized("panel.add.prompt", defaultValue: "Add")
+        panel.message = directories
+            ? localized("panel.addFolder.message", defaultValue: "Choose a folder to add")
+            : localized("panel.addFiles.message", defaultValue: "Choose files to add")
         guard panel.runModal() == .OK else { return }
         importURLs(panel.urls)
     }
@@ -602,17 +638,32 @@ final class AppModel: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
         panel.directoryURL = directory.deletingLastPathComponent()
-        panel.title = "「\(directory.lastPathComponent)」へのアクセスを許可"
-        panel.prompt = "アクセスを許可"
-        panel.message = "「\(directory.lastPathComponent)」または親フォルダへのアクセスを許可してください。"
+        panel.title = localized(
+            "access.panel.title",
+            defaultValue: "Allow Access to “%@”",
+            arguments: [directory.lastPathComponent]
+        )
+        panel.prompt = localized("access.panel.prompt", defaultValue: "Allow Access")
+        panel.message = localized(
+            "access.panel.message",
+            defaultValue: "Allow access to “%@” or its parent folder.",
+            arguments: [directory.lastPathComponent]
+        )
 
         guard panel.runModal() == .OK, let selected = panel.url else { return false }
         guard selected.standardizedFileURL == directory.standardizedFileURL
                 || isAncestor(selected, of: directory) else {
             if reportsErrors {
                 alertMessage = AlertMessage(
-                    title: "「\(directory.lastPathComponent)」を選択してください",
-                    detail: "このフォルダ、または親フォルダを選択してください。"
+                    title: localized(
+                        "access.selection.title",
+                        defaultValue: "Select “%@”",
+                        arguments: [directory.lastPathComponent]
+                    ),
+                    detail: localized(
+                        "access.selection.detail",
+                        defaultValue: "Select this folder or its parent folder."
+                    )
                 )
             }
             return false
@@ -627,8 +678,8 @@ final class AppModel: ObservableObject {
             if started { selected.stopAccessingSecurityScopedResource() }
             if reportsErrors {
                 alertMessage = AlertMessage(
-                    title: "アクセスを許可できませんでした",
-                    detail: "もう一度お試しください。"
+                    title: localized("access.failed.title", defaultValue: "Couldn’t Allow Access"),
+                    detail: localized("access.failed.detail", defaultValue: "Please try again.")
                 )
             }
             return false
@@ -695,10 +746,21 @@ final class AppModel: ObservableObject {
             if showCancellationAlert {
                 pendingFolderAccessDirectory = directory
                 alertMessage = AlertMessage(
-                    title: "「\(directory.lastPathComponent)」へのアクセスを許可",
-                    detail: "リネームを続けるには、現在読み込んでいるフォルダへのアクセスを許可してください。",
+                    title: localized(
+                        "access.rename.title",
+                        defaultValue: "Allow Access to “%@”",
+                        arguments: [directory.lastPathComponent]
+                    ),
+                    detail: localized(
+                        "access.rename.detail",
+                        defaultValue: "To continue renaming, allow access to the folder currently loaded."
+                    ),
                     action: .addWorkingFolder,
-                    actionTitle: "「\(directory.lastPathComponent)」を選択…"
+                    actionTitle: localized(
+                        "access.rename.action",
+                        defaultValue: "Select “%@”…",
+                        arguments: [directory.lastPathComponent]
+                    )
                 )
             }
             return false
@@ -863,7 +925,7 @@ final class AppModel: ObservableObject {
             .map { $0.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
 
-        guard beginBusy("ゴミ箱に移動中…", critical: true) else { return }
+        guard beginBusy(localized("busy.trashing", defaultValue: "Moving to Trash…"), critical: true) else { return }
         let outcome = await trasher.moveToTrash(groups: targets.map(\.allURLs))
         endBusy()
 
@@ -884,10 +946,22 @@ final class AppModel: ObservableObject {
             let itemCount = removedIDs.count
             resultMessage = ResultMessage(
                 text: fileCount == 0
-                    ? "既に見つからない \(itemCount) 件をリストから除外しました"
+                    ? localized(
+                        "trash.removedMissing",
+                        defaultValue: "Removed %d missing item(s) from the list.",
+                        arguments: [itemCount]
+                    )
                     : itemCount == fileCount
-                        ? "\(itemCount) 件をゴミ箱に移動しました"
-                        : "\(itemCount) 件（\(fileCount) ファイル）をゴミ箱に移動しました"
+                        ? localized(
+                            "trash.movedItems",
+                            defaultValue: "Moved %d item(s) to Trash.",
+                            arguments: [itemCount]
+                        )
+                        : localized(
+                            "trash.movedFiles",
+                            defaultValue: "Moved %d item(s) (%d files) to Trash.",
+                            arguments: [itemCount, fileCount]
+                        )
             )
         } else {
             let detail = outcome.failures
@@ -895,7 +969,7 @@ final class AppModel: ObservableObject {
                 .map { "\($0.url.lastPathComponent): \($0.message)" }
                 .joined(separator: "\n")
             alertMessage = AlertMessage(
-                title: "ゴミ箱に移動できないファイルがあります",
+                title: localized("trash.failed.title", defaultValue: "Some Files Couldn’t Be Moved to Trash"),
                 detail: detail
             )
         }
@@ -1228,7 +1302,9 @@ final class AppModel: ObservableObject {
     // `RuleBuilderView`, which is why there are no per-token methods here.
 
     var selectedPresetName: String? {
-        selectedPresetID.flatMap { id in presets.first { $0.id == id }?.name }
+        selectedPresetID.flatMap { id in
+            presets.first { $0.id == id }?.localizedDisplayName(in: displayLanguage)
+        }
     }
 
     var userPresets: [RenameRulePreset] { presets.filter { !$0.isBuiltIn } }
@@ -1314,8 +1390,8 @@ final class AppModel: ObservableObject {
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.prompt = "読み込む"
-        panel.message = "FileRenamerのプリセットJSONを選択"
+        panel.prompt = localized("preset.import.prompt", defaultValue: "Import")
+        panel.message = localized("preset.import.message", defaultValue: "Choose a FileRenamer presets JSON file.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
@@ -1328,29 +1404,50 @@ final class AppModel: ObservableObject {
                 }
             }
             persistPresets()
-            resultMessage = ResultMessage(text: "\(imported.count) 件のプリセットを読み込みました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "preset.imported",
+                    defaultValue: "Imported %d preset(s).",
+                    arguments: [imported.count]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "プリセットを読み込めませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("preset.import.failed", defaultValue: "Couldn’t Import Presets"),
+                detail: error.localizedDescription
+            )
         }
     }
 
     func exportPresets() {
         guard !userPresets.isEmpty else {
-            alertMessage = AlertMessage(title: "書き出すプリセットがありません", detail: "マイプリセットを作成してから実行してください。")
+            alertMessage = AlertMessage(
+                title: localized("preset.export.none.title", defaultValue: "No Presets to Export"),
+                detail: localized("preset.export.none.detail", defaultValue: "Create a custom preset first.")
+            )
             return
         }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "FileRenamer-Presets.json"
         panel.canCreateDirectories = true
-        panel.prompt = "書き出す"
+        panel.prompt = localized("preset.export.prompt", defaultValue: "Export")
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
             try presetStore.exportData(userPresets).write(to: url, options: .atomic)
-            resultMessage = ResultMessage(text: "\(userPresets.count) 件のプリセットを書き出しました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "preset.exported",
+                    defaultValue: "Exported %d preset(s).",
+                    arguments: [userPresets.count]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "プリセットを書き出せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("preset.export.failed", defaultValue: "Couldn’t Export Presets"),
+                detail: error.localizedDescription
+            )
         }
     }
 
@@ -1359,7 +1456,7 @@ final class AppModel: ObservableObject {
             try presetStore.save(presets)
         } catch {
             alertMessage = AlertMessage(
-                title: "プリセットを保存できませんでした",
+                title: localized("preset.save.failed", defaultValue: "Couldn’t Save Presets"),
                 detail: error.localizedDescription
             )
         }
@@ -1398,8 +1495,11 @@ final class AppModel: ObservableObject {
         guard !name.isEmpty, name != ".", name != "..",
               !name.contains("/"), !name.contains(":") else {
             alertMessage = AlertMessage(
-                title: "フォルダ名を使用できません",
-                detail: "空欄、`.`、`..`、`/`、`:` はフォルダ名に使用できません。"
+                title: localized("originalFolder.invalid.title", defaultValue: "This Folder Name Can’t Be Used"),
+                detail: localized(
+                    "originalFolder.invalid.detail",
+                    defaultValue: "A folder name can’t be blank, `.`, `..`, or contain `/` or `:`."
+                )
             )
             return
         }
@@ -1417,8 +1517,11 @@ final class AppModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.prompt = "保存場所を選択"
-        panel.message = "選択した場所に元画像専用の新しいフォルダを作成します。"
+        panel.prompt = localized("originalFolder.destination.prompt", defaultValue: "Choose Location")
+        panel.message = localized(
+            "originalFolder.destination.message",
+            defaultValue: "A new folder for original images will be created in the selected location."
+        )
         panel.directoryURL = importedDirectories.count == 1 ? importedDirectories.first : nil
         guard panel.runModal() == .OK, let parentDirectory = panel.url else { return }
 
@@ -1430,8 +1533,8 @@ final class AppModel: ObservableObject {
         ) else {
             if started { parentDirectory.stopAccessingSecurityScopedResource() }
             alertMessage = AlertMessage(
-                title: "保存先へのアクセスを許可できませんでした",
-                detail: "別のフォルダを選択して、もう一度お試しください。"
+                title: localized("originalFolder.access.failed.title", defaultValue: "Couldn’t Allow Access to This Location"),
+                detail: localized("originalFolder.access.failed.detail", defaultValue: "Choose another folder and try again.")
             )
             return
         }
@@ -1443,8 +1546,12 @@ final class AppModel: ObservableObject {
         )
         guard !FileManager.default.fileExists(atPath: originalsDirectory.path) else {
             alertMessage = AlertMessage(
-                title: "同名の保存フォルダがあります",
-                detail: "「\(originalsDirectory.lastPathComponent)」が既に存在します。ファイルは変更していません。もう一度保存場所を選択してください。"
+                title: localized("originalFolder.exists.title", defaultValue: "A Folder with This Name Already Exists"),
+                detail: localized(
+                    "originalFolder.exists.detail",
+                    defaultValue: "“%@” already exists. No files were changed. Choose a location again.",
+                    arguments: [originalsDirectory.lastPathComponent]
+                )
             )
             return
         }
@@ -1452,10 +1559,16 @@ final class AppModel: ObservableObject {
         let collisions = originalImageNameCollisions()
         guard collisions.isEmpty else {
             let shownNames = collisions.prefix(5).joined(separator: "、")
-            let remainder = collisions.count > 5 ? " ほか\(collisions.count - 5)件" : ""
+            let remainder = collisions.count > 5
+                ? localized("originalFolder.collisions.remainder", defaultValue: " and %d more", arguments: [collisions.count - 5])
+                : ""
             alertMessage = AlertMessage(
-                title: "同名の元画像があります",
-                detail: "保存対象内で「\(shownNames)」\(remainder)の名前が重複しています。ファイルは変更していません。重複する画像名を変更してから、もう一度実行してください。"
+                title: localized("originalFolder.collisions.title", defaultValue: "Original Image Names Conflict"),
+                detail: localized(
+                    "originalFolder.collisions.detail",
+                    defaultValue: "The names %@%@ are duplicated among the originals. No files were changed. Rename the duplicate images and try again.",
+                    arguments: [shownNames, remainder]
+                )
             )
             return
         }
@@ -1464,9 +1577,13 @@ final class AppModel: ObservableObject {
 
     private func defaultOriginalImagesFolderName() -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = Locale(identifier: displayLanguage.localeIdentifier)
         formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        return "FileRenamer 元画像 \(formatter.string(from: Date()))"
+        return localized(
+            "originalFolder.defaultName",
+            defaultValue: "FileRenamer Originals %@",
+            arguments: [formatter.string(from: Date())]
+        )
     }
 
     private func originalImageNameCollisions() -> [String] {
@@ -1568,27 +1685,54 @@ final class AppModel: ObservableObject {
            let height = item.metadata.pixelHeight {
             let target = rule.imageResize.targetDimensions(width: width, height: height)
             if width == target.width, height == target.height {
-                details.append("サイズ維持 \(width)×\(height) px")
+                details.append(
+                    localized(
+                        "imageConfirmation.sizeUnchanged",
+                        defaultValue: "Size unchanged: %d×%d px",
+                        arguments: [width, height]
+                    )
+                )
             } else {
                 details.append("\(width)×\(height) → \(target.width)×\(target.height) px")
             }
         } else if rule.imageResize.isEnabled {
-            details.append("長辺 \(rule.imageResize.normalizedLongEdge) px")
+            details.append(
+                localized(
+                    "imageConfirmation.longEdge",
+                    defaultValue: "Long edge %d px",
+                    arguments: [rule.imageResize.normalizedLongEdge]
+                )
+            )
         }
 
         let sourceExtension = operation.source.pathExtension.uppercased()
         let destinationExtension = operation.destination.pathExtension.uppercased()
         if sourceExtension != destinationExtension {
-            details.append("\(sourceExtension.isEmpty ? "拡張子なし" : sourceExtension) → \(destinationExtension.isEmpty ? "拡張子なし" : destinationExtension)")
+            let noExtension = localized("imageConfirmation.noExtension", defaultValue: "No Extension")
+            details.append("\(sourceExtension.isEmpty ? noExtension : sourceExtension) → \(destinationExtension.isEmpty ? noExtension : destinationExtension)")
         } else if !destinationExtension.isEmpty {
-            details.append("\(destinationExtension)で再保存")
+            details.append(
+                localized(
+                    "imageConfirmation.resaved",
+                    defaultValue: "Re-saved as %@",
+                    arguments: [destinationExtension]
+                )
+            )
         }
 
         if FileKinds.isJPEG(operation.destination) {
-            details.append("品質 \(jpegQualitySetting.percent)%")
+            details.append(
+                localized(
+                    "imageConfirmation.quality",
+                    defaultValue: "Quality %d%%",
+                    arguments: [jpegQualitySetting.percent]
+                )
+            )
         }
 
-        return details.isEmpty ? "画像データを再生成" : details.joined(separator: "・")
+        return details.isEmpty
+            ? localized("imageConfirmation.recreate", defaultValue: "Recreate Image Data")
+            : details.joined(separator: " • ")
     }
 
     private func beginRename(originalImagesDirectory: URL?) {
@@ -1600,7 +1744,7 @@ final class AppModel: ObservableObject {
             .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
         if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
         guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
-        guard beginBusy("ファイルを変更中…", critical: true) else { return }
+        guard beginBusy(localized("busy.changingFiles", defaultValue: "Changing Files…"), critical: true) else { return }
         busyTask = Task { [weak self] in
             await self?.performRename(originalImagesDirectory: originalImagesDirectory)
         }
@@ -1627,12 +1771,22 @@ final class AppModel: ObservableObject {
             )
             validated = try await destinationWorker.validate(structural)
         } catch {
-            alertMessage = AlertMessage(title: "検証に失敗しました", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("rename.validation.failed", defaultValue: "Validation Failed"),
+                detail: error.localizedDescription
+            )
             return
         }
         applyPreviews(validated)
         guard errorCount == 0 else {
-            alertMessage = AlertMessage(title: "実行できません", detail: "\(errorCount) 件のエラーを解消してください。")
+            alertMessage = AlertMessage(
+                title: localized("rename.cannotRun.title", defaultValue: "Can’t Make Changes"),
+                detail: localized(
+                    "rename.cannotRun.detail",
+                    defaultValue: "Resolve %d error(s) before continuing.",
+                    arguments: [errorCount]
+                )
+            )
             return
         }
 
@@ -1693,13 +1847,25 @@ final class AppModel: ObservableObject {
             persistHistory()
             adoptRenamedURLs(from: transaction)
             progress = 1
-            let action = imageRequests.isEmpty ? "リネーム" : "変更"
             resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルを\(action)しました",
+                text: imageRequests.isEmpty
+                    ? localized(
+                        "rename.completed",
+                        defaultValue: "Renamed %d file(s).",
+                        arguments: [transaction.fileCount]
+                    )
+                    : localized(
+                        "imageChange.completed",
+                        defaultValue: "Changed %d file(s).",
+                        arguments: [transaction.fileCount]
+                    ),
                 offersUndo: true
             )
         } catch {
-            alertMessage = AlertMessage(title: "変更に失敗しました", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("rename.failed", defaultValue: "Couldn’t Make Changes"),
+                detail: error.localizedDescription
+            )
         }
     }
 
@@ -1726,7 +1892,7 @@ final class AppModel: ObservableObject {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
         } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
-        guard beginBusy("元に戻しています…", critical: true) else { return }
+        guard beginBusy(localized("busy.undoing", defaultValue: "Undoing…"), critical: true) else { return }
         busyTask = Task { [weak self] in await self?.revert(transaction) }
     }
 
@@ -1737,7 +1903,7 @@ final class AppModel: ObservableObject {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
         } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
-        guard beginBusy("やり直しています…", critical: true) else { return }
+        guard beginBusy(localized("busy.redoing", defaultValue: "Redoing…"), critical: true) else { return }
         busyTask = Task { [weak self] in await self?.reapply(transaction) }
     }
 
@@ -1764,9 +1930,18 @@ final class AppModel: ObservableObject {
             history.finishUndo()
             persistHistory()
             adoptRenamedURLs(from: transaction.inverted)
-            resultMessage = ResultMessage(text: "\(transaction.fileCount) ファイルを元の状態に戻しました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "undo.completed",
+                    defaultValue: "Restored %d file(s) to their original state.",
+                    arguments: [transaction.fileCount]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "元に戻せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("undo.failed", defaultValue: "Couldn’t Undo Changes"),
+                detail: error.localizedDescription
+            )
         }
     }
 
@@ -1804,11 +1979,18 @@ final class AppModel: ObservableObject {
             persistHistory()
             adoptRenamedURLs(from: transaction)
             resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルの変更をやり直しました",
+                text: localized(
+                    "redo.completed",
+                    defaultValue: "Redid changes to %d file(s).",
+                    arguments: [transaction.fileCount]
+                ),
                 offersUndo: true
             )
         } catch {
-            alertMessage = AlertMessage(title: "やり直せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("redo.failed", defaultValue: "Couldn’t Redo Changes"),
+                detail: error.localizedDescription
+            )
         }
     }
 
@@ -1847,7 +2029,10 @@ final class AppModel: ObservableObject {
         do {
             try historyStore.save(history)
         } catch {
-            alertMessage = AlertMessage(title: "履歴を保存できませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("history.save.failed", defaultValue: "Couldn’t Save History"),
+                detail: error.localizedDescription
+            )
         }
     }
 
@@ -1915,7 +2100,7 @@ final class AppModel: ObservableObject {
     }
 
     private func recoverPendingRenames() async {
-        guard beginBusy("前回の処理を確認中…", critical: true) else { return }
+        guard beginBusy(localized("busy.recovering", defaultValue: "Checking Previous Work…"), critical: true) else { return }
         defer { endBusy() }
         let imageReport = await imageProcessor.recoverPendingTransactions()
         let report = await executor.recoverPendingTransactions()
@@ -1923,13 +2108,17 @@ final class AppModel: ObservableObject {
 
         if imageReport.hasUnresolvedWork || report.hasUnresolvedWork {
             alertMessage = AlertMessage(
-                title: "自動復旧できない処理があります",
+                title: localized("recovery.unresolved.title", defaultValue: "Some Work Couldn’t Be Recovered Automatically"),
                 detail: (imageReport.messages + report.messages).joined(separator: "\n")
             )
         } else {
             let recoveredCount = imageReport.recoveredFileCount + report.recoveredFileCount
             resultMessage = ResultMessage(
-                text: "前回中断された \(recoveredCount) ファイルを元の状態へ復旧しました"
+                text: localized(
+                    "recovery.completed",
+                    defaultValue: "Restored %d file(s) from interrupted previous work.",
+                    arguments: [recoveredCount]
+                )
             )
         }
     }

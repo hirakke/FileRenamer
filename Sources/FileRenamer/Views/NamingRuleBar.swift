@@ -301,6 +301,7 @@ private struct CustomChevron: Shape {
 /// The same catalogue as the preset editor's insert panel, folded into a menu for
 /// the toolbar where there is no room for three rows of popups.
 struct BlockInsertMenu: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let insert: (RenameToken) -> Void
 
     var body: some View {
@@ -308,13 +309,13 @@ struct BlockInsertMenu: View {
             Menu("連番と日付") {
                 ForEach(TokenInsertPanel.counterAndDateOptions.indices, id: \.self) { index in
                     let option = TokenInsertPanel.counterAndDateOptions[index]
-                    Button(option.title) { insert(option.make()) }
+                    Button(option.title(in: preferences.resolvedLanguage)) { insert(option.make()) }
                 }
             }
             Menu("元の名前") {
                 ForEach(TokenInsertPanel.originalNameOptions.indices, id: \.self) { index in
                     let option = TokenInsertPanel.originalNameOptions[index]
-                    Button(option.title) { insert(option.make()) }
+                    Button(option.title(in: preferences.resolvedLanguage)) { insert(option.make()) }
                 }
             }
         } label: {

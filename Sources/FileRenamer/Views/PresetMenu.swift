@@ -7,6 +7,7 @@ import RenameKit
 /// hand — so it is always clear whether what you see came from a preset or not.
 struct PresetMenu: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
 
     @State private var sheetMode: PresetSheetMode?
 
@@ -57,9 +58,9 @@ struct PresetMenu: View {
             model.applyPreset(preset)
         } label: {
             if model.selectedPresetID == preset.id {
-                Label(preset.name, systemImage: "checkmark")
+                Label(preset.localizedDisplayName(in: preferences.resolvedLanguage), systemImage: "checkmark")
             } else {
-                Text(preset.name)
+                Text(preset.localizedDisplayName(in: preferences.resolvedLanguage))
             }
         }
     }
@@ -86,6 +87,7 @@ enum PresetSheetMode: Identifiable {
 /// is assembled here from scratch, not just captured from the toolbar.
 struct ManagePresetsSheet: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
     let initialMode: PresetSheetMode
     let dismiss: () -> Void
 
@@ -337,10 +339,15 @@ struct ManagePresetsSheet: View {
 
 /// Compact textual rendering of a rule's blocks, e.g. `撮影日 · _ · Event · _ · 001`.
 struct RulePreviewLine: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let rule: RenameRule
 
     var body: some View {
-        Text(rule.tokens.isEmpty ? "（ブロックなし）" : rule.tokens.map(\.summary).joined(separator: " · "))
+        Text(
+            rule.tokens.isEmpty
+                ? "（ブロックなし）"
+                : rule.tokens.map { $0.localizedSummary(in: preferences.resolvedLanguage) }.joined(separator: " · ")
+        )
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)

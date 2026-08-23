@@ -22,6 +22,108 @@ private func makeDate(_ string: String) -> Date {
     return formatter.date(from: string) ?? Date(timeIntervalSince1970: 0)
 }
 
+private func localizedCatalogValue(for key: String, language: String) throws -> String? {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let catalogURL = repositoryURL
+        .appendingPathComponent("Sources/FileRenamer/Resources/Localizable.xcstrings")
+    let data = try Data(contentsOf: catalogURL)
+    let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    let strings = catalog?["strings"] as? [String: Any]
+    let entry = strings?[key] as? [String: Any]
+    let localizations = entry?["localizations"] as? [String: Any]
+    let localization = localizations?[language] as? [String: Any]
+    let stringUnit = localization?["stringUnit"] as? [String: Any]
+    return stringUnit?["value"] as? String
+}
+
+private func untranslatedVisibleJapaneseLiterals() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let sourceDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let pattern = #"\"(?:\\.|[^\"\\])*\""#
+    let expression = try NSRegularExpression(pattern: pattern)
+    let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
+    var visibleLiterals = Set<String>()
+
+    let enumerator = FileManager.default.enumerator(
+        at: sourceDirectory,
+        includingPropertiesForKeys: [.isRegularFileKey]
+    )
+    while let fileURL = enumerator?.nextObject() as? URL {
+        guard fileURL.pathExtension == "swift" else { continue }
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        let range = NSRange(source.startIndex..., in: source)
+        for match in expression.matches(in: source, range: range) {
+            guard let matchRange = Range(match.range, in: source) else { continue }
+            let literal = String(source[matchRange])
+            // Interpolated copy is represented by semantic L10n keys at the call
+            // site, because its rendered value cannot be a string-catalog key.
+            guard !literal.contains("\\(") else { continue }
+            guard japanese.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil else { continue }
+            visibleLiterals.insert(String(literal.dropFirst().dropLast()))
+        }
+    }
+
+    return try visibleLiterals.sorted().filter { literal in
+        guard let english = try localizedCatalogValue(for: literal, language: "en") else { return true }
+        return english == literal
+    }
+}
+
+private func untranslatedRuntimeAppModelCopy() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let appModelURL = repositoryURL.appendingPathComponent("Sources/FileRenamer/AppModel.swift")
+    let source = try String(contentsOf: appModelURL, encoding: .utf8)
+    let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
+    let runtimeMarkers = ["beginBusy(", "AlertMessage(", "ResultMessage(", "panel.prompt", "panel.message"]
+
+    return source
+        .split(separator: "\n", omittingEmptySubsequences: false)
+        .map(String.init)
+        .filter { line in
+            runtimeMarkers.contains(where: line.contains)
+                && japanese.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) != nil
+                && !line.contains("localized(")
+        }
+}
+
+private func semanticLocalizationKeysMissingTranslation() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let sourceDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let pattern = #"(?:localized|L10n\.(?:string|format))\(\s*\"([^\"]+\.[^\"]+)\""#
+    let expression = try NSRegularExpression(pattern: pattern)
+    var keys = Set<String>()
+    let enumerator = FileManager.default.enumerator(at: sourceDirectory, includingPropertiesForKeys: [.isRegularFileKey])
+    while let fileURL = enumerator?.nextObject() as? URL {
+        guard fileURL.pathExtension == "swift" else { continue }
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        for match in expression.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+            guard let range = Range(match.range(at: 1), in: source) else { continue }
+            keys.insert(String(source[range]))
+        }
+    }
+
+    return try keys.sorted().filter { key in
+        try localizedCatalogValue(for: key, language: "en")?.isEmpty != false
+            || localizedCatalogValue(for: key, language: "ja")?.isEmpty != false
+    }
+}
+
 @MainActor
 func runEngineTests() async {
     let runner = TestRunner.shared
@@ -580,5 +682,20 @@ func runLocalizationTests() async {
     await runner.test("明示した表示言語はシステム設定より優先される") {
         try expectEqual(AppLanguage.japanese.resolved(preferredLanguageIdentifier: "en-US"), .japanese)
         try expectEqual(AppLanguage.english.resolved(preferredLanguageIdentifier: "ja-JP"), .english)
+    }
+
+    await runner.test("画面の固定日本語には英語訳を必ず登録する") {
+        let missing = try untranslatedVisibleJapaneseLiterals()
+        try expect(missing.isEmpty, "英語訳がありません: \(missing.joined(separator: ", "))")
+    }
+
+    await runner.test("実行中のメッセージは選択した表示言語を使う") {
+        let missing = try untranslatedRuntimeAppModelCopy()
+        try expect(missing.isEmpty, "AppModelで翻訳されない実行時メッセージがあります: \(missing.joined(separator: " | "))")
+    }
+
+    await runner.test("意味ベースの翻訳キーは日英とも登録する") {
+        let missing = try semanticLocalizationKeysMissingTranslation()
+        try expect(missing.isEmpty, "翻訳カタログにないキーがあります: \(missing.joined(separator: ", "))")
     }
 }

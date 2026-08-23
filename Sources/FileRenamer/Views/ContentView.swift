@@ -130,7 +130,12 @@ struct ContentView: View {
             Text(model.undoConfirmationMessage)
         }
         .confirmationDialog(
-            "\(model.trashConfirmationItems.count) 件をゴミ箱に移動しますか？",
+            L10n.format(
+                "trash.confirmation.title",
+                defaultValue: "Move %d item(s) to Trash?",
+                arguments: [model.trashConfirmationItems.count],
+                language: preferences.resolvedLanguage
+            ),
             isPresented: Binding(
                 get: { model.trashConfirmation != nil },
                 set: { if !$0 { model.cancelMoveToTrashConfirmation() } }
@@ -186,14 +191,31 @@ struct ContentView: View {
         guard let first = model.workingDirectories.first else { return "" }
         return model.workingDirectories.count == 1
             ? first.lastPathComponent
-            : "\(first.lastPathComponent) ほか\(model.workingDirectories.count - 1)か所"
+            : L10n.format(
+                "workspace.additionalFolders",
+                defaultValue: "%@ and %d more location(s)",
+                arguments: [first.lastPathComponent, model.workingDirectories.count - 1],
+                language: preferences.resolvedLanguage
+            )
     }
 
     private var trashConfirmationDetail: String {
         let items = model.trashConfirmationItems
         let names = items.prefix(5).map(\.displayName).joined(separator: "\n")
-        let remainder = items.count > 5 ? "\nほか \(items.count - 5) 件" : ""
-        return "ファイルはFinderのゴミ箱へ移動され、Finderから元に戻せます。\n\n\(names)\(remainder)"
+        let remainder = items.count > 5
+            ? L10n.format(
+                "trash.confirmation.remainder",
+                defaultValue: "\n%d more item(s)",
+                arguments: [items.count - 5],
+                language: preferences.resolvedLanguage
+            )
+            : ""
+        return L10n.format(
+            "trash.confirmation.detail",
+            defaultValue: "Files will be moved to Finder’s Trash and can be restored there.\n\n%@%@",
+            arguments: [names, remainder],
+            language: preferences.resolvedLanguage
+        )
     }
 
     @ViewBuilder
@@ -284,7 +306,7 @@ struct ContentView: View {
 
             Menu {
                 ForEach(SortField.allCases, id: \.self) { field in
-                    Menu(field.displayName) {
+                    Menu(field.localizedDisplayName(in: preferences.resolvedLanguage)) {
                         Button("昇順") { model.applySort(SortDescriptorOption(field: field, ascending: true)) }
                         Button("降順") { model.applySort(SortDescriptorOption(field: field, ascending: false)) }
                     }
