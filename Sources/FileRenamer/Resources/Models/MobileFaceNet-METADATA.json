@@ -1,0 +1,38 @@
+{
+  "artifact": {
+    "coreMLModelSHA256": "1828fb6686f2baa9d36debc2375534f175ff4da0a7afcda1f593f9f9a711a2be",
+    "coreMLWeightsSHA256": "2c1ae0ebb65ab0b383ddc296c1d5b3960f7e12c9dd2819d3a2413f810d484e8f",
+    "dimension": 128,
+    "input": "1x3x112x112 RGB Float32, range 0...1",
+    "output": "1x128 L2-normalized embedding",
+    "precision": "Float32"
+  },
+  "conversion": {
+    "coremltools": "9.0",
+    "numpy": "2.0.2",
+    "onnx": "1.19.1",
+    "onnx2torch": "1.5.15",
+    "script": "scripts/convert-mobilefacenet-to-coreml.py",
+    "torch": "2.8.0",
+    "torchvision": "0.23.0"
+  },
+  "license": {
+    "modelAndWeights": "Apache-2.0",
+    "qualcommRecipe": "BSD-3-Clause"
+  },
+  "modelIdentifier": "qualcomm.mobilefacenet",
+  "modelVersion": "0.61.0",
+  "source": {
+    "downloadURL": "https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobile_facenet/releases/v0.61.0/mobile_facenet-onnx-float.zip",
+    "modelCard": "https://huggingface.co/qualcomm/MobileFaceNet",
+    "onnxDataSHA256": "5164ee5cdd52328da0b1959913e23fd1866b1696b690fc4ad0bbc5cd32ae319c",
+    "onnxSHA256": "bdf7ed83b56232e9806e10102de14b497a67d15e4bf27be729d1e49dca957ef0",
+    "recipe": "https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/mobile_facenet",
+    "zipSHA256": "77d0629562b58ce159b49504503baf43a5a4d70191b8750dd117b2bf9386c0c8"
+  },
+  "validation": {
+    "coreMLMaximumAbsoluteErrorAgainstPyTorch": 1.3485550880432129e-06,
+    "coreMLOutputL2Norm": 1.0,
+    "onnxCompatibilityRewriteOutput": "bit-identical"
+  }
+}
