@@ -1,5 +1,6 @@
 import Foundation
 import RenameKit
+import SwiftData
 
 @MainActor
 func runFaceGroupingTests() async {
@@ -127,6 +128,112 @@ func runFaceGroupingTests() async {
         try expect(result.clusters.isEmpty)
         try expectEqual(result.outliers, ids)
     }
+
+    runner.suite("PersonStore — 確認した人物")
+
+    await runner.test("複数の顔から正規化した代表埋め込みを作る") {
+        let first = try FaceEmbedding(model: model, values: [1, 0])
+        let second = try FaceEmbedding(model: model, values: [0, 1])
+        let centroid = try FaceEmbedding.centroid(of: [first, second])
+        let expected = Float(1 / Double(2).squareRoot())
+
+        try expect(abs(centroid.values[0] - expected) < 0.000_01)
+        try expect(abs(centroid.values[1] - expected) < 0.000_01)
+    }
+
+    await runner.test("異なるモデルの顔を一つの人物へ登録しない") {
+        let first = try FaceEmbedding(model: model, values: [1, 0])
+        let otherModel = FaceEmbeddingModel(
+            identifier: "another.model",
+            version: model.version,
+            dimension: model.dimension
+        )
+        let second = try FaceEmbedding(model: otherModel, values: [1, 0])
+        try await expectThrows {
+            _ = try FaceEmbedding.centroid(of: [first, second])
+        }
+    }
+
+    await runner.test("人物を保存して再取得・改名・削除できる") {
+        let store = try makeInMemoryPersonStore()
+        let embeddings = [
+            try FaceEmbedding(model: model, values: [1, 0]),
+            try FaceEmbedding(model: model, values: [0.8, 0.2])
+        ]
+        let saved = try store.savePerson(
+            displayName: "  Keiju  ",
+            embeddings: embeddings,
+            now: Date(timeIntervalSince1970: 100)
+        )
+
+        try expectEqual(saved.displayName, "Keiju")
+        try expectEqual(saved.sampleCount, 2)
+        try expectEqual(saved.embedding.model, model)
+        try expectEqual(try store.people().map(\.id), [saved.id])
+
+        let renamed = try store.renamePerson(
+            id: saved.id,
+            displayName: "慶樹",
+            now: Date(timeIntervalSince1970: 200)
+        )
+        try expectEqual(renamed.displayName, "慶樹")
+        try expectEqual(renamed.updatedAt, Date(timeIntervalSince1970: 200))
+
+        try store.deletePerson(id: saved.id)
+        try expect(try store.people().isEmpty)
+    }
+
+    await runner.test("空の名前・顔なし・壊れた埋め込みを保存しない") {
+        let store = try makeInMemoryPersonStore()
+        let embedding = try FaceEmbedding(model: model, values: [1, 0])
+        try await expectThrows {
+            _ = try store.savePerson(displayName: "   ", embeddings: [embedding])
+        }
+        try await expectThrows {
+            _ = try store.savePerson(displayName: "Keiju", embeddings: [])
+        }
+        try expect(try store.people().isEmpty)
+    }
+
+    await runner.test("互換モデルだけを既知人物候補として照合する") {
+        let store = try makeInMemoryPersonStore()
+        let saved = try store.savePerson(
+            displayName: "Keiju",
+            embeddings: [try FaceEmbedding(model: model, values: [1, 0])]
+        )
+        _ = try store.savePerson(
+            displayName: "Someone",
+            embeddings: [try FaceEmbedding(model: model, values: [0, 1])]
+        )
+
+        let match = try store.bestMatch(
+            for: FaceEmbedding(model: model, values: [0.99, 0.01]),
+            maximumDistance: 0.10
+        )
+        try expectEqual(match?.person.id, saved.id)
+        try expect((match?.distance ?? 1) < 0.01)
+
+        let incompatible = try FaceEmbedding(
+            model: FaceEmbeddingModel(identifier: model.identifier, version: "next", dimension: 2),
+            values: [1, 0]
+        )
+        try expect(try store.bestMatch(for: incompatible, maximumDistance: 0.10) == nil)
+    }
+
+    await runner.test("人物データをまとめて削除できる") {
+        let store = try makeInMemoryPersonStore()
+        _ = try store.savePerson(
+            displayName: "One",
+            embeddings: [try FaceEmbedding(model: model, values: [1, 0])]
+        )
+        _ = try store.savePerson(
+            displayName: "Two",
+            embeddings: [try FaceEmbedding(model: model, values: [0, 1])]
+        )
+
+        try store.deleteAllPeople()
+        try expect(try store.people().isEmpty)
+    }
 }
 
 private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {
@@ -136,4 +243,14 @@ private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {
             faceIndex: index
         )
     }
+}
+
+@MainActor
+private func makeInMemoryPersonStore() throws -> PersonStore {
+    let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try ModelContainer(
+        for: PersonProfile.self,
+        configurations: configuration
+    )
+    return PersonStore(container: container)
 }

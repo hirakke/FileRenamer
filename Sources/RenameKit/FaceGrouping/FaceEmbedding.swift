@@ -13,6 +13,7 @@ public struct FaceEmbeddingModel: Hashable, Codable, Sendable {
 }
 
 public enum FaceEmbeddingError: Error, Equatable, Sendable {
+    case emptyCollection
     case invalidModelDimension(Int)
     case dimensionMismatch(expected: Int, actual: Int)
     case nonFiniteValue
@@ -65,6 +66,28 @@ public struct FaceEmbedding: Hashable, Sendable {
         }
         guard dot.isFinite else { throw FaceEmbeddingError.nonFiniteValue }
         return Float(1 - min(1, max(-1, dot)))
+    }
+
+    public static func centroid(of embeddings: [FaceEmbedding]) throws -> FaceEmbedding {
+        guard let first = embeddings.first else {
+            throw FaceEmbeddingError.emptyCollection
+        }
+        guard embeddings.allSatisfy({ $0.model == first.model }) else {
+            let incompatible = embeddings.first(where: { $0.model != first.model })!
+            throw FaceEmbeddingError.incompatibleModels(first.model, incompatible.model)
+        }
+
+        var sums = [Double](repeating: 0, count: first.model.dimension)
+        for embedding in embeddings {
+            for index in sums.indices {
+                sums[index] += Double(embedding.values[index])
+            }
+        }
+        let divisor = Double(embeddings.count)
+        return try FaceEmbedding(
+            model: first.model,
+            values: sums.map { Float($0 / divisor) }
+        )
     }
 }
 
