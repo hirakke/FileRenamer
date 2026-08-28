@@ -19,6 +19,8 @@ final class AppPreferences: ObservableObject {
         static let similarImageSensitivity = "preferences.similarImageSensitivity"
         static let detectsOnlyExactDuplicates = "preferences.detectsOnlyExactDuplicates"
         static let excludesRAWJPEGFromSimilarity = "preferences.excludesRAWJPEGFromSimilarity"
+        static let classifiesPeople = "preferences.classifiesPeople"
+        static let faceGroupingSensitivity = "preferences.faceGroupingSensitivity"
         static let displayLanguage = "preferences.displayLanguage"
     }
 
@@ -67,6 +69,12 @@ final class AppPreferences: ObservableObject {
     @Published var excludesRAWJPEGFromSimilarity: Bool {
         didSet { defaults.set(excludesRAWJPEGFromSimilarity, forKey: Key.excludesRAWJPEGFromSimilarity) }
     }
+    @Published var classifiesPeople: Bool {
+        didSet { defaults.set(classifiesPeople, forKey: Key.classifiesPeople) }
+    }
+    @Published var faceGroupingSensitivity: FaceGroupingSensitivity {
+        didSet { defaults.set(faceGroupingSensitivity.rawValue, forKey: Key.faceGroupingSensitivity) }
+    }
     @Published var displayLanguage: AppLanguage {
         didSet { defaults.set(displayLanguage.rawValue, forKey: Key.displayLanguage) }
     }
@@ -86,6 +94,8 @@ final class AppPreferences: ObservableObject {
             Key.similarImageSensitivity: SimilarImageSensitivity.standard.rawValue,
             Key.detectsOnlyExactDuplicates: false,
             Key.excludesRAWJPEGFromSimilarity: true,
+            Key.classifiesPeople: FaceGroupingDefaults.classifiesPeople,
+            Key.faceGroupingSensitivity: FaceGroupingDefaults.sensitivity.rawValue,
             Key.displayLanguage: AppLanguage.system.rawValue
         ])
         confirmsRenameChanges = defaults.bool(forKey: Key.confirmsRenameChanges)
@@ -102,6 +112,9 @@ final class AppPreferences: ObservableObject {
             .flatMap(SimilarImageSensitivity.init(rawValue:)) ?? .standard
         detectsOnlyExactDuplicates = defaults.bool(forKey: Key.detectsOnlyExactDuplicates)
         excludesRAWJPEGFromSimilarity = defaults.bool(forKey: Key.excludesRAWJPEGFromSimilarity)
+        classifiesPeople = defaults.bool(forKey: Key.classifiesPeople)
+        faceGroupingSensitivity = defaults.string(forKey: Key.faceGroupingSensitivity)
+            .flatMap(FaceGroupingSensitivity.init(rawValue:)) ?? FaceGroupingDefaults.sensitivity
         displayLanguage = defaults.string(forKey: Key.displayLanguage)
             .flatMap(AppLanguage.init(rawValue:)) ?? .system
     }
@@ -153,13 +166,15 @@ final class WorkspaceModel: ObservableObject {
     @Published private(set) var canShiftSelectionLater = false
 
     private let preferences: AppPreferences
+    private(set) var personStore: PersonStore?
     private var preferenceCancellables: Set<AnyCancellable> = []
     private var activeModelCancellable: AnyCancellable?
 
     init(preferences: AppPreferences) {
         self.preferences = preferences
+        personStore = try? PersonStore.localPersistent()
         let id = UUID()
-        let model = AppModel(preferences: preferences)
+        let model = AppModel(preferences: preferences, personStore: personStore)
         tabs = [Tab(id: id, model: model)]
         selectedTabID = id
 
@@ -184,6 +199,15 @@ final class WorkspaceModel: ObservableObject {
         )
         .sink { [weak self] in
             self?.tabs.forEach { $0.model.similarityPreferencesDidChange() }
+        }
+        .store(in: &preferenceCancellables)
+
+        Publishers.Merge(
+            preferences.$classifiesPeople.dropFirst().map { _ in () }.eraseToAnyPublisher(),
+            preferences.$faceGroupingSensitivity.dropFirst().map { _ in () }.eraseToAnyPublisher()
+        )
+        .sink { [weak self] in
+            self?.tabs.forEach { $0.model.facePreferencesDidChange() }
         }
         .store(in: &preferenceCancellables)
 
@@ -251,6 +275,7 @@ final class WorkspaceModel: ObservableObject {
         let model = AppModel(
             historyStore: RenameHistoryStore(fileURL: historyURL),
             preferences: preferences,
+            personStore: personStore,
             recoversPendingRenames: false
         )
         tabs.append(Tab(id: id, model: model))
@@ -285,6 +310,18 @@ final class WorkspaceModel: ObservableObject {
         }
         let index = tabs.firstIndex(where: { $0.id == tab.id }) ?? 0
         return "Tab \(index + 1)"
+    }
+
+    func deleteAllPeople() {
+        do {
+            try personStore?.deleteAllPeople()
+            tabs.forEach { $0.model.peopleStoreDidChange() }
+        } catch {
+            activeModel.alertMessage = AppModel.AlertMessage(
+                title: "人物データを削除できませんでした",
+                detail: error.localizedDescription
+            )
+        }
     }
 
 }
@@ -461,6 +498,7 @@ struct FileRenamerApp: App {
         Settings {
             PreferencesView()
                 .environmentObject(preferences)
+                .environmentObject(workspace)
                 .environmentObject(updateController)
                 .environment(\.locale, preferences.displayLocale)
         }
@@ -473,8 +511,10 @@ struct FileRenamerApp: App {
 
 private struct PreferencesView: View {
     @EnvironmentObject private var preferences: AppPreferences
+    @EnvironmentObject private var workspace: WorkspaceModel
     @EnvironmentObject private var updateController: UpdateController
     @State private var showsPrivacyPolicy = false
+    @State private var confirmsDeletingPeople = false
 
     var body: some View {
         Form {
@@ -524,6 +564,27 @@ private struct PreferencesView: View {
                 Text("画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("人物候補（実験的）") {
+                Toggle("写真内の人物候補をまとめる", isOn: $preferences.classifiesPeople)
+
+                Picker("分類の感度", selection: $preferences.faceGroupingSensitivity) {
+                    Text("厳密").tag(FaceGroupingSensitivity.strict)
+                    Text("標準").tag(FaceGroupingSensitivity.standard)
+                    Text("広め").tag(FaceGroupingSensitivity.broad)
+                }
+                .pickerStyle(.segmented)
+                .disabled(!preferences.classifiesPeople)
+
+                Text("顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button("保存した人物データをすべて削除…", role: .destructive) {
+                    confirmsDeletingPeople = true
+                }
+                .disabled(workspace.personStore == nil)
             }
 
             Section("表示") {
@@ -597,6 +658,18 @@ private struct PreferencesView: View {
         .frame(width: 560, height: 780)
         .sheet(isPresented: $showsPrivacyPolicy) {
             PrivacyPolicyView()
+        }
+        .confirmationDialog(
+            "保存した人物データをすべて削除しますか？",
+            isPresented: $confirmsDeletingPeople,
+            titleVisibility: .visible
+        ) {
+            Button("すべて削除", role: .destructive) {
+                workspace.deleteAllPeople()
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。")
         }
     }
 }

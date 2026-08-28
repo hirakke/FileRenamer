@@ -21,6 +21,22 @@ public final class PersonStore {
         context.autosaveEnabled = false
     }
 
+    /// Creates the app-wide on-device store. CloudKit is explicitly disabled so
+    /// named-person embeddings never leave this Mac through SwiftData syncing.
+    public static func localPersistent() throws -> PersonStore {
+        let configuration = ModelConfiguration(
+            "NamedPeople",
+            schema: Schema([PersonProfile.self]),
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .none
+        )
+        let container = try ModelContainer(
+            for: PersonProfile.self,
+            configurations: configuration
+        )
+        return PersonStore(container: container)
+    }
+
     public func people() throws -> [PersonProfileSnapshot] {
         try profiles()
             .map { try $0.snapshot() }

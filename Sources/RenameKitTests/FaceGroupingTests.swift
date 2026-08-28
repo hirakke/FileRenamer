@@ -124,6 +124,29 @@ func runFaceGroupingTests() async {
         }
     }
 
+    runner.suite("FaceGroupingPreferences — 安全な初期値")
+
+    await runner.test("人物候補の分類は初回OFF") {
+        try expect(!FaceGroupingDefaults.classifiesPeople)
+        try expectEqual(FaceGroupingDefaults.sensitivity, .standard)
+    }
+
+    await runner.test("感度ごとの閾値は厳密から広めへ単調に広がる") {
+        let strict = FaceGroupingSensitivity.strict.policy
+        let standard = FaceGroupingSensitivity.standard.policy
+        let broad = FaceGroupingSensitivity.broad.policy
+
+        try expect(strict.knownPersonMaximumDistance < standard.knownPersonMaximumDistance)
+        try expect(standard.knownPersonMaximumDistance < broad.knownPersonMaximumDistance)
+        try expect(strict.clusterEpsilon < standard.clusterEpsilon)
+        try expect(standard.clusterEpsilon < broad.clusterEpsilon)
+        try expect(strict.minimumCaptureQuality > standard.minimumCaptureQuality)
+        try expect(standard.minimumCaptureQuality > broad.minimumCaptureQuality)
+        try expectEqual(strict.clusterMinimumPoints, 2)
+        try expectEqual(standard.clusterMinimumPoints, 2)
+        try expectEqual(broad.clusterMinimumPoints, 2)
+    }
+
     runner.suite("FaceDensityClusterer — 人物候補")
 
     await runner.test("密度到達可能な顔を同じクラスタにまとめる") {

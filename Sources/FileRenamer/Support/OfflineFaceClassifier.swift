@@ -55,13 +55,16 @@ struct OfflineFaceClassifierConfiguration: Sendable {
     let clusterEpsilon: Float
     let clusterMinimumPoints: Int
 
-    static let standard = OfflineFaceClassifierConfiguration(
-        minimumFaceSide: 40,
-        minimumCaptureQuality: 0.20,
-        knownPersonMaximumDistance: 0.36,
-        clusterEpsilon: 0.42,
-        clusterMinimumPoints: 2
-    )
+    init(sensitivity: FaceGroupingSensitivity) {
+        let policy = sensitivity.policy
+        minimumFaceSide = 40
+        minimumCaptureQuality = policy.minimumCaptureQuality
+        knownPersonMaximumDistance = policy.knownPersonMaximumDistance
+        clusterEpsilon = policy.clusterEpsilon
+        clusterMinimumPoints = policy.clusterMinimumPoints
+    }
+
+    static let standard = OfflineFaceClassifierConfiguration(sensitivity: .standard)
 }
 
 /// A local-only actor separate from SimilarImageDetector and all file operations.
