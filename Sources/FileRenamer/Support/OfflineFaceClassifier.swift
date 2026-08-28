@@ -181,8 +181,12 @@ actor OfflineFaceClassifier {
     }
 
     private func prepare(_ candidate: FaceClassificationCandidate) -> PreparedCandidate? {
-        guard FileKinds.isImage(candidate.analysisURL),
-              let values = try? candidate.analysisURL.resourceValues(
+        guard FileKinds.isImage(candidate.analysisURL) else { return nil }
+        let accessed = candidate.analysisURL.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { candidate.analysisURL.stopAccessingSecurityScopedResource() }
+        }
+        guard let values = try? candidate.analysisURL.resourceValues(
                   forKeys: [.fileSizeKey, .contentModificationDateKey]
               )
         else { return nil }

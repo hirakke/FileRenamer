@@ -110,7 +110,7 @@ versions can never be compared silently.
 
 The first implementation uses the Apache-2.0 Qualcomm MobileFaceNet release through
 Core ML and follows the input contract used by `Faces` (112 × 112 RGB normalised to
-[-1, 1], L2-normalised output). A Vision feature-print backend remains available only
+[0, 1], L2-normalised output). A Vision feature-print backend remains available only
 as a developer fallback and is never mixed with MobileFaceNet profiles.
 
 No InsightFace `buffalo_*` model or other restricted weight is bundled in this branch.

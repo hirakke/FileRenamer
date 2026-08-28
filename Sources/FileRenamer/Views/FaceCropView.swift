@@ -17,6 +17,8 @@ private actor FaceCropProvider {
         normalizedBoundingBox: CGRect,
         size: CGFloat
     ) -> NSImage? {
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         let values = try? url.resourceValues(
             forKeys: [.fileSizeKey, .contentModificationDateKey]
         )

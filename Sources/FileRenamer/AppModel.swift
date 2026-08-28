@@ -411,12 +411,18 @@ final class AppModel: ObservableObject {
 
     func peopleBadge(for itemID: UUID) -> PeopleBadge? {
         guard let faces = faceClassificationResult.facesByItemID[itemID] else { return nil }
-        let embedded = faces.filter { $0.embedding != nil }
-        guard !embedded.isEmpty else { return nil }
-        let knownNames = Set(embedded.compactMap { $0.knownPersonMatch?.person.displayName })
-        let hasUnknown = embedded.contains { $0.knownPersonMatch == nil }
+        let clusteredUnknownIDs = Set(
+            faceClassificationResult.unknownClusters.flatMap(\.members)
+        )
+        let candidates = faces.filter { face in
+            face.embedding != nil
+                && (face.knownPersonMatch != nil || clusteredUnknownIDs.contains(face.id))
+        }
+        guard !candidates.isEmpty else { return nil }
+        let knownNames = Set(candidates.compactMap { $0.knownPersonMatch?.person.displayName })
+        let hasUnknown = candidates.contains { $0.knownPersonMatch == nil }
         return PeopleBadge(
-            count: embedded.count,
+            count: candidates.count,
             knownName: knownNames.count == 1 && !hasUnknown ? knownNames.first : nil
         )
     }
@@ -432,10 +438,6 @@ final class AppModel: ObservableObject {
         for cluster in faceClassificationResult.unknownClusters {
             for member in cluster.members { unknownGroupByFaceID[member] = "unknown:\(cluster.id)" }
         }
-        for outlier in faceClassificationResult.unknownOutliers {
-            unknownGroupByFaceID[outlier] = "unknown:\(outlier.itemID.uuidString):\(outlier.faceIndex)"
-        }
-
         var orderedGroupIDs: [String] = []
         var groupedFaces: [String: [ClassifiedFace]] = [:]
         var peopleByGroupID: [String: PersonProfileSnapshot] = [:]
@@ -448,9 +450,10 @@ final class AppModel: ObservableObject {
                 if let person = face.knownPersonMatch?.person {
                     groupID = "known:\(person.id.uuidString)"
                     peopleByGroupID[groupID] = person
+                } else if let unknownGroupID = unknownGroupByFaceID[face.id] {
+                    groupID = unknownGroupID
                 } else {
-                    groupID = unknownGroupByFaceID[face.id]
-                        ?? "unknown:\(face.id.itemID.uuidString):\(face.id.faceIndex)"
+                    continue
                 }
                 if groupedFaces[groupID] == nil { orderedGroupIDs.append(groupID) }
                 groupedFaces[groupID, default: []].append(face)
