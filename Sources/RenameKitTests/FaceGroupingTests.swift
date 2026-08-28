@@ -61,6 +61,69 @@ func runFaceGroupingTests() async {
         }
     }
 
+    runner.suite("FaceGeometry — Vision座標と顔整列")
+
+    await runner.test("Visionの左下原点矩形を表示向き画像の左上原点へ直す") {
+        let rect = FaceGeometry.imageRect(
+            normalizedVisionRect: CGRect(x: 0.10, y: 0.20, width: 0.30, height: 0.40),
+            imageSize: CGSize(width: 1_000, height: 500)
+        )
+        try expect(abs(rect.minX - 100) < 0.001)
+        try expect(abs(rect.minY - 200) < 0.001)
+        try expect(abs(rect.width - 300) < 0.001)
+        try expect(abs(rect.height - 200) < 0.001)
+    }
+
+    await runner.test("顔の予備切り抜きを正方形にして画像範囲へ収める") {
+        let crop = FaceGeometry.fallbackCrop(
+            faceRect: CGRect(x: 5, y: 10, width: 40, height: 50),
+            imageBounds: CGRect(x: 0, y: 0, width: 100, height: 80),
+            scale: 1.6
+        )
+        try expectEqual(crop, CGRect(x: 0, y: 0, width: 80, height: 80))
+    }
+
+    await runner.test("小さすぎる顔は埋め込み対象にしない") {
+        try expect(!FaceGeometry.isLargeEnough(
+            faceRect: CGRect(x: 0, y: 0, width: 39, height: 80),
+            minimumSide: 40
+        ))
+        try expect(FaceGeometry.isLargeEnough(
+            faceRect: CGRect(x: 0, y: 0, width: 40, height: 40),
+            minimumSide: 40
+        ))
+    }
+
+    await runner.test("両目の中点・傾き・距離から112px整列を決める") {
+        let plan = try FaceGeometry.eyeAlignment(
+            leftEye: CGPoint(x: 30, y: 45),
+            rightEye: CGPoint(x: 70, y: 55),
+            targetSize: 112
+        )
+        try expect(abs(plan.sourceEyeMidpoint.x - 50) < 0.001)
+        try expect(abs(plan.sourceEyeMidpoint.y - 50) < 0.001)
+        try expect(abs(plan.rotationRadians + atan2(10.0, 40.0)) < 0.000_001)
+        try expect(abs(plan.scale - (33.6 / hypot(40.0, 10.0))) < 0.000_001)
+        try expectEqual(plan.targetEyeMidpoint, CGPoint(x: 56, y: 42.56))
+    }
+
+    await runner.test("重なった目や不正な対象サイズでは整列しない") {
+        try await expectThrows {
+            _ = try FaceGeometry.eyeAlignment(
+                leftEye: CGPoint(x: 10, y: 10),
+                rightEye: CGPoint(x: 10, y: 10),
+                targetSize: 112
+            )
+        }
+        try await expectThrows {
+            _ = try FaceGeometry.eyeAlignment(
+                leftEye: CGPoint(x: 10, y: 10),
+                rightEye: CGPoint(x: 20, y: 10),
+                targetSize: 0
+            )
+        }
+    }
+
     runner.suite("FaceDensityClusterer — 人物候補")
 
     await runner.test("密度到達可能な顔を同じクラスタにまとめる") {
