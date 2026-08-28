@@ -21,6 +21,7 @@ final class AppPreferences: ObservableObject {
         static let excludesRAWJPEGFromSimilarity = "preferences.excludesRAWJPEGFromSimilarity"
         static let classifiesPeople = "preferences.classifiesPeople"
         static let faceGroupingSensitivity = "preferences.faceGroupingSensitivity"
+        static let confirmedPeopleStorage = "preferences.confirmedPeopleStorage"
         static let displayLanguage = "preferences.displayLanguage"
     }
 
@@ -133,6 +134,14 @@ final class AppPreferences: ObservableObject {
 
     var displayLocale: Locale {
         Locale(identifier: resolvedLanguage.localeIdentifier)
+    }
+
+    var hasConfirmedPeopleStorage: Bool {
+        defaults.bool(forKey: Key.confirmedPeopleStorage)
+    }
+
+    func confirmPeopleStorage() {
+        defaults.set(true, forKey: Key.confirmedPeopleStorage)
     }
 }
 

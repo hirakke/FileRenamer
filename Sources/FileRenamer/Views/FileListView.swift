@@ -27,7 +27,16 @@ struct FileListView: View {
                                 sortField: model.sortOption.field,
                                 imageChangeSummary: model.imageChangeSummary(for: item, preview: preview),
                                 similarityBadge: model.similarityBadge(for: item.id),
-                                onShowSimilarity: { model.showSimilarImages(for: item.id) }
+                                onShowSimilarity: { model.showSimilarImages(for: item.id) },
+                                peopleBadge: model.peopleBadge(for: item.id),
+                                onShowPeople: {
+                                    let previousSelection = model.selection
+                                    model.showPeople(for: item.id)
+                                    Task { @MainActor in
+                                        await Task.yield()
+                                        model.selection = previousSelection
+                                    }
+                                }
                             )
                             OrderStepper(id: item.id, axis: .vertical)
                         }
@@ -209,6 +218,9 @@ struct FileListView: View {
             Divider()
             Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
         }
+        if model.peopleBadge(for: item.id) != nil {
+            Button("人物候補を確認…") { model.showPeople(for: item.id) }
+        }
         Divider()
         Button("Finder で表示") { model.revealInFinder(ids: ids) }
         Button("クイックルック") { model.quickLookURL = item.originalURL }
@@ -306,12 +318,15 @@ private struct ListRowDropDelegate: DropDelegate {
 }
 
 struct FileRow: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let item: RenameItem
     let preview: RenamePreview?
     var sortField: SortField = .fileName
     var imageChangeSummary: String?
     var similarityBadge: AppModel.SimilarityBadge?
     var onShowSimilarity: () -> Void = {}
+    var peopleBadge: AppModel.PeopleBadge?
+    var onShowPeople: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 12) {
@@ -326,6 +341,25 @@ struct FileRow: View {
                     Text(summary)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                }
+                if let peopleBadge {
+                    Button(action: onShowPeople) {
+                        Text(peopleBadge.knownName ?? L10n.format(
+                            "badge.peopleCount",
+                            defaultValue: "%lld People",
+                            arguments: [peopleBadge.count],
+                            language: preferences.resolvedLanguage
+                        ))
+                            .font(.system(size: 9, weight: .medium))
+                            .lineLimit(1)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .foregroundStyle(Palette.accent)
+                            .background(Palette.accent.opacity(0.10), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .help("同じ人物の可能性がある写真を確認")
+                    .accessibilityLabel("\(peopleBadge.count)人の人物候補")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

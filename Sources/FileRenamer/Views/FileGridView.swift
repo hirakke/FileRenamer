@@ -39,7 +39,16 @@ struct FileGridView: View {
                                         preview: model.preview(for: item)
                                     ),
                                     similarityBadge: model.similarityBadge(for: item.id),
-                                    onShowSimilarity: { model.showSimilarImages(for: item.id) }
+                                    onShowSimilarity: { model.showSimilarImages(for: item.id) },
+                                    peopleBadge: model.peopleBadge(for: item.id),
+                                    onShowPeople: {
+                                        let previousSelection = model.selection
+                                        model.showPeople(for: item.id)
+                                        Task { @MainActor in
+                                            await Task.yield()
+                                            model.selection = previousSelection
+                                        }
+                                    }
                                 )
                                 .opacity(draggingIDs.contains(item.id) ? 0.35 : 1)
                                 .overlay(alignment: .leading) {
@@ -283,6 +292,9 @@ struct FileGridView: View {
         if model.similarityBadge(for: item.id) != nil {
             Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
         }
+        if model.peopleBadge(for: item.id) != nil {
+            Button("人物候補を確認…") { model.showPeople(for: item.id) }
+        }
         Divider()
         Button("ゴミ箱に移動…", role: .destructive) {
             model.requestMoveToTrash(ids: ids)
@@ -379,6 +391,7 @@ private struct CellDropDelegate: DropDelegate {
 }
 
 private struct GridCell: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let item: RenameItem
     let preview: RenamePreview?
     let size: Double
@@ -386,6 +399,8 @@ private struct GridCell: View {
     let imageChangeSummary: String?
     let similarityBadge: AppModel.SimilarityBadge?
     let onShowSimilarity: () -> Void
+    let peopleBadge: AppModel.PeopleBadge?
+    let onShowPeople: () -> Void
 
     var body: some View {
         VStack(spacing: 6) {
@@ -431,6 +446,28 @@ private struct GridCell: View {
                             : "類似している可能性のある画像を比較"
                     )
                     .accessibilityLabel("\(similarityBadge.count)件の重複候補")
+                }
+            }
+            .overlay(alignment: .bottomLeading) {
+                if let peopleBadge {
+                    Button(action: onShowPeople) {
+                        Text(peopleBadge.knownName ?? L10n.format(
+                            "badge.peopleCount",
+                            defaultValue: "%lld People",
+                            arguments: [peopleBadge.count],
+                            language: preferences.resolvedLanguage
+                        ))
+                            .font(.system(size: 9, weight: .semibold))
+                            .lineLimit(1)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(Palette.accent, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(6)
+                    .help("同じ人物の可能性がある写真を確認")
+                    .accessibilityLabel("\(peopleBadge.count)人の人物候補")
                 }
             }
 

@@ -100,6 +100,9 @@ struct ContentView: View {
         .sheet(item: $model.similarityReview) { review in
             SimilarImageReviewView(review: review)
         }
+        .sheet(item: $model.peopleReview) { review in
+            PeopleReviewView(review: review)
+        }
         .sheet(item: $model.renameConfirmation) { confirmation in
             RenameConfirmationView(confirmation: confirmation) {
                 model.confirmRename()

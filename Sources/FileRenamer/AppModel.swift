@@ -112,6 +112,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var faceClassificationResult = OfflineFaceClassificationResult.empty
     @Published private(set) var faceClassificationError: String?
     @Published var similarityReview: SimilarityReview?
+    @Published var peopleReview: PeopleReview?
+    @Published var pendingPersonRegistration: PendingPersonRegistration?
     @Published var alertMessage: AlertMessage?
     @Published var resultMessage: ResultMessage?
     @Published var quickLookURL: URL?
@@ -259,6 +261,31 @@ final class AppModel: ObservableObject {
         let containsExactMatch: Bool
     }
 
+    struct PeopleBadge {
+        let count: Int
+        let knownName: String?
+    }
+
+    struct PeopleReview: Identifiable {
+        let id = UUID()
+        let focusedGroupID: String?
+    }
+
+    struct PeopleReviewGroup: Identifiable {
+        let id: String
+        let faces: [ClassifiedFace]
+        let person: PersonProfileSnapshot?
+
+        var isKnownPerson: Bool { person != nil }
+    }
+
+    struct PendingPersonRegistration: Identifiable {
+        let id = UUID()
+        let groupID: String
+        let displayName: String
+        let embeddings: [FaceEmbedding]
+    }
+
     init(
         presetStore: RulePresetStore = RulePresetStore(),
         historyStore: RenameHistoryStore = RenameHistoryStore(),
@@ -380,6 +407,157 @@ final class AppModel: ObservableObject {
             count: matches.count,
             containsExactMatch: matches.contains { $0.kind == .exact }
         )
+    }
+
+    func peopleBadge(for itemID: UUID) -> PeopleBadge? {
+        guard let faces = faceClassificationResult.facesByItemID[itemID] else { return nil }
+        let embedded = faces.filter { $0.embedding != nil }
+        guard !embedded.isEmpty else { return nil }
+        let knownNames = Set(embedded.compactMap { $0.knownPersonMatch?.person.displayName })
+        let hasUnknown = embedded.contains { $0.knownPersonMatch == nil }
+        return PeopleBadge(
+            count: embedded.count,
+            knownName: knownNames.count == 1 && !hasUnknown ? knownNames.first : nil
+        )
+    }
+
+    var peopleReviewGroups: [PeopleReviewGroup] {
+        var facesByID: [FaceDescriptorID: ClassifiedFace] = [:]
+        for faces in faceClassificationResult.facesByItemID.values {
+            for face in faces where face.embedding != nil { facesByID[face.id] = face }
+        }
+        guard !facesByID.isEmpty else { return [] }
+
+        var unknownGroupByFaceID: [FaceDescriptorID: String] = [:]
+        for cluster in faceClassificationResult.unknownClusters {
+            for member in cluster.members { unknownGroupByFaceID[member] = "unknown:\(cluster.id)" }
+        }
+        for outlier in faceClassificationResult.unknownOutliers {
+            unknownGroupByFaceID[outlier] = "unknown:\(outlier.itemID.uuidString):\(outlier.faceIndex)"
+        }
+
+        var orderedGroupIDs: [String] = []
+        var groupedFaces: [String: [ClassifiedFace]] = [:]
+        var peopleByGroupID: [String: PersonProfileSnapshot] = [:]
+        for item in items {
+            let faces = (faceClassificationResult.facesByItemID[item.id] ?? [])
+                .filter { $0.embedding != nil }
+                .sorted { $0.id.faceIndex < $1.id.faceIndex }
+            for face in faces {
+                let groupID: String
+                if let person = face.knownPersonMatch?.person {
+                    groupID = "known:\(person.id.uuidString)"
+                    peopleByGroupID[groupID] = person
+                } else {
+                    groupID = unknownGroupByFaceID[face.id]
+                        ?? "unknown:\(face.id.itemID.uuidString):\(face.id.faceIndex)"
+                }
+                if groupedFaces[groupID] == nil { orderedGroupIDs.append(groupID) }
+                groupedFaces[groupID, default: []].append(face)
+            }
+        }
+
+        return orderedGroupIDs.compactMap { groupID in
+            guard let faces = groupedFaces[groupID], !faces.isEmpty else { return nil }
+            let person = peopleByGroupID[groupID]
+            return PeopleReviewGroup(
+                id: groupID,
+                faces: faces,
+                person: person
+            )
+        }
+    }
+
+    var peopleCandidateCount: Int { peopleReviewGroups.count }
+
+    func showPeople(for itemID: UUID) {
+        let focused = peopleReviewGroups.first { group in
+            group.faces.contains { $0.id.itemID == itemID }
+        }
+        guard let focused else { return }
+        peopleReview = PeopleReview(focusedGroupID: focused.id)
+    }
+
+    func showPeopleReview() {
+        guard let first = peopleReviewGroups.first else { return }
+        peopleReview = PeopleReview(focusedGroupID: first.id)
+    }
+
+    func faceAnalysisURL(for itemID: UUID) -> URL? {
+        guard let item = items.first(where: { $0.id == itemID }) else { return nil }
+        let imageURLs = item.allURLs.filter(FileKinds.isImage)
+        return imageURLs.first(where: { !FileKinds.isRAW($0) }) ?? imageURLs.first
+    }
+
+    func requestPersonRegistration(groupID: String, displayName: String) {
+        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty,
+              let group = peopleReviewGroups.first(where: { $0.id == groupID }),
+              group.person == nil
+        else { return }
+        let embeddings = group.faces.compactMap(\.embedding)
+        guard !embeddings.isEmpty else { return }
+        let registration = PendingPersonRegistration(
+            groupID: groupID,
+            displayName: name,
+            embeddings: embeddings
+        )
+        if preferences.hasConfirmedPeopleStorage {
+            savePerson(registration)
+        } else {
+            pendingPersonRegistration = registration
+        }
+    }
+
+    func confirmPersonRegistration() {
+        guard let registration = pendingPersonRegistration else { return }
+        pendingPersonRegistration = nil
+        preferences.confirmPeopleStorage()
+        savePerson(registration)
+    }
+
+    func cancelPersonRegistration() {
+        pendingPersonRegistration = nil
+    }
+
+    func renamePerson(id: UUID, displayName: String) {
+        do {
+            _ = try personStore?.renamePerson(id: id, displayName: displayName)
+            scheduleFaceClassification()
+        } catch {
+            alertMessage = AlertMessage(
+                title: "人物名を変更できませんでした",
+                detail: error.localizedDescription
+            )
+        }
+    }
+
+    func deletePerson(id: UUID) {
+        do {
+            try personStore?.deletePerson(id: id)
+            scheduleFaceClassification()
+        } catch {
+            alertMessage = AlertMessage(
+                title: "人物の登録を解除できませんでした",
+                detail: error.localizedDescription
+            )
+        }
+    }
+
+    private func savePerson(_ registration: PendingPersonRegistration) {
+        do {
+            _ = try personStore?.savePerson(
+                displayName: registration.displayName,
+                embeddings: registration.embeddings
+            )
+            resultMessage = ResultMessage(text: "「\(registration.displayName)」をこのMacに登録しました")
+            scheduleFaceClassification()
+        } catch {
+            alertMessage = AlertMessage(
+                title: "人物を登録できませんでした",
+                detail: error.localizedDescription
+            )
+        }
     }
 
     /// Connected components of the match graph, in list order.

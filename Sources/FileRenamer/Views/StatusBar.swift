@@ -72,6 +72,43 @@ struct StatusBar: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            if model.isClassifyingPeople {
+                ProgressView()
+                    .controlSize(.small)
+                Text(L10n.string(
+                    "status.classifyingPeople",
+                    defaultValue: "Grouping People Candidates",
+                    language: preferences.resolvedLanguage
+                ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if model.peopleCandidateCount > 0 {
+                Button {
+                    model.showPeopleReview()
+                } label: {
+                    Label(
+                        L10n.format(
+                            "status.peopleCandidates",
+                            defaultValue: "%lld People Candidates",
+                            arguments: [model.peopleCandidateCount],
+                            language: preferences.resolvedLanguage
+                        ),
+                        systemImage: "person.2"
+                    )
+                    .font(.callout)
+                    .foregroundStyle(Palette.accent)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.string(
+                    "status.reviewPeopleHelp",
+                    defaultValue: "Review photos that may contain the same person.",
+                    language: preferences.resolvedLanguage
+                ))
+            } else if let error = model.faceClassificationError {
+                Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(Palette.warning)
+                    .help(error)
+            }
 
             Spacer()
 

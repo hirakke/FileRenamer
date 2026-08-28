@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreImage
 import Foundation
 import RenameKit
 import Vision
@@ -87,32 +88,42 @@ enum FaceAligner {
         image: CGImage,
         alignment: FaceEyeAlignment
     ) -> CGImage? {
-        guard let context = makeContext(width: targetSize, height: targetSize) else {
-            return nil
-        }
-        prepareTopLeftCoordinates(context, height: targetSize)
-
-        let cosine = cos(alignment.rotationRadians) * alignment.scale
-        let sine = sin(alignment.rotationRadians) * alignment.scale
+        // Core Image uses a lower-left origin. `FaceGeometry` deliberately exposes
+        // upper-left image coordinates to the rest of the app, so convert both
+        // midpoints once here and build the affine transform in Core Image's
+        // native coordinate system. Mixing a flipped CGContext with the alignment
+        // transform caused the source image to be translated outside the 112 px
+        // destination for portrait images.
+        let sourceMidpoint = CGPoint(
+            x: alignment.sourceEyeMidpoint.x,
+            y: CGFloat(image.height) - alignment.sourceEyeMidpoint.y
+        )
+        let targetMidpoint = CGPoint(
+            x: alignment.targetEyeMidpoint.x,
+            y: CGFloat(targetSize) - alignment.targetEyeMidpoint.y
+        )
+        let rotation = -alignment.rotationRadians
+        let cosine = cos(rotation) * alignment.scale
+        let sine = sin(rotation) * alignment.scale
         let transform = CGAffineTransform(
             a: cosine,
             b: sine,
             c: -sine,
             d: cosine,
-            tx: alignment.targetEyeMidpoint.x
-                - cosine * alignment.sourceEyeMidpoint.x
-                + sine * alignment.sourceEyeMidpoint.y,
-            ty: alignment.targetEyeMidpoint.y
-                - sine * alignment.sourceEyeMidpoint.x
-                - cosine * alignment.sourceEyeMidpoint.y
+            tx: targetMidpoint.x
+                - cosine * sourceMidpoint.x
+                + sine * sourceMidpoint.y,
+            ty: targetMidpoint.y
+                - sine * sourceMidpoint.x
+                - cosine * sourceMidpoint.y
         )
-        context.concatenate(transform)
-        context.interpolationQuality = .high
-        context.draw(
-            image,
-            in: CGRect(x: 0, y: 0, width: image.width, height: image.height)
+        let transformed = CIImage(cgImage: image).transformed(by: transform)
+        return CIContext(options: [.useSoftwareRenderer: false]).createCGImage(
+            transformed,
+            from: CGRect(x: 0, y: 0, width: targetSize, height: targetSize),
+            format: .RGBA8,
+            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)
         )
-        return context.makeImage()
     }
 
     private static func resize(_ image: CGImage, width: Int, height: Int) -> CGImage? {

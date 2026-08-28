@@ -29,11 +29,15 @@ final class MobileFaceNetEmbedder {
 
     private let model: MLModel
 
-    init() throws {
+    convenience init() throws {
+        try self.init(modelURL: Self.modelURL())
+    }
+
+    init(modelURL: URL) throws {
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .all
         model = try MLModel(
-            contentsOf: try Self.modelURL(),
+            contentsOf: modelURL,
             configuration: configuration
         )
     }
