@@ -46,8 +46,11 @@ Review your photos with larger previews and both the original and proposed names
 - Open images, PDFs, and videos in a separate preview window with double-click or the Space bar.
 - Keep several naming jobs open at once in tabs.
 - Review exact and visually similar image candidates before deciding what to do.
+- Optionally group photos by possible person, then name only the people you confirm (experimental and off by default).
 
 Similarity analysis stays on your Mac. FileRenamer never removes files or excludes them from the list automatically. Files can only be moved to the Finder Trash after you explicitly choose them and confirm.
+
+People-candidate analysis also stays on your Mac and runs only after you enable it in Settings. It detects faces and groups photos that may show the same person. Results are suggestions and never rename, exclude, or delete files automatically. If you choose to name someone, FileRenamer asks first, then stores only the name and a representative embedding on this Mac. It does not save face crops or source-photo locations, and saved people data can be deleted from Settings.
 
 ## Languages
 
@@ -131,6 +134,8 @@ Whenever image content will change, FileRenamer lets you choose whether to keep 
 Files, thumbnails, image analysis, metadata reading, renaming, conversion, resizing, similarity checks, Trash actions, Undo, and recovery are handled on your Mac. FileRenamer does not collect or send your files, images, names, metadata, or usage data.
 
 When update checking is enabled, the app contacts the update feed only to learn whether a newer version is available. It does not upload file or usage data.
+
+Experimental people grouping is off by default. When enabled, face detection, alignment, embeddings, and grouping are computed locally. Face crops are temporary and are not persisted. A name and representative embedding are saved only after your confirmation, and can be removed from Settings.
 
 Read the full [Privacy Policy](https://hirakke.github.io/FileRenamer/privacy.html).
 
