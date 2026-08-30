@@ -1,5 +1,90 @@
 import Foundation
 
+public enum FaceEligibilityTier: Int, Codable, Hashable, Sendable {
+    case displayOnly
+    case classificationEligible
+    case prototypeEligible
+}
+
+public enum FaceIneligibilityReason: String, Codable, Hashable, Sendable {
+    case tooSmall
+    case lowCaptureQuality
+    case incompleteLandmarks
+    case alignmentFailed
+    case embeddingFailed
+}
+
+public struct FaceEligibilityDecision: Equatable, Sendable {
+    public let tier: FaceEligibilityTier
+    public let reason: FaceIneligibilityReason?
+
+    public init(tier: FaceEligibilityTier, reason: FaceIneligibilityReason?) {
+        self.tier = tier
+        self.reason = reason
+    }
+}
+
+public struct FaceEligibilityPolicy: Hashable, Sendable {
+    public let minimumFaceSide: CGFloat
+    public let classificationMinimumCaptureQuality: Float
+    public let prototypeMinimumFaceSide: CGFloat
+    public let prototypeMinimumCaptureQuality: Float
+
+    public init(
+        minimumFaceSide: CGFloat = 40,
+        classificationMinimumCaptureQuality: Float,
+        prototypeMinimumFaceSide: CGFloat = 80,
+        prototypeMinimumCaptureQuality: Float = 0.45
+    ) {
+        self.minimumFaceSide = minimumFaceSide
+        self.classificationMinimumCaptureQuality = classificationMinimumCaptureQuality
+        self.prototypeMinimumFaceSide = prototypeMinimumFaceSide
+        self.prototypeMinimumCaptureQuality = prototypeMinimumCaptureQuality
+    }
+
+    public init(sensitivity: FaceGroupingSensitivity) {
+        self.init(
+            classificationMinimumCaptureQuality: sensitivity.policy.minimumCaptureQuality
+        )
+    }
+
+    public func tier(
+        faceSide: CGFloat,
+        quality: Float?,
+        hasFivePointAlignment: Bool
+    ) -> FaceEligibilityTier {
+        decision(
+            faceSide: faceSide,
+            quality: quality,
+            hasFivePointAlignment: hasFivePointAlignment
+        ).tier
+    }
+
+    public func decision(
+        faceSide: CGFloat,
+        quality: Float?,
+        hasFivePointAlignment: Bool
+    ) -> FaceEligibilityDecision {
+        guard faceSide.isFinite, faceSide >= minimumFaceSide else {
+            return FaceEligibilityDecision(tier: .displayOnly, reason: .tooSmall)
+        }
+        guard hasFivePointAlignment else {
+            return FaceEligibilityDecision(tier: .displayOnly, reason: .incompleteLandmarks)
+        }
+        guard let quality,
+              quality.isFinite,
+              quality >= classificationMinimumCaptureQuality
+        else {
+            return FaceEligibilityDecision(tier: .displayOnly, reason: .lowCaptureQuality)
+        }
+        if faceSide >= prototypeMinimumFaceSide,
+           quality >= prototypeMinimumCaptureQuality {
+            return FaceEligibilityDecision(tier: .prototypeEligible, reason: nil)
+        }
+        return FaceEligibilityDecision(tier: .classificationEligible, reason: nil)
+    }
+}
+
 public enum FaceGroupingSensitivity: String, CaseIterable, Codable, Identifiable, Sendable {
     case strict
     case standard

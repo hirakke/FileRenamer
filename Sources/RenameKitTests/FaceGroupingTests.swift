@@ -255,6 +255,28 @@ func runFaceGroupingTests() async {
         try expectEqual(broad.clusterMinimumPoints, 2)
     }
 
+    await runner.test("顔サイズ・品質・5点整列で利用範囲を安全に制限する") {
+        let policy = FaceEligibilityPolicy(sensitivity: .standard)
+        let cases: [(CGFloat, Float?, Bool, FaceEligibilityTier)] = [
+            (120, 0.70, true, .prototypeEligible),
+            (50, 0.25, true, .classificationEligible),
+            (39, 0.90, true, .displayOnly),
+            (120, 0.90, false, .displayOnly),
+            (120, 0.10, true, .displayOnly)
+        ]
+
+        for (side, quality, hasFivePoints, expected) in cases {
+            try expectEqual(
+                policy.tier(
+                    faceSide: side,
+                    quality: quality,
+                    hasFivePointAlignment: hasFivePoints
+                ),
+                expected
+            )
+        }
+    }
+
     runner.suite("FaceDensityClusterer — 人物候補")
 
     await runner.test("密度到達可能な顔を同じクラスタにまとめる") {
