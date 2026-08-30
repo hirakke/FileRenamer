@@ -9,6 +9,9 @@ public final class PersonProfile {
     public var embeddingModelIdentifier: String
     public var embeddingModelVersion: String
     public var embeddingDimension: Int
+    public var embeddingPreprocessingVersion: Int = 1
+    public var embeddingAlignmentVersion: Int = 1
+    public var embeddingDistanceMetricVersion: Int = 1
     public var sampleCount: Int
     public var createdAt: Date
     public var updatedAt: Date
@@ -27,6 +30,9 @@ public final class PersonProfile {
         embeddingModelIdentifier = embedding.model.identifier
         embeddingModelVersion = embedding.model.version
         embeddingDimension = embedding.model.dimension
+        embeddingPreprocessingVersion = embedding.contract.preprocessingVersion
+        embeddingAlignmentVersion = embedding.contract.alignmentVersion
+        embeddingDistanceMetricVersion = embedding.contract.distanceMetricVersion
         self.sampleCount = sampleCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -39,7 +45,12 @@ public final class PersonProfile {
             dimension: embeddingDimension
         )
         let embedding = try FaceEmbedding(
-            model: model,
+            contract: FacePipelineContract(
+                embeddingModel: model,
+                preprocessingVersion: embeddingPreprocessingVersion,
+                alignmentVersion: embeddingAlignmentVersion,
+                distanceMetricVersion: embeddingDistanceMetricVersion
+            ),
             values: try FaceEmbeddingBinaryCodec.decode(
                 embeddingData,
                 expectedCount: embeddingDimension

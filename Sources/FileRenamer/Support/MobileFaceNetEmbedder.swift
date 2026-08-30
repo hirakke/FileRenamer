@@ -20,12 +20,26 @@ enum MobileFaceNetError: LocalizedError {
     }
 }
 
-final class MobileFaceNetEmbedder {
-    static let modelContract = FaceEmbeddingModel(
-        identifier: "qualcomm.mobilefacenet",
-        version: "0.61.0",
-        dimension: 128
+protocol FaceEmbeddingProvider: AnyObject {
+    var contract: FacePipelineContract { get }
+    var targetSize: Int { get }
+    func embedding(for image: CGImage) throws -> FaceEmbedding
+}
+
+final class MobileFaceNetEmbedder: FaceEmbeddingProvider {
+    static let pipelineContract = FacePipelineContract(
+        embeddingModel: FaceEmbeddingModel(
+            identifier: "qualcomm.mobilefacenet",
+            version: "0.61.0",
+            dimension: 128
+        ),
+        preprocessingVersion: 1,
+        alignmentVersion: 2,
+        distanceMetricVersion: 1
     )
+
+    var contract: FacePipelineContract { Self.pipelineContract }
+    var targetSize: Int { FaceAligner.targetSize }
 
     private let model: MLModel
 
@@ -47,11 +61,11 @@ final class MobileFaceNetEmbedder {
         let provider = try MLDictionaryFeatureProvider(dictionary: ["input": input])
         let prediction = try model.prediction(from: provider)
         guard let output = prediction.featureValue(for: "embedding")?.multiArrayValue,
-              output.count == Self.modelContract.dimension
+              output.count == Self.pipelineContract.embeddingModel.dimension
         else { throw MobileFaceNetError.missingOutput }
 
         let values = (0..<output.count).map { output[$0].floatValue }
-        return try FaceEmbedding(model: Self.modelContract, values: values)
+        return try FaceEmbedding(contract: Self.pipelineContract, values: values)
     }
 
     private func makeInput(_ image: CGImage) throws -> MLMultiArray {

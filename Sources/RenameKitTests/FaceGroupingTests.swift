@@ -10,11 +10,17 @@ func runFaceGroupingTests() async {
         version: "0.61.0",
         dimension: 2
     )
+    let contract = FacePipelineContract(
+        embeddingModel: model,
+        preprocessingVersion: 1,
+        alignmentVersion: 2,
+        distanceMetricVersion: 1
+    )
 
     runner.suite("FaceEmbedding — 正規化と距離")
 
     await runner.test("埋め込みをL2正規化する") {
-        let embedding = try FaceEmbedding(model: model, values: [3, 4])
+        let embedding = try FaceEmbedding(contract: contract, values: [3, 4])
         try expectEqual(embedding.values.count, 2)
         try expect(abs(embedding.values[0] - 0.6) < 0.000_01)
         try expect(abs(embedding.values[1] - 0.8) < 0.000_01)
@@ -22,24 +28,24 @@ func runFaceGroupingTests() async {
 
     await runner.test("ゼロベクトルと非有限値を拒否する") {
         try await expectThrows {
-            _ = try FaceEmbedding(model: model, values: [0, 0])
+            _ = try FaceEmbedding(contract: contract, values: [0, 0])
         }
         try await expectThrows {
-            _ = try FaceEmbedding(model: model, values: [.nan, 1])
+            _ = try FaceEmbedding(contract: contract, values: [.nan, 1])
         }
     }
 
     await runner.test("モデルの次元と異なる入力を拒否する") {
         try await expectThrows {
-            _ = try FaceEmbedding(model: model, values: [1, 0, 0])
+            _ = try FaceEmbedding(contract: contract, values: [1, 0, 0])
         }
     }
 
     await runner.test("cosine距離を0から2で計算する") {
-        let x = try FaceEmbedding(model: model, values: [1, 0])
-        let same = try FaceEmbedding(model: model, values: [2, 0])
-        let orthogonal = try FaceEmbedding(model: model, values: [0, 1])
-        let opposite = try FaceEmbedding(model: model, values: [-1, 0])
+        let x = try FaceEmbedding(contract: contract, values: [1, 0])
+        let same = try FaceEmbedding(contract: contract, values: [2, 0])
+        let orthogonal = try FaceEmbedding(contract: contract, values: [0, 1])
+        let opposite = try FaceEmbedding(contract: contract, values: [-1, 0])
 
         try expect(abs(try x.cosineDistance(to: same) - 0) < 0.000_01)
         try expect(abs(try x.cosineDistance(to: orthogonal) - 1) < 0.000_01)
@@ -47,17 +53,64 @@ func runFaceGroupingTests() async {
     }
 
     await runner.test("モデルID・版・次元が異なる埋め込みを比較しない") {
-        let reference = try FaceEmbedding(model: model, values: [1, 0])
+        let reference = try FaceEmbedding(contract: contract, values: [1, 0])
         let anotherVersion = try FaceEmbedding(
-            model: FaceEmbeddingModel(
-                identifier: model.identifier,
-                version: "0.62.0",
-                dimension: 2
+            contract: FacePipelineContract(
+                embeddingModel: FaceEmbeddingModel(
+                    identifier: model.identifier,
+                    version: "0.62.0",
+                    dimension: 2
+                ),
+                preprocessingVersion: contract.preprocessingVersion,
+                alignmentVersion: contract.alignmentVersion,
+                distanceMetricVersion: contract.distanceMetricVersion
             ),
             values: [1, 0]
         )
         try await expectThrows {
             _ = try reference.cosineDistance(to: anotherVersion)
+        }
+    }
+
+    await runner.test("同じモデルでも整列版が異なる埋め込みを比較しない") {
+        let current = FacePipelineContract(
+            embeddingModel: model,
+            preprocessingVersion: 1,
+            alignmentVersion: 2,
+            distanceMetricVersion: 1
+        )
+        let oldAlignment = FacePipelineContract(
+            embeddingModel: model,
+            preprocessingVersion: 1,
+            alignmentVersion: 1,
+            distanceMetricVersion: 1
+        )
+        let lhs = try FaceEmbedding(contract: current, values: [1, 0])
+        let rhs = try FaceEmbedding(contract: oldAlignment, values: [1, 0])
+
+        try await expectThrows {
+            _ = try lhs.cosineDistance(to: rhs)
+        }
+    }
+
+    await runner.test("同じモデルでも前処理版が異なる埋め込みを比較しない") {
+        let current = FacePipelineContract(
+            embeddingModel: model,
+            preprocessingVersion: 1,
+            alignmentVersion: 2,
+            distanceMetricVersion: 1
+        )
+        let oldPreprocessing = FacePipelineContract(
+            embeddingModel: model,
+            preprocessingVersion: 0,
+            alignmentVersion: 2,
+            distanceMetricVersion: 1
+        )
+        let lhs = try FaceEmbedding(contract: current, values: [1, 0])
+        let rhs = try FaceEmbedding(contract: oldPreprocessing, values: [1, 0])
+
+        try await expectThrows {
+            _ = try lhs.cosineDistance(to: rhs)
         }
     }
 
@@ -218,8 +271,8 @@ func runFaceGroupingTests() async {
     runner.suite("PersonStore — 確認した人物")
 
     await runner.test("複数の顔から正規化した代表埋め込みを作る") {
-        let first = try FaceEmbedding(model: model, values: [1, 0])
-        let second = try FaceEmbedding(model: model, values: [0, 1])
+        let first = try FaceEmbedding(contract: contract, values: [1, 0])
+        let second = try FaceEmbedding(contract: contract, values: [0, 1])
         let centroid = try FaceEmbedding.centroid(of: [first, second])
         let expected = Float(1 / Double(2).squareRoot())
 
@@ -228,13 +281,21 @@ func runFaceGroupingTests() async {
     }
 
     await runner.test("異なるモデルの顔を一つの人物へ登録しない") {
-        let first = try FaceEmbedding(model: model, values: [1, 0])
+        let first = try FaceEmbedding(contract: contract, values: [1, 0])
         let otherModel = FaceEmbeddingModel(
             identifier: "another.model",
             version: model.version,
             dimension: model.dimension
         )
-        let second = try FaceEmbedding(model: otherModel, values: [1, 0])
+        let second = try FaceEmbedding(
+            contract: FacePipelineContract(
+                embeddingModel: otherModel,
+                preprocessingVersion: contract.preprocessingVersion,
+                alignmentVersion: contract.alignmentVersion,
+                distanceMetricVersion: contract.distanceMetricVersion
+            ),
+            values: [1, 0]
+        )
         try await expectThrows {
             _ = try FaceEmbedding.centroid(of: [first, second])
         }
@@ -243,8 +304,8 @@ func runFaceGroupingTests() async {
     await runner.test("人物を保存して再取得・改名・削除できる") {
         let store = try makeInMemoryPersonStore()
         let embeddings = [
-            try FaceEmbedding(model: model, values: [1, 0]),
-            try FaceEmbedding(model: model, values: [0.8, 0.2])
+            try FaceEmbedding(contract: contract, values: [1, 0]),
+            try FaceEmbedding(contract: contract, values: [0.8, 0.2])
         ]
         let saved = try store.savePerson(
             displayName: "  Keiju  ",
@@ -271,7 +332,7 @@ func runFaceGroupingTests() async {
 
     await runner.test("空の名前・顔なし・壊れた埋め込みを保存しない") {
         let store = try makeInMemoryPersonStore()
-        let embedding = try FaceEmbedding(model: model, values: [1, 0])
+        let embedding = try FaceEmbedding(contract: contract, values: [1, 0])
         try await expectThrows {
             _ = try store.savePerson(displayName: "   ", embeddings: [embedding])
         }
@@ -285,22 +346,31 @@ func runFaceGroupingTests() async {
         let store = try makeInMemoryPersonStore()
         let saved = try store.savePerson(
             displayName: "Keiju",
-            embeddings: [try FaceEmbedding(model: model, values: [1, 0])]
+            embeddings: [try FaceEmbedding(contract: contract, values: [1, 0])]
         )
         _ = try store.savePerson(
             displayName: "Someone",
-            embeddings: [try FaceEmbedding(model: model, values: [0, 1])]
+            embeddings: [try FaceEmbedding(contract: contract, values: [0, 1])]
         )
 
         let match = try store.bestMatch(
-            for: FaceEmbedding(model: model, values: [0.99, 0.01]),
+            for: FaceEmbedding(contract: contract, values: [0.99, 0.01]),
             maximumDistance: 0.10
         )
         try expectEqual(match?.person.id, saved.id)
         try expect((match?.distance ?? 1) < 0.01)
 
         let incompatible = try FaceEmbedding(
-            model: FaceEmbeddingModel(identifier: model.identifier, version: "next", dimension: 2),
+            contract: FacePipelineContract(
+                embeddingModel: FaceEmbeddingModel(
+                    identifier: model.identifier,
+                    version: "next",
+                    dimension: 2
+                ),
+                preprocessingVersion: contract.preprocessingVersion,
+                alignmentVersion: contract.alignmentVersion,
+                distanceMetricVersion: contract.distanceMetricVersion
+            ),
             values: [1, 0]
         )
         try expect(try store.bestMatch(for: incompatible, maximumDistance: 0.10) == nil)
@@ -310,11 +380,11 @@ func runFaceGroupingTests() async {
         let store = try makeInMemoryPersonStore()
         _ = try store.savePerson(
             displayName: "One",
-            embeddings: [try FaceEmbedding(model: model, values: [1, 0])]
+            embeddings: [try FaceEmbedding(contract: contract, values: [1, 0])]
         )
         _ = try store.savePerson(
             displayName: "Two",
-            embeddings: [try FaceEmbedding(model: model, values: [0, 1])]
+            embeddings: [try FaceEmbedding(contract: contract, values: [0, 1])]
         )
 
         try store.deleteAllPeople()

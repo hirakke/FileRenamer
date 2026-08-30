@@ -107,7 +107,7 @@ public final class PersonStore {
         guard maximumDistance.isFinite, maximumDistance >= 0 else { return nil }
 
         var best: PersonMatch?
-        for person in try people() where person.embedding.model == embedding.model {
+        for person in try people() where person.embedding.contract == embedding.contract {
             let distance = try embedding.cosineDistance(to: person.embedding)
             guard distance <= maximumDistance,
                   distance < (best?.distance ?? .infinity)
