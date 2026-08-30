@@ -5,6 +5,7 @@ import RenameKit
 import Vision
 
 enum FaceAlignmentMethod: String, Hashable, Sendable {
+    case fivePoint
     case eyes
     case paddedCrop
 }
@@ -16,11 +17,24 @@ struct AlignedFaceImage {
 
 enum FaceAligner {
     static let targetSize = 112
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
     static func align(
         image: CGImage,
         observation: VNFaceObservation
     ) -> AlignedFaceImage? {
+        if let landmarks = fivePointLandmarks(observation: observation, image: image),
+           let reference = try? FaceGeometry.mobileFaceNetReferenceLandmarks(
+               targetSize: CGFloat(targetSize)
+           ),
+           let transform = try? FaceGeometry.similarityTransform(
+               from: landmarks,
+               to: reference
+           ),
+           let aligned = render(image: image, similarity: transform) {
+            return AlignedFaceImage(image: aligned, method: .fivePoint)
+        }
+
         if let eyes = eyeCenters(observation: observation, image: image),
            let plan = try? FaceGeometry.eyeAlignment(
                leftEye: eyes.left,
@@ -48,6 +62,44 @@ enum FaceAligner {
         return AlignedFaceImage(image: resized, method: .paddedCrop)
     }
 
+    private static func fivePointLandmarks(
+        observation: VNFaceObservation,
+        image: CGImage
+    ) -> FaceFivePointLandmarks? {
+        guard let faceLandmarks = observation.landmarks,
+              let leftEyeRegion = faceLandmarks.leftEye,
+              let rightEyeRegion = faceLandmarks.rightEye,
+              let noseRegion = faceLandmarks.nose,
+              let outerLipsRegion = faceLandmarks.outerLips,
+              leftEyeRegion.pointCount > 0,
+              rightEyeRegion.pointCount > 0,
+              noseRegion.pointCount > 0,
+              outerLipsRegion.pointCount >= 2
+        else { return nil }
+
+        let faceRect = FaceGeometry.imageRect(
+            normalizedVisionRect: observation.boundingBox,
+            imageSize: CGSize(width: image.width, height: image.height)
+        )
+        let eyes = [
+            center(of: leftEyeRegion, in: faceRect),
+            center(of: rightEyeRegion, in: faceRect)
+        ].sorted { $0.x < $1.x }
+        let nose = medianCenter(of: noseRegion, in: faceRect)
+        let lipPoints = points(of: outerLipsRegion, in: faceRect).sorted { $0.x < $1.x }
+        guard let leftMouth = lipPoints.first,
+              let rightMouth = lipPoints.last
+        else { return nil }
+
+        return FaceFivePointLandmarks(
+            leftEye: eyes[0],
+            rightEye: eyes[1],
+            nose: nose,
+            leftMouth: leftMouth,
+            rightMouth: rightMouth
+        )
+    }
+
     private static func eyeCenters(
         observation: VNFaceObservation,
         image: CGImage
@@ -72,15 +124,69 @@ enum FaceAligner {
         of region: VNFaceLandmarkRegion2D,
         in faceRect: CGRect
     ) -> CGPoint {
-        let points = region.normalizedPoints
+        let mappedPoints = points(of: region, in: faceRect)
         var sum = CGPoint.zero
-        for index in 0..<region.pointCount {
-            sum.x += faceRect.minX + points[index].x * faceRect.width
-            sum.y += faceRect.maxY - points[index].y * faceRect.height
+        for point in mappedPoints {
+            sum.x += point.x
+            sum.y += point.y
         }
         return CGPoint(
-            x: sum.x / CGFloat(region.pointCount),
-            y: sum.y / CGFloat(region.pointCount)
+            x: sum.x / CGFloat(mappedPoints.count),
+            y: sum.y / CGFloat(mappedPoints.count)
+        )
+    }
+
+    private static func medianCenter(
+        of region: VNFaceLandmarkRegion2D,
+        in faceRect: CGRect
+    ) -> CGPoint {
+        let mappedPoints = points(of: region, in: faceRect)
+        let sortedX = mappedPoints.map(\.x).sorted()
+        let sortedY = mappedPoints.map(\.y).sorted()
+        let middle = mappedPoints.count / 2
+        if mappedPoints.count.isMultiple(of: 2) {
+            return CGPoint(
+                x: (sortedX[middle - 1] + sortedX[middle]) / 2,
+                y: (sortedY[middle - 1] + sortedY[middle]) / 2
+            )
+        }
+        return CGPoint(x: sortedX[middle], y: sortedY[middle])
+    }
+
+    private static func points(
+        of region: VNFaceLandmarkRegion2D,
+        in faceRect: CGRect
+    ) -> [CGPoint] {
+        let normalized = region.normalizedPoints
+        return (0..<region.pointCount).map { index in
+            CGPoint(
+                x: faceRect.minX + normalized[index].x * faceRect.width,
+                y: faceRect.maxY - normalized[index].y * faceRect.height
+            )
+        }
+    }
+
+    private static func render(
+        image: CGImage,
+        similarity: FaceSimilarityTransform
+    ) -> CGImage? {
+        let upper = similarity.affineTransform
+        let sourceHeight = CGFloat(image.height)
+        let outputHeight = CGFloat(targetSize)
+        let coreImageTransform = CGAffineTransform(
+            a: upper.a,
+            b: -upper.b,
+            c: -upper.c,
+            d: upper.d,
+            tx: upper.tx + upper.c * sourceHeight,
+            ty: outputHeight - upper.d * sourceHeight - upper.ty
+        )
+        let transformed = CIImage(cgImage: image).transformed(by: coreImageTransform)
+        return ciContext.createCGImage(
+            transformed,
+            from: CGRect(x: 0, y: 0, width: targetSize, height: targetSize),
+            format: .RGBA8,
+            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)
         )
     }
 
@@ -118,7 +224,7 @@ enum FaceAligner {
                 - cosine * sourceMidpoint.y
         )
         let transformed = CIImage(cgImage: image).transformed(by: transform)
-        return CIContext(options: [.useSoftwareRenderer: false]).createCGImage(
+        return ciContext.createCGImage(
             transformed,
             from: CGRect(x: 0, y: 0, width: targetSize, height: targetSize),
             format: .RGBA8,

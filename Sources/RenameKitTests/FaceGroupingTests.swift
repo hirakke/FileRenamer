@@ -177,6 +177,61 @@ func runFaceGroupingTests() async {
         }
     }
 
+    await runner.test("MobileFaceNetの112px基準5点を返す") {
+        let reference = try FaceGeometry.mobileFaceNetReferenceLandmarks(targetSize: 112)
+        try expect(hypot(reference.leftEye.x - 44.1964, reference.leftEye.y - 53.1309) < 0.001)
+        try expect(hypot(reference.rightEye.x - 67.6879, reference.rightEye.y - 53.0009) < 0.001)
+        try expect(hypot(reference.nose.x - 56.0168, reference.nose.y - 66.4911) < 0.001)
+        try expect(hypot(reference.leftMouth.x - 46.3662, reference.leftMouth.y - 80.2437) < 0.001)
+        try expect(hypot(reference.rightMouth.x - 65.8199, reference.rightMouth.y - 80.1361) < 0.001)
+    }
+
+    await runner.test("5点から拡大と平行移動を1px以内で補正する") {
+        let target = try FaceGeometry.mobileFaceNetReferenceLandmarks(targetSize: 112)
+        let source = FaceFivePointLandmarks(
+            leftEye: CGPoint(x: target.leftEye.x * 2 + 20, y: target.leftEye.y * 2 + 30),
+            rightEye: CGPoint(x: target.rightEye.x * 2 + 20, y: target.rightEye.y * 2 + 30),
+            nose: CGPoint(x: target.nose.x * 2 + 20, y: target.nose.y * 2 + 30),
+            leftMouth: CGPoint(x: target.leftMouth.x * 2 + 20, y: target.leftMouth.y * 2 + 30),
+            rightMouth: CGPoint(x: target.rightMouth.x * 2 + 20, y: target.rightMouth.y * 2 + 30)
+        )
+        let transform = try FaceGeometry.similarityTransform(from: source, to: target)
+
+        for (actual, expected) in zip(source.points, target.points) {
+            let mapped = actual.applying(transform.affineTransform)
+            try expect(hypot(mapped.x - expected.x, mapped.y - expected.y) < 1)
+        }
+    }
+
+    await runner.test("不正・重複・左右反転した5点を拒否する") {
+        let target = try FaceGeometry.mobileFaceNetReferenceLandmarks(targetSize: 112)
+        let coincident = FaceFivePointLandmarks(
+            leftEye: .zero,
+            rightEye: .zero,
+            nose: .zero,
+            leftMouth: .zero,
+            rightMouth: .zero
+        )
+        let nonfinite = FaceFivePointLandmarks(
+            leftEye: CGPoint(x: CGFloat.nan, y: 1),
+            rightEye: CGPoint(x: 2, y: 1),
+            nose: CGPoint(x: 1.5, y: 2),
+            leftMouth: CGPoint(x: 1, y: 3),
+            rightMouth: CGPoint(x: 2, y: 3)
+        )
+        let inverted = FaceFivePointLandmarks(
+            leftEye: target.rightEye,
+            rightEye: target.leftEye,
+            nose: target.nose,
+            leftMouth: target.rightMouth,
+            rightMouth: target.leftMouth
+        )
+
+        try await expectThrows { _ = try FaceGeometry.similarityTransform(from: coincident, to: target) }
+        try await expectThrows { _ = try FaceGeometry.similarityTransform(from: nonfinite, to: target) }
+        try await expectThrows { _ = try FaceGeometry.similarityTransform(from: inverted, to: target) }
+    }
+
     runner.suite("FaceGroupingPreferences — 安全な初期値")
 
     await runner.test("人物候補の分類は初回OFF") {

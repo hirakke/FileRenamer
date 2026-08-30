@@ -4,6 +4,42 @@ public enum FaceGeometryError: Error, Equatable, Sendable {
     case invalidImageSize
     case invalidTargetSize
     case coincidentEyes
+    case invalidLandmarks
+    case degenerateLandmarks
+}
+
+public struct FaceFivePointLandmarks: Equatable, Sendable {
+    public let leftEye: CGPoint
+    public let rightEye: CGPoint
+    public let nose: CGPoint
+    public let leftMouth: CGPoint
+    public let rightMouth: CGPoint
+
+    public init(
+        leftEye: CGPoint,
+        rightEye: CGPoint,
+        nose: CGPoint,
+        leftMouth: CGPoint,
+        rightMouth: CGPoint
+    ) {
+        self.leftEye = leftEye
+        self.rightEye = rightEye
+        self.nose = nose
+        self.leftMouth = leftMouth
+        self.rightMouth = rightMouth
+    }
+
+    public var points: [CGPoint] {
+        [leftEye, rightEye, nose, leftMouth, rightMouth]
+    }
+}
+
+public struct FaceSimilarityTransform: Equatable, Sendable {
+    public let affineTransform: CGAffineTransform
+
+    public init(affineTransform: CGAffineTransform) {
+        self.affineTransform = affineTransform
+    }
 }
 
 public struct FaceEyeAlignment: Equatable, Sendable {
@@ -31,6 +67,64 @@ public struct FaceEyeAlignment: Equatable, Sendable {
 /// Vision's normalized lower-left coordinates are converted to the image's
 /// upper-left pixel coordinates exactly once at this boundary.
 public enum FaceGeometry {
+    public static func mobileFaceNetReferenceLandmarks(
+        targetSize: CGFloat
+    ) throws -> FaceFivePointLandmarks {
+        guard targetSize.isFinite, targetSize > 0 else {
+            throw FaceGeometryError.invalidTargetSize
+        }
+        let scale = targetSize / 112
+        return FaceFivePointLandmarks(
+            leftEye: CGPoint(x: 44.1964 * scale, y: 53.1309 * scale),
+            rightEye: CGPoint(x: 67.6879 * scale, y: 53.0009 * scale),
+            nose: CGPoint(x: 56.0168 * scale, y: 66.4911 * scale),
+            leftMouth: CGPoint(x: 46.3662 * scale, y: 80.2437 * scale),
+            rightMouth: CGPoint(x: 65.8199 * scale, y: 80.1361 * scale)
+        )
+    }
+
+    public static func similarityTransform(
+        from source: FaceFivePointLandmarks,
+        to target: FaceFivePointLandmarks
+    ) throws -> FaceSimilarityTransform {
+        guard landmarksAreValid(source), landmarksAreValid(target) else {
+            throw FaceGeometryError.invalidLandmarks
+        }
+
+        let sourceCenter = centroid(of: source.points)
+        let targetCenter = centroid(of: target.points)
+        let centeredSource = source.points.map {
+            CGPoint(x: $0.x - sourceCenter.x, y: $0.y - sourceCenter.y)
+        }
+        let centeredTarget = target.points.map {
+            CGPoint(x: $0.x - targetCenter.x, y: $0.y - targetCenter.y)
+        }
+        let denominator = centeredSource.reduce(CGFloat.zero) {
+            $0 + $1.x * $1.x + $1.y * $1.y
+        }
+        guard denominator.isFinite, denominator > CGFloat.ulpOfOne else {
+            throw FaceGeometryError.degenerateLandmarks
+        }
+
+        let a = zip(centeredSource, centeredTarget).reduce(CGFloat.zero) {
+            $0 + $1.0.x * $1.1.x + $1.0.y * $1.1.y
+        } / denominator
+        let b = zip(centeredSource, centeredTarget).reduce(CGFloat.zero) {
+            $0 + $1.0.x * $1.1.y - $1.0.y * $1.1.x
+        } / denominator
+        guard a.isFinite, b.isFinite else {
+            throw FaceGeometryError.degenerateLandmarks
+        }
+
+        let tx = targetCenter.x - a * sourceCenter.x + b * sourceCenter.y
+        let ty = targetCenter.y - b * sourceCenter.x - a * sourceCenter.y
+        let transform = CGAffineTransform(a: a, b: b, c: -b, d: a, tx: tx, ty: ty)
+        guard [transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty]
+            .allSatisfy(\.isFinite)
+        else { throw FaceGeometryError.degenerateLandmarks }
+        return FaceSimilarityTransform(affineTransform: transform)
+    }
+
     public static func imageRect(
         normalizedVisionRect: CGRect,
         imageSize: CGSize
@@ -107,5 +201,20 @@ public enum FaceGeometry {
             rotationRadians: -atan2(deltaY, deltaX),
             scale: targetSize * 0.30 / distance
         )
+    }
+
+    private static func landmarksAreValid(_ landmarks: FaceFivePointLandmarks) -> Bool {
+        landmarks.points.allSatisfy { $0.x.isFinite && $0.y.isFinite }
+            && landmarks.leftEye.x < landmarks.rightEye.x
+            && landmarks.leftMouth.x < landmarks.rightMouth.x
+    }
+
+    private static func centroid(of points: [CGPoint]) -> CGPoint {
+        let sum = points.reduce(into: CGPoint.zero) { partial, point in
+            partial.x += point.x
+            partial.y += point.y
+        }
+        let count = CGFloat(points.count)
+        return CGPoint(x: sum.x / count, y: sum.y / count)
     }
 }
