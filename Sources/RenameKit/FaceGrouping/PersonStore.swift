@@ -70,28 +70,45 @@ public final class PersonStore {
         prototype: PersonEmbeddingSample,
         now: Date = Date()
     ) throws -> PersonProfileSnapshot {
+        try createPerson(displayName: displayName, prototypes: [prototype], now: now)
+    }
+
+    @discardableResult
+    public func createPerson(
+        displayName: String,
+        prototypes: [PersonEmbeddingSample],
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
         let name = try normalisedName(displayName)
+        guard !prototypes.isEmpty else { throw PersonStoreError.noEmbeddings }
+        let selected = try FacePrototypeSelector.select(
+            existing: [],
+            adding: prototypes,
+            limit: Self.positiveLimit,
+            nearDuplicateDistance: Self.nearDuplicateDistance
+        )
+        guard let first = selected.first else { throw PersonStoreError.noEmbeddings }
         return try atomicMutation {
             let profile = PersonProfile(
                 displayName: name,
-                embedding: prototype.embedding,
-                sampleCount: 1,
+                embedding: first.embedding,
+                sampleCount: selected.count,
                 createdAt: now,
                 updatedAt: now
             )
             profile.schemaVersion = 2
-            profile.positiveRecords = [
-                PersonEmbeddingRecord(kind: .positive, sample: prototype)
-            ]
+            profile.positiveRecords = selected.map {
+                PersonEmbeddingRecord(kind: .positive, sample: $0)
+            }
             context.insert(profile)
             return try profile.snapshot()
         }
     }
 
     @discardableResult
-    public func addPrototype(
-        personID: UUID,
-        sample: PersonEmbeddingSample,
+    public func addPositivePrototype(
+        _ sample: PersonEmbeddingSample,
+        to personID: UUID,
         now: Date = Date()
     ) throws -> PersonProfileSnapshot {
         try atomicMutation {
@@ -114,10 +131,21 @@ public final class PersonStore {
         }
     }
 
+    /// Compatibility spelling retained for the existing review UI while it is
+    /// replaced by PeopleWorkspace commands.
     @discardableResult
-    public func addRejection(
+    public func addPrototype(
         personID: UUID,
         sample: PersonEmbeddingSample,
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
+        try addPositivePrototype(sample, to: personID, now: now)
+    }
+
+    @discardableResult
+    public func addRejectionPrototype(
+        _ sample: PersonEmbeddingSample,
+        to personID: UUID,
         now: Date = Date()
     ) throws -> PersonProfileSnapshot {
         try atomicMutation {
@@ -134,6 +162,18 @@ public final class PersonStore {
             profile.updatedAt = now
             return try profile.snapshot()
         }
+    }
+
+
+    /// Compatibility spelling retained for callers created before the positive /
+    /// rejection distinction became explicit.
+    @discardableResult
+    public func addRejection(
+        personID: UUID,
+        sample: PersonEmbeddingSample,
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
+        try addRejectionPrototype(sample, to: personID, now: now)
     }
 
     @discardableResult
@@ -159,6 +199,21 @@ public final class PersonStore {
         destinationID: UUID,
         now: Date = Date()
     ) throws -> PersonProfileSnapshot {
+        try mergePeople(
+            sourceIDs: sourceIDs,
+            destinationID: destinationID,
+            additionalPrototypes: [],
+            now: now
+        )
+    }
+
+    @discardableResult
+    public func mergePeople(
+        sourceIDs: Set<UUID>,
+        destinationID: UUID,
+        additionalPrototypes: [PersonEmbeddingSample],
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
         try atomicMutation {
             guard let destination = try profile(id: destinationID) else {
                 throw PersonStoreError.personNotFound(destinationID)
@@ -173,7 +228,8 @@ public final class PersonStore {
 
             let positives = try FacePrototypeSelector.select(
                 existing: try destination.positiveRecords.map { try $0.sample() },
-                adding: try sources.flatMap { try $0.positiveRecords.map { try $0.sample() } },
+                adding: try sources.flatMap { try $0.positiveRecords.map { try $0.sample() } }
+                    + additionalPrototypes.map { duplicate($0, at: now) },
                 limit: Self.positiveLimit,
                 nearDuplicateDistance: Self.nearDuplicateDistance
             )
@@ -195,6 +251,134 @@ public final class PersonStore {
         }
     }
 
+    /// Applies an explicit user reassignment as one SwiftData save. The corrected
+    /// faces become positive evidence for the destination and rejection evidence
+    /// for the former person, without persisting any file or face identifier.
+    @discardableResult
+    public func reassignPrototypes(
+        _ samples: [PersonEmbeddingSample],
+        from sourceID: UUID?,
+        to destinationID: UUID,
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
+        guard !samples.isEmpty else { throw PersonStoreError.noEmbeddings }
+        return try atomicMutation {
+            guard let destination = try profile(id: destinationID) else {
+                throw PersonStoreError.personNotFound(destinationID)
+            }
+            let destinationSamples = samples.map { duplicate($0, at: now) }
+            let positives = try FacePrototypeSelector.select(
+                existing: try destination.positiveRecords.map { try $0.sample() },
+                adding: destinationSamples,
+                limit: Self.positiveLimit,
+                nearDuplicateDistance: Self.nearDuplicateDistance
+            )
+
+            var source: PersonProfile?
+            var rejections: [PersonEmbeddingSample] = []
+            if let sourceID, sourceID != destinationID {
+                guard let storedSource = try profile(id: sourceID) else {
+                    throw PersonStoreError.personNotFound(sourceID)
+                }
+                source = storedSource
+                rejections = try FacePrototypeSelector.select(
+                    existing: try storedSource.rejectionRecords.map { try $0.sample() },
+                    adding: samples.map { duplicate($0, at: now) },
+                    limit: Self.rejectionLimit,
+                    nearDuplicateDistance: Self.nearDuplicateDistance
+                )
+            }
+
+            try replaceRecords(on: destination, kind: .positive, with: positives)
+            if let first = positives.first {
+                destination.copyLegacyColumns(from: first.embedding, sampleCount: positives.count)
+                destination.schemaVersion = 2
+            }
+            destination.updatedAt = now
+            if let source {
+                try replaceRecords(on: source, kind: .rejection, with: rejections)
+                source.updatedAt = now
+            }
+            return try destination.snapshot()
+        }
+    }
+
+    @discardableResult
+    public func rejectPrototypes(
+        _ samples: [PersonEmbeddingSample],
+        from personID: UUID,
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
+        guard !samples.isEmpty else { throw PersonStoreError.noEmbeddings }
+        return try atomicMutation {
+            guard let profile = try profile(id: personID) else {
+                throw PersonStoreError.personNotFound(personID)
+            }
+            let rejections = try FacePrototypeSelector.select(
+                existing: try profile.rejectionRecords.map { try $0.sample() },
+                adding: samples.map { duplicate($0, at: now) },
+                limit: Self.rejectionLimit,
+                nearDuplicateDistance: Self.nearDuplicateDistance
+            )
+            try replaceRecords(on: profile, kind: .rejection, with: rejections)
+            profile.updatedAt = now
+            return try profile.snapshot()
+        }
+    }
+
+    /// Creates a new profile and records the split faces as negative evidence for
+    /// their former confirmed person in one transaction.
+    @discardableResult
+    public func splitPerson(
+        displayName: String,
+        prototypes: [PersonEmbeddingSample],
+        from sourceID: UUID?,
+        now: Date = Date()
+    ) throws -> PersonProfileSnapshot {
+        let name = try normalisedName(displayName)
+        guard !prototypes.isEmpty else { throw PersonStoreError.noEmbeddings }
+        let positives = try FacePrototypeSelector.select(
+            existing: [],
+            adding: prototypes.map { duplicate($0, at: now) },
+            limit: Self.positiveLimit,
+            nearDuplicateDistance: Self.nearDuplicateDistance
+        )
+        guard let first = positives.first else { throw PersonStoreError.noEmbeddings }
+        return try atomicMutation {
+            var source: PersonProfile?
+            var rejections: [PersonEmbeddingSample] = []
+            if let sourceID {
+                guard let storedSource = try profile(id: sourceID) else {
+                    throw PersonStoreError.personNotFound(sourceID)
+                }
+                source = storedSource
+                rejections = try FacePrototypeSelector.select(
+                    existing: try storedSource.rejectionRecords.map { try $0.sample() },
+                    adding: prototypes.map { duplicate($0, at: now) },
+                    limit: Self.rejectionLimit,
+                    nearDuplicateDistance: Self.nearDuplicateDistance
+                )
+            }
+            let created = PersonProfile(
+                displayName: name,
+                embedding: first.embedding,
+                sampleCount: positives.count,
+                createdAt: now,
+                updatedAt: now
+            )
+            created.schemaVersion = 2
+            created.positiveRecords = positives.map {
+                PersonEmbeddingRecord(kind: .positive, sample: $0)
+            }
+            context.insert(created)
+            if let source {
+                try replaceRecords(on: source, kind: .rejection, with: rejections)
+                source.updatedAt = now
+            }
+            return try created.snapshot()
+        }
+    }
+
     public func snapshot() throws -> PersonStoreSnapshot {
         let storedProfiles = try profiles()
         let archives = try storedProfiles.map { profile in
@@ -213,6 +397,9 @@ public final class PersonStore {
                 createdAt: profile.createdAt,
                 updatedAt: profile.updatedAt
             )
+        }.sorted { lhs, rhs in
+            if lhs.createdAt != rhs.createdAt { return lhs.createdAt < rhs.createdAt }
+            return lhs.id.uuidString < rhs.id.uuidString
         }
         return PersonStoreSnapshot(
             people: try storedProfiles.map { try $0.snapshot() }.sorted(by: Self.profileOrder),
@@ -333,6 +520,17 @@ public final class PersonStore {
         } else {
             profile.rejectionRecords = records
         }
+    }
+
+    private func duplicate(
+        _ sample: PersonEmbeddingSample,
+        at date: Date
+    ) -> PersonEmbeddingSample {
+        PersonEmbeddingSample(
+            embedding: sample.embedding,
+            captureQuality: sample.captureQuality,
+            createdAt: date
+        )
     }
 
     private func atomicMutation<T>(_ operation: () throws -> T) throws -> T {

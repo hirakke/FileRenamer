@@ -59,6 +59,8 @@ extension ViewMode {
             return L10n.string("view.list", defaultValue: "List", language: language)
         case .grid:
             return L10n.string("view.grid", defaultValue: "Grid", language: language)
+        case .people:
+            return L10n.string("view.people", defaultValue: "People", language: language)
         }
     }
 }

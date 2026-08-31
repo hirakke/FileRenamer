@@ -167,6 +167,9 @@ final class WorkspaceModel: ObservableObject {
     /// menu needs puts them on the object the menu is actually subscribed to.
     @Published private(set) var canUndoOrderChange = false
     @Published private(set) var canRedoOrderChange = false
+    @Published private(set) var canUndoPeopleEdit = false
+    @Published private(set) var canRedoPeopleEdit = false
+    @Published private(set) var activeViewMode: ViewMode = .list
     @Published private(set) var isRuleTextEditing = false
     @Published private(set) var canUndoRename = false
     @Published private(set) var canRedoRename = false
@@ -244,6 +247,9 @@ final class WorkspaceModel: ObservableObject {
         let editing = model.isRuleTextEditing
         let undoRename = model.canUndo
         let redoRename = model.canRedo
+        let peopleUndo = model.canUndoPeopleEdit
+        let peopleRedo = model.canRedoPeopleEdit
+        let viewMode = model.viewMode
         let selected = !model.selection.isEmpty
         let earlier = model.canShift(ids: model.selection, by: -1)
         let later = model.canShift(ids: model.selection, by: 1)
@@ -252,6 +258,9 @@ final class WorkspaceModel: ObservableObject {
                 || editing != isRuleTextEditing
                 || undoRename != canUndoRename
                 || redoRename != canRedoRename
+                || peopleUndo != canUndoPeopleEdit
+                || peopleRedo != canRedoPeopleEdit
+                || viewMode != activeViewMode
                 || selected != hasSelection
                 || earlier != canShiftSelectionEarlier
                 || later != canShiftSelectionLater
@@ -262,6 +271,9 @@ final class WorkspaceModel: ObservableObject {
         isRuleTextEditing = editing
         canUndoRename = undoRename
         canRedoRename = redoRename
+        canUndoPeopleEdit = peopleUndo
+        canRedoPeopleEdit = peopleRedo
+        activeViewMode = viewMode
         hasSelection = selected
         canShiftSelectionEarlier = earlier
         canShiftSelectionLater = later
@@ -438,21 +450,37 @@ struct FileRenamerApp: App {
                 Button(localized("menu.undo", defaultValue: "Undo")) {
                     if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeUndo()
+                    } else if workspace.activeViewMode == .people,
+                              workspace.canUndoPeopleEdit {
+                        workspace.activeModel.peopleWorkspace.undoPeopleEdit()
                     } else {
                         workspace.activeModel.undoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: .command)
-                    .disabled(!workspace.canUndoOrderChange && !workspace.isRuleTextEditing)
+                    .disabled(
+                        !workspace.isRuleTextEditing
+                            && !(workspace.activeViewMode == .people
+                                ? workspace.canUndoPeopleEdit
+                                : workspace.canUndoOrderChange)
+                    )
                 Button(localized("menu.redo", defaultValue: "Redo")) {
                     if workspace.isRuleTextEditing || UndoCommandRouter.hasNativeTextEditorFocus {
                         UndoCommandRouter.performNativeRedo()
+                    } else if workspace.activeViewMode == .people,
+                              workspace.canRedoPeopleEdit {
+                        workspace.activeModel.peopleWorkspace.redoPeopleEdit()
                     } else {
                         workspace.activeModel.redoOrderChange()
                     }
                 }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(!workspace.canRedoOrderChange && !workspace.isRuleTextEditing)
+                    .disabled(
+                        !workspace.isRuleTextEditing
+                            && !(workspace.activeViewMode == .people
+                                ? workspace.canRedoPeopleEdit
+                                : workspace.canRedoOrderChange)
+                    )
                 Divider()
                 Button(localized("menu.undoRename", defaultValue: "Undo Last Rename")) { workspace.activeModel.requestUndo() }
                     .keyboardShortcut("z", modifiers: [.command, .option])

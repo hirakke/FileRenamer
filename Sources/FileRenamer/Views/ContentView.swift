@@ -207,6 +207,12 @@ struct ContentView: View {
             switch model.viewMode {
             case .list: FileListView()
             case .grid: FileGridView()
+            case .people:
+                ContentUnavailableView(
+                    "人物",
+                    systemImage: "person.2",
+                    description: Text(model.isClassifyingPeople ? "人物を確認しています…" : "人物候補を表示します")
+                )
             }
         }
     }
@@ -306,7 +312,7 @@ struct ContentView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .help("リスト / グリッド表示を切り替え")
+            .help("リスト / グリッド / 人物表示を切り替え")
 
             Button {
                 model.requestUndo()

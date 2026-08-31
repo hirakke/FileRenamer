@@ -674,7 +674,73 @@ func runFaceGroupingTests() async {
         try expectEqual(try store.people().map(\.id), [merged.id])
 
         try store.restore(before)
+        try expectEqual(try store.snapshot(), before)
         try expectEqual(Set(try store.people().map(\.id)), [first.id, second.id])
+    }
+
+    await runner.test("人物編集を正確なスナップショットへ復元できる") {
+        let store = try makeInMemoryPersonStore()
+        let created = try store.createPerson(
+            displayName: "Before",
+            prototype: makePersonEmbeddingSample(index: 0, count: 8, contract: contract),
+            now: Date(timeIntervalSince1970: 10)
+        )
+        let before = try store.snapshot()
+
+        _ = try store.renamePerson(
+            id: created.id,
+            displayName: "After",
+            now: Date(timeIntervalSince1970: 20)
+        )
+        _ = try store.addPositivePrototype(
+            makePersonEmbeddingSample(index: 2, count: 8, contract: contract),
+            to: created.id,
+            now: Date(timeIntervalSince1970: 30)
+        )
+        _ = try store.addRejectionPrototype(
+            makePersonEmbeddingSample(index: 4, count: 8, contract: contract),
+            to: created.id,
+            now: Date(timeIntervalSince1970: 40)
+        )
+        try store.restore(before)
+
+        try expectEqual(try store.snapshot(), before)
+    }
+
+    await runner.test("互換性のない人物統合は保存内容を変更しない") {
+        let store = try makeInMemoryPersonStore()
+        let destination = try store.createPerson(
+            displayName: "Current",
+            prototype: makePersonEmbeddingSample(index: 0, count: 8, contract: contract)
+        )
+        let incompatibleContract = FacePipelineContract(
+            embeddingModel: FaceEmbeddingModel(
+                identifier: contract.embeddingModel.identifier,
+                version: "future",
+                dimension: contract.embeddingModel.dimension
+            ),
+            preprocessingVersion: contract.preprocessingVersion,
+            alignmentVersion: contract.alignmentVersion,
+            distanceMetricVersion: contract.distanceMetricVersion
+        )
+        let source = try store.createPerson(
+            displayName: "Future",
+            prototype: makePersonEmbeddingSample(
+                index: 1,
+                count: 8,
+                contract: incompatibleContract
+            )
+        )
+        let before = try store.snapshot()
+
+        try await expectThrows {
+            _ = try store.mergePeople(
+                sourceIDs: [source.id],
+                destinationID: destination.id
+            )
+        }
+
+        try expectEqual(try store.snapshot(), before)
     }
 
     await runner.test("空の名前・顔なし・壊れた埋め込みを保存しない") {

@@ -44,10 +44,23 @@ private actor DestinationValidationWorker {
 enum ViewMode: String, CaseIterable, Identifiable {
     case list
     case grid
+    case people
 
     var id: String { rawValue }
-    var displayName: String { self == .list ? "リスト" : "グリッド" }
-    var systemImageName: String { self == .list ? "list.bullet" : "square.grid.2x2" }
+    var displayName: String {
+        switch self {
+        case .list: "リスト"
+        case .grid: "グリッド"
+        case .people: "人物"
+        }
+    }
+    var systemImageName: String {
+        switch self {
+        case .list: "list.bullet"
+        case .grid: "square.grid.2x2"
+        case .people: "person.2"
+        }
+    }
 }
 
 /// The single piece of app state. Owns the item order, the naming rule and the
@@ -329,6 +342,8 @@ final class AppModel: ObservableObject {
     var canRedo: Bool { !isBusy && history.canRedo }
     var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
     var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
+    var canUndoPeopleEdit: Bool { peopleWorkspace.canUndoPeopleEdit }
+    var canRedoPeopleEdit: Bool { peopleWorkspace.canRedoPeopleEdit }
     var isClassifyingPeople: Bool { peopleWorkspace.isAnalyzing }
     var faceClassificationError: String? { peopleWorkspace.errorMessage }
     private var faceClassificationResult: OfflineFaceClassificationResult {
@@ -404,6 +419,17 @@ final class AppModel: ObservableObject {
 
     func peopleStoreDidChange() {
         peopleWorkspace.reclassifyUsingCachedEmbeddings()
+    }
+
+    func performPeopleEdit(_ command: PeopleEditCommand) {
+        do {
+            try peopleWorkspace.perform(command)
+        } catch {
+            alertMessage = AlertMessage(
+                title: "人物情報を変更できませんでした",
+                detail: error.localizedDescription
+            )
+        }
     }
 
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
