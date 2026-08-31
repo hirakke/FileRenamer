@@ -224,6 +224,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		B70000000000000000000007 /* Sign Sparkle Helpers for Distribution */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
