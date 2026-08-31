@@ -886,6 +886,77 @@ func runFaceGroupingTests() async {
             Dictionary(uniqueKeysWithValues: reordered.groups.map { ($0.id, Set($0.faceIDs)) })
         )
     }
+
+    runner.suite("PeopleAccuracyMetrics — ローカル精度診断")
+
+    await runner.test("固定距離表から混同行列と精度・再現率を計算する") {
+        let report = PeopleAccuracyMetrics.evaluate(
+            pairs: [
+                PeopleAccuracyPair(expectedSame: true, distance: 0.10),
+                PeopleAccuracyPair(expectedSame: true, distance: 0.45),
+                PeopleAccuracyPair(expectedSame: false, distance: 0.20),
+                PeopleAccuracyPair(expectedSame: false, distance: 0.80)
+            ],
+            threshold: 0.40
+        )
+        try expectEqual(report.counts.truePositive, 1)
+        try expectEqual(report.counts.falseNegative, 1)
+        try expectEqual(report.counts.falsePositive, 1)
+        try expectEqual(report.counts.trueNegative, 1)
+        try expectEqual(report.precision, 0.5)
+        try expectEqual(report.recall, 0.5)
+    }
+
+    await runner.test("分母ゼロではnilを返し閾値表を昇順にする") {
+        let empty = PeopleAccuracyMetrics.evaluate(pairs: [], threshold: 0.4)
+        try expect(empty.precision == nil)
+        try expect(empty.recall == nil)
+
+        let reports = PeopleAccuracyMetrics.evaluate(
+            pairs: [PeopleAccuracyPair(expectedSame: true, distance: 0.2)],
+            thresholds: [0.6, 0.2, 0.4]
+        )
+        try expectEqual(reports.map(\.threshold), [0.2, 0.4, 0.6])
+    }
+
+    await runner.test("自動分類基準は十分な正負ペアと99%以上の精度を要求する") {
+        let passing = PeopleThresholdReport(
+            threshold: 0.36,
+            counts: PeopleAccuracyCounts(
+                truePositive: 99,
+                falsePositive: 1,
+                trueNegative: 100,
+                falseNegative: 1
+            ),
+            precision: 0.99,
+            recall: 0.99
+        )
+        try expect(PeopleAccuracyMetrics.meetsAutomaticClassificationGate(
+            report: passing,
+            personCount: 2,
+            samePersonPairCount: 100,
+            differentPersonPairCount: 100
+        ))
+
+        let failing = PeopleThresholdReport(
+            threshold: 0.36,
+            counts: passing.counts,
+            precision: 0.989,
+            recall: 1
+        )
+        try expect(!PeopleAccuracyMetrics.meetsAutomaticClassificationGate(
+            report: failing,
+            personCount: 2,
+            samePersonPairCount: 100,
+            differentPersonPairCount: 100
+        ))
+        try expect(!PeopleAccuracyMetrics.meetsAutomaticClassificationGate(
+            report: passing,
+            personCount: 1,
+            samePersonPairCount: 100,
+            differentPersonPairCount: 0
+        ))
+    }
 }
 
 private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {

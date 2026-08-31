@@ -564,6 +564,9 @@ private struct PreferencesView: View {
     @EnvironmentObject private var updateController: UpdateController
     @State private var showsPrivacyPolicy = false
     @State private var confirmsDeletingPeople = false
+#if DEBUG
+    @State private var showsPeopleAccuracyDiagnostic = false
+#endif
 
     var body: some View {
         Form {
@@ -661,6 +664,12 @@ private struct PreferencesView: View {
                     confirmsDeletingPeople = true
                 }
                 .disabled(workspace.personStore == nil)
+
+#if DEBUG
+                Button("人物分類のローカル診断…") {
+                    showsPeopleAccuracyDiagnostic = true
+                }
+#endif
             }
 
             Section("表示") {
@@ -735,6 +744,11 @@ private struct PreferencesView: View {
         .sheet(isPresented: $showsPrivacyPolicy) {
             PrivacyPolicyView()
         }
+#if DEBUG
+        .sheet(isPresented: $showsPeopleAccuracyDiagnostic) {
+            PeopleAccuracyDiagnosticView()
+        }
+#endif
         .confirmationDialog(
             "保存した人物データをすべて削除しますか？",
             isPresented: $confirmsDeletingPeople,
