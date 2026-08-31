@@ -24,6 +24,25 @@ public struct PersonStoreSnapshot: Hashable, Sendable {
     fileprivate let archives: [PersonStoreProfileArchive]
 }
 
+public struct PersonStoreStatistics: Equatable, Sendable {
+    public let savedPersonCount: Int
+    public let legacyProfileCount: Int
+    public let positivePrototypeCount: Int
+    public let rejectionPrototypeCount: Int
+
+    public init(
+        savedPersonCount: Int,
+        legacyProfileCount: Int,
+        positivePrototypeCount: Int,
+        rejectionPrototypeCount: Int
+    ) {
+        self.savedPersonCount = savedPersonCount
+        self.legacyProfileCount = legacyProfileCount
+        self.positivePrototypeCount = positivePrototypeCount
+        self.rejectionPrototypeCount = rejectionPrototypeCount
+    }
+}
+
 /// Main-actor SwiftData gateway for the small, local-only named-person database.
 /// Source URLs and face crops are intentionally absent from the schema.
 @MainActor
@@ -62,6 +81,16 @@ public final class PersonStore {
         try profiles()
             .map { try $0.snapshot() }
             .sorted(by: Self.profileOrder)
+    }
+
+    public func statistics() throws -> PersonStoreStatistics {
+        let snapshots = try people()
+        return PersonStoreStatistics(
+            savedPersonCount: snapshots.count,
+            legacyProfileCount: snapshots.filter(\.isLegacyOnly).count,
+            positivePrototypeCount: snapshots.reduce(0) { $0 + $1.positives.count },
+            rejectionPrototypeCount: snapshots.reduce(0) { $0 + $1.rejections.count }
+        )
     }
 
     @discardableResult

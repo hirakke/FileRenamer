@@ -131,8 +131,10 @@ struct PersonDetailView: View {
 
     private var title: String {
         switch route {
-        case .overview: "人物"
-        case .unconfirmed: "未確認"
+        case .overview:
+            L10n.string("people.title", defaultValue: "People", language: preferences.resolvedLanguage)
+        case .unconfirmed:
+            L10n.string("people.unconfirmed", defaultValue: "Unconfirmed", language: preferences.resolvedLanguage)
         case .group: group?.displayName ?? "名前のない人物"
         }
     }
@@ -187,13 +189,21 @@ struct PersonDetailView: View {
     @ViewBuilder
     private func correctionMenu(faceIDs: Set<FaceDescriptorID>) -> some View {
         if let sourcePersonID {
-            Button("この人ではない") {
+            Button(L10n.string(
+                "people.notThisPerson",
+                defaultValue: "Not This Person",
+                language: preferences.resolvedLanguage
+            )) {
                 model.requestPeopleEdit(.reject(faceIDs: faceIDs, from: sourcePersonID))
             }
         }
         let otherPeople = workspace.currentPeople().filter { $0.id != sourcePersonID }
         if !otherPeople.isEmpty {
-            Menu("別の人物へ移動…") {
+            Menu(L10n.string(
+                "people.moveToPerson",
+                defaultValue: "Move to Another Person…",
+                language: preferences.resolvedLanguage
+            )) {
                 ForEach(otherPeople) { person in
                     Button(person.displayName) {
                         model.requestPeopleEdit(.reassign(
@@ -205,7 +215,11 @@ struct PersonDetailView: View {
                 }
             }
         }
-        Button("新しい人物として分離…") {
+        Button(L10n.string(
+            "people.splitPerson",
+            defaultValue: "Split as a New Person…",
+            language: preferences.resolvedLanguage
+        )) {
             pendingSplitFaceIDs = faceIDs
             draftName = ""
             asksForSplitName = true

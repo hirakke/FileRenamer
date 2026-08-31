@@ -621,6 +621,15 @@ func runFaceGroupingTests() async {
         try expectEqual(loaded?.positives.map(\.id), [positive.id])
         try expectEqual(loaded?.rejections.map(\.id), [rejection.id])
         try expectEqual(loaded?.isLegacyOnly, false)
+        try expectEqual(
+            try reopened.statistics(),
+            PersonStoreStatistics(
+                savedPersonCount: 1,
+                legacyProfileCount: 0,
+                positivePrototypeCount: 1,
+                rejectionPrototypeCount: 1
+            )
+        )
 
         let renamed = try reopened.renamePerson(
             id: saved.id,

@@ -581,4 +581,50 @@ func runLocalizationTests() async {
         try expectEqual(AppLanguage.japanese.resolved(preferredLanguageIdentifier: "en-US"), .japanese)
         try expectEqual(AppLanguage.english.resolved(preferredLanguageIdentifier: "ja-JP"), .english)
     }
+
+    await runner.test("人物表示の主要文言に日本語と英語がある") {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let catalogueURL = repositoryRoot
+            .appendingPathComponent("Sources/FileRenamer/Resources/Localizable.xcstrings")
+        let data = try Data(contentsOf: catalogueURL)
+        guard let catalogue = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let strings = catalogue["strings"] as? [String: Any]
+        else {
+            throw ExpectationFailure(message: "invalid string catalogue", file: #fileID, line: #line)
+        }
+        let requiredKeys = [
+            "view.people",
+            "people.title",
+            "people.unconfirmed",
+            "people.notThisPerson",
+            "people.moveToPerson",
+            "people.splitPerson",
+            "people.mergePeople",
+            "people.legacyNeedsConfirmation",
+            "people.deleteAll"
+        ]
+        for key in requiredKeys {
+            guard let entry = strings[key] as? [String: Any],
+                  let localizations = entry["localizations"] as? [String: Any]
+            else {
+                throw ExpectationFailure(message: "missing \(key)", file: #fileID, line: #line)
+            }
+            for language in ["ja", "en"] {
+                guard let localization = localizations[language] as? [String: Any],
+                      let unit = localization["stringUnit"] as? [String: Any],
+                      let value = unit["value"] as? String
+                else {
+                    throw ExpectationFailure(
+                        message: "missing \(key) [\(language)]",
+                        file: #fileID,
+                        line: #line
+                    )
+                }
+                try expect(!value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+    }
 }

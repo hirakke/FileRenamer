@@ -1,164 +1,3388 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "FileRenamer" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "FileRenamer" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "FileRenamer" } } } },
-    "設定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } } } },
-    "表示言語" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Display Language" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "表示言語" } } } },
-    "システム設定に従う" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Use System Setting" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "システム設定に従う" } } } },
-    "日本語" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Japanese" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日本語" } } } },
-    "日本語以外のシステム言語では英語で表示します。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When your system language is not Japanese, FileRenamer uses English." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日本語以外のシステム言語では英語で表示します。" } } } },
-    "ファイルを追加…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Files…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファイルを追加…" } } } },
-    "フォルダを追加…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Folder…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォルダを追加…" } } } },
-    "キャンセル" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } } } },
-    "閉じる" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "閉じる" } } } },
-    "変更を実行" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更を実行" } } } },
-    "変更内容を確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Review Changes" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更内容を確認" } } } },
-    "元に戻す" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Undo" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "元に戻す" } } } },
-    "やり直す" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Redo" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "やり直す" } } } },
-    "ゴミ箱に移動" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move to Trash" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゴミ箱に移動" } } } },
-    "Finderで表示" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Show in Finder" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "Finderで表示" } } } },
-    "クイックルック" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Quick Look" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "クイックルック" } } } },
-    "命名規則" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Naming Rule" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "命名規則" } } } },
-    "画像設定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image Settings" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像設定" } } } },
-    "画像リサイズ" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Resize Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像リサイズ" } } } },
-    "JPEG品質" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "JPEG Quality" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEG品質" } } } },
-    "元のファイル名" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Original Name" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "元のファイル名" } } } },
-    "変更前" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Before" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更前" } } } },
-    "変更後" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "After" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更後" } } } },
-    "リスト" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "List" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リスト" } } } },
-    "グリッド" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Grid" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "グリッド" } } } },
-    "リストを空にする" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear List" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リストを空にする" } } } },
-    "類似画像を確認中" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking Similar Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "類似画像を確認中" } } } },
-    "保存先を確認中" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking Destination" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存先を確認中" } } } },
-    "アップデートを確認…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップデートを確認…" } } } },
-    "settings.language.system" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Use System Setting" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "システム設定に従う" } } } },
-    "settings.language.japanese" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Japanese" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日本語" } } } },
-    "view.list" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "List" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リスト" } } } },
-    "view.grid" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Grid" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "グリッド" } } } },
-    "similarity.strict" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Strict" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "厳密" } } } },
-    "similarity.standard" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Standard" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "標準" } } } },
-    "similarity.broad" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Broad" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "広め" } } } },
-    "sort.fileName" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "元ファイル名" } } } },
-    "sort.creationDate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date Created" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "作成日時" } } } },
-    "sort.modificationDate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date Modified" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新日時" } } } },
-    "sort.fileSize" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Size" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファイルサイズ" } } } },
-    "sort.captureDate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date Taken" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "撮影日時" } } } },
-    "sort.ascending" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Ascending" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "昇順" } } } },
-    "sort.descending" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Descending" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "降順" } } } },
-    "menu.checkForUpdates" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップデートを確認…" } } } },
-    "menu.newTab" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "New Tab" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "新規タブ" } } } },
-    "menu.addFiles" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Files…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファイルを追加…" } } } },
-    "menu.addFolder" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Folder…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォルダを追加…" } } } },
-    "menu.undo" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Undo" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "取り消す" } } } },
-    "menu.redo" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Redo" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "やり直す" } } } },
-    "menu.undoRename" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Undo Last Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "前回のリネームを元に戻す" } } } },
-    "menu.redoRename" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Redo Last Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "前回のリネームをやり直す" } } } },
-    "menu.selectAll" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select All" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて選択" } } } },
-    "menu.removeSelection" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove %lld from List" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件をリストから除外" } } } },
-    "menu.sort" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sort" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "並べ替え" } } } },
-    "menu.moveEarlier" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move Earlier" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "1つ前へ" } } } },
-    "menu.moveLater" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move Later" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "1つ後ろへ" } } } },
-    "menu.moveToStart" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move to Start" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "先頭へ移動" } } } },
-    "menu.moveToEnd" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Move to End" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "末尾へ移動" } } } },
-    "menu.reverseOrder" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reverse Order" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "並びを反転" } } } },
-    "menu.togglePositionLock" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Lock / Unlock Position" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "選択項目の位置を固定 / 解除" } } } },
-    "確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirmation" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "確認" } } } },
-    "実行前に変更内容を確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Review changes before renaming" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "実行前に変更内容を確認" } } } },
-    "変更前後のファイル名、画像処理、原本の扱いを一覧で確認します。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Review file names, image processing, and original-file handling before continuing." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更前後のファイル名、画像処理、原本の扱いを一覧で確認します。" } } } },
-    "画像を変換・リサイズする前に原本の扱いを確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm original-file handling before converting or resizing images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像を変換・リサイズする前に原本の扱いを確認" } } } },
-    "オフの場合は元画像を置き換えます。ファイル名の衝突防止と失敗時の復元は常に有効です。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When off, the original image is replaced. Name-conflict protection and recovery after failure remain active." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフの場合は元画像を置き換えます。ファイル名の衝突防止と失敗時の復元は常に有効です。" } } } },
-    "Undoの前に確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Confirm before undoing a rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "Undoの前に確認" } } } },
-    "画像処理" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image Processing" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像処理" } } } },
-    "リサイズでは拡大を防ぐ設定を初期値にする" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Prevent upscaling by default when resizing" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リサイズでは拡大を防ぐ設定を初期値にする" } } } },
-    "画像設定でリサイズを新しく有効にしたときに適用します。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Applied when you first enable resizing in Image Settings." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像設定でリサイズを新しく有効にしたときに適用します。" } } } },
-    "JPEG 100%・同形式・リサイズなしでは再圧縮しない" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Do not recompress JPEG files at 100% when format and size are unchanged" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEG 100%・同形式・リサイズなしでは再圧縮しない" } } } },
-    "オンの場合、対象のJPEGデータは変更せず、必要な名前変更だけを行います。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When on, matching JPEG data remains unchanged and only the file name is changed." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オンの場合、対象のJPEGデータは変更せず、必要な名前変更だけを行います。" } } } },
-    "類似画像" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Similar Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "類似画像" } } } },
-    "類似している可能性のある画像を確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for potentially similar images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "類似している可能性のある画像を確認" } } } },
-    "完全に同一のファイルだけ検出" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Find exact duplicate files only" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "完全に同一のファイルだけ検出" } } } },
-    "検出感度" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Detection Sensitivity" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "検出感度" } } } },
-    "RAW＋JPEGの組み合わせを候補から除外" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Exclude RAW + JPEG pairs from suggestions" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "RAW＋JPEGの組み合わせを候補から除外" } } } },
-    "画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image-feature comparisons stay on this Mac. FileRenamer only shows suggestions; it never removes or excludes files automatically." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。" } } } },
-    "人物候補（実験的）" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "People Candidates (Experimental)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "人物候補（実験的）" } } } },
-    "写真内の人物候補をまとめる" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Group people candidates in photos" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真内の人物候補をまとめる" } } } },
-    "分類の感度" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Grouping Sensitivity" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "分類の感度" } } } },
-    "厳密" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Strict" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "厳密" } } } },
-    "標準" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Standard" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "標準" } } } },
-    "広め" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Broad" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "広め" } } } },
-    "顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Face images and embeddings are processed only on this Mac. Only representative embeddings for people you name are saved locally. Files are never removed, excluded, or renamed automatically." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。" } } } },
-    "保存した人物データをすべて削除…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete All Saved People Data…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存した人物データをすべて削除…" } } } },
-    "保存した人物データをすべて削除しますか？" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete all saved people data?" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存した人物データをすべて削除しますか？" } } } },
-    "すべて削除" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete All" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて削除" } } } },
-    "登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Deletes registered names and representative embeddings from this Mac. Photo files are not changed." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。" } } } },
-    "人物候補" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "People Candidates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "人物候補" } } } },
-    "同じ人物の可能性がある写真です。確認して、必要な候補だけに名前を登録できます。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "These photos may contain the same person. Review them and name only the candidates you recognize." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "同じ人物の可能性がある写真です。確認して、必要な候補だけに名前を登録できます。" } } } },
-    "人物候補はありません" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No People Candidates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "人物候補はありません" } } } },
-    "設定を有効にして写真を読み込むと、候補がここに表示されます。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable the setting and import photos to see candidates here." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定を有効にして写真を読み込むと、候補がここに表示されます。" } } } },
-    "誰ですか？" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Who is this?" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "誰ですか？" } } } },
-    "名前" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前" } } } },
-    "名前を登録" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Name" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前を登録" } } } },
-    "名前を変更" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前を変更" } } } },
-    "登録を解除…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove Registration…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録を解除…" } } } },
-    "登録を解除" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove Registration" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録を解除" } } } },
-    "このMacに人物データを保存しますか？" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Save people data on this Mac?" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "このMacに人物データを保存しますか？" } } } },
-    "登録した名前と代表特徴量をこのMac内に保存します。顔画像や写真の場所は保存しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The name and representative embedding are saved on this Mac. Face images and photo locations are not saved." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "登録した名前と代表特徴量をこのMac内に保存します。顔画像や写真の場所は保存しません。" } } } },
-    "名前と代表特徴量だけを削除します。写真ファイルは変更しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Only the name and representative embedding are deleted. Photo files are not changed." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前と代表特徴量だけを削除します。写真ファイルは変更しません。" } } } },
-    "表示" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Display" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "表示" } } } },
-    "標準の表示形式" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Default View" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "標準の表示形式" } } } },
-    "グリッドの列数" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Grid Columns" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "グリッドの列数" } } } },
-    "ウィンドウを開いたときにサイドバーを表示" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Show sidebar when opening a window" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ウィンドウを開いたときにサイドバーを表示" } } } },
-    "アップデート" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップデート" } } } },
-    "起動後にアップデートを自動確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatically check for updates after launch" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "起動後にアップデートを自動確認" } } } },
-    "更新情報の確認時も、ファイルや画像は送信しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking for updates never sends your files or images." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新情報の確認時も、ファイルや画像は送信しません。" } } } },
-    "プライバシー" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー" } } } },
-    "データの処理" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Data Handling" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "データの処理" } } } },
-    "このMac内のみ" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "On This Mac Only" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "このMac内のみ" } } } },
-    "プライバシーポリシーを表示…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Show Privacy Policy…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシーポリシーを表示…" } } } },
-    "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、任意で有効にした人物候補のローカル分類、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Access to selected files is used only for importing, previewing, renaming, image conversion and resizing, local similar-image comparison, optional local people-candidate classification, moving files explicitly selected by the user to the Trash, Undo, and failure recovery." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、任意で有効にした人物候補のローカル分類、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。" } } } },
-    "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録を確認した場合だけ、登録名と代表特徴量も保存します。顔画像や元写真の場所は保存しません。保存した人物データは設定から削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings, naming rules, Undo history, recovery data, and required image backups are stored on this Mac. A registered name and representative embedding are also stored only after you confirm naming a person. Face images and source-photo locations are not saved, and saved people data can be deleted from Settings. Older Undo history and related backups are deleted according to the app's storage limit." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録を確認した場合だけ、登録名と代表特徴量も保存します。顔画像や元写真の場所は保存しません。保存した人物データは設定から削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。" } } } },
-    "制定日：2026年8月13日　最終更新日：2026年8月28日" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Effective: August 13, 2026 · Updated: August 28, 2026" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "制定日：2026年8月13日　最終更新日：2026年8月28日" } } } },
-    "status.errorCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Errors" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件のエラー" } } } },
-    "status.warningCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Warnings" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件の警告" } } } },
-    "status.checkingSimilarImages" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking Similar Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "類似画像を確認中" } } } },
-    "status.classifyingPeople" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Grouping People Candidates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "人物候補を分類中" } } } },
-    "status.peopleCandidates" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld People Candidates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 組の人物候補" } } } },
-    "status.reviewPeopleHelp" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Review photos that may contain the same person." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "同じ人物の可能性がある写真を確認します" } } } },
-    "badge.peopleCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld People" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 人" } } } },
-    "people.photoCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Photos" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 枚" } } } },
-    "people.captureQuality" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Quality %lld%%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "品質 %lld%%" } } } },
-    "people.confirmRemoveRegistration" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Remove the registration for “%@”?" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%@」の登録を解除しますか？" } } } },
-    "people.unknownPerson" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Who is this?" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "誰ですか？" } } } },
-    "status.duplicateGroups" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Duplicate Groups" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 組の重複候補" } } } },
-    "status.reviewDuplicatesHelp" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Review potentially duplicate images before removing any files." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "重複している可能性のある画像を確認して削除します" } } } },
-    "status.checkingDestination" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking Destination" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "保存先を確認中" } } } },
-    "action.clearList" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear List" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リストを空にする" } } } },
-    "status.fixErrorsHelp" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Resolve the errors to continue." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "エラーを解消すると実行できます" } } } },
-    "status.renameHelp" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Change file names, extensions, and image size." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "名前・拡張子・画像サイズの変更を実行します" } } } },
-    "status.noFiles" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No Files" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファイルなし" } } } },
-    "status.itemCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld Items" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件" } } } },
-    "status.itemAndFileCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld Items (%2$lld Files)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld 件（%2$lld ファイル）" } } } },
-    "action.renameCount" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename %lld Items" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lld 件を変更" } } } },
-    "action.rename" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更を実行" } } } },
-    "caseTransform.none" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "そのまま" } } } },
-    "caseTransform.lowercase" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Lowercase" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "小文字" } } } },
-    "caseTransform.uppercase" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Uppercase" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "大文字" } } } },
-    "imageFormat.preserve" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep Original" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "変更しない" } } } },
-    "jpegQuality.maximum" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Maximum — 100%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "最高品質 — 100%" } } } },
-    "jpegQuality.high" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "High — 95% (Recommended)" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "高品質 — 95%（推奨）" } } } },
-    "jpegQuality.standard" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Standard — 90%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "標準 — 90%" } } } },
-    "jpegQuality.compact" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Compact — 80%" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "軽量 — 80%" } } } },
-    "jpegQuality.custom" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "カスタム" } } } },
-    "画像形式" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image Format" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像形式" } } } },
-    "画像形式と画像サイズを設定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Set image format and dimensions" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像形式と画像サイズを設定" } } } },
-    "JPEGカスタム品質" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom JPEG Quality" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEGカスタム品質" } } } },
-    "100%・JPEG同形式・リサイズなしでは再圧縮しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "JPEG files are not recompressed at 100% when format and size are unchanged." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "100%・JPEG同形式・リサイズなしでは再圧縮しません。" } } } },
-    "JPEGは保存時に再圧縮されます。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "JPEG files are recompressed when saved." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "JPEGは保存時に再圧縮されます。" } } } },
-    "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Image conversion and resizing support JPEG and PNG. Transparent areas become white in JPEG." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。" } } } },
-    "リサイズを有効にする" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable Resizing" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "リサイズを有効にする" } } } },
-    "統一する長辺" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Maximum Long Edge" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "統一する長辺" } } } },
-    "元画像より小さい場合は拡大しない" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Do Not Upscale Smaller Images" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "元画像より小さい場合は拡大しない" } } } },
-    "オフ" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } } } },
-    "imageResize.off" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } } } }
+    "" : {
+
+    },
+    "—" : {
+      "comment" : "A placeholder value for a missing sort value.",
+      "isCommentAutoGenerated" : true
+    },
+    "「%@」は元に戻せません。" : {
+      "comment" : "A message in the alert that appears when you try to delete a preset.",
+      "isCommentAutoGenerated" : true
+    },
+    "#" : {
+      "comment" : "The column heading for the \"number\" column.",
+      "isCommentAutoGenerated" : true
+    },
+    "%@、%lld番目" : {
+      "comment" : "Accessibility labels and hints are used for VoiceOver.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@、%2$lld番目"
+          }
+        }
+      }
+    },
+    "%@をFinderで開く" : {
+      "comment" : "A button that opens a directory in Finder. The argument is the name of the directory.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld" : {
+      "comment" : "A button that shows the number of selected items in a group.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld / %lld" : {
+      "comment" : "A label that shows the current group index.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld ファイル" : {
+      "comment" : "A label showing the number of files in a tab. The argument is the number of files in the tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld 件" : {
+      "comment" : "A label at the bottom of the sidebar that shows the number of tabs in the workspace. The argument is the number of tabs in the workspace.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld 件をゴミ箱に移動しますか？" : {
+
+    },
+    "%lld 件をリストから除外" : {
+      "comment" : "A button that removes the selected items from the list.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld 件を削除対象にしています" : {
+      "comment" : "A tooltip that describes the number of selected items in a group.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld 枚" : {
+      "comment" : "A label that shows the number of photos in a group of similar images. The argument is the number of photos in the group.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld 組 · %lld 枚。残すものと削除するものを選んでください。" : {
+      "comment" : "A description of the number of groups and the total number of images.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld 組 · %2$lld 枚。残すものと削除するものを選んでください。"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+      "comment" : "A label displaying the current JPEG quality value.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lldファイル" : {
+      "comment" : "A label showing the number of files in a photo. The argument is the number of files.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld人の人物候補" : {
+      "comment" : "A label that describes the number of people in an image. The argument is the number of people.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld件の重複候補" : {
+      "comment" : "A button that shows a list of similar images. The argument is the number of similar images.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld列" : {
+
+    },
+    "＋" : {
+      "comment" : "A plus sign.",
+      "isCommentAutoGenerated" : true
+    },
+    "+%lld" : {
+      "comment" : "A stepper that lets the user increment or decrement the counter by 1.",
+      "isCommentAutoGenerated" : true
+    },
+    "×" : {
+      "comment" : "A button to close a tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "⌘Tで追加" : {
+      "comment" : "A label displayed in the sidebar that describes how to add a new workspace tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "1つ前へ" : {
+      "comment" : "A button that moves the selected items one position up.",
+      "isCommentAutoGenerated" : true
+    },
+    "1つ前へ移動" : {
+      "comment" : "A label for a button that moves an item one position earlier.",
+      "isCommentAutoGenerated" : true
+    },
+    "1つ後ろへ" : {
+      "comment" : "A button that moves the selected items one position down.",
+      "isCommentAutoGenerated" : true
+    },
+    "1つ後ろへ移動" : {
+      "comment" : "A label for a button that moves an item one position later.",
+      "isCommentAutoGenerated" : true
+    },
+    "64〜20,000 px。拡大・縮小して、縦横比を保ったまま長辺を統一します。" : {
+      "comment" : "A description of how the image resize rule works.",
+      "isCommentAutoGenerated" : true
+    },
+    "100%・JPEG同形式・リサイズなしでは再圧縮しません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG files are not recompressed at 100% when format and size are unchanged."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100%・JPEG同形式・リサイズなしでは再圧縮しません。"
+          }
+        }
+      }
+    },
+    "2048" : {
+      "comment" : "A placeholder for the user to enter a value for the maximum long edge of an image.",
+      "isCommentAutoGenerated" : true
+    },
+    "action.clearList" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear List"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リストを空にする"
+          }
+        }
+      }
+    },
+    "action.rename" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を実行"
+          }
+        }
+      }
+    },
+    "action.renameCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename %lld Items"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件を変更"
+          }
+        }
+      }
+    },
+    "badge.peopleCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld People"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 人"
+          }
+        }
+      }
+    },
+    "caseTransform.lowercase" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lowercase"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小文字"
+          }
+        }
+      }
+    },
+    "caseTransform.none" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "そのまま"
+          }
+        }
+      }
+    },
+    "caseTransform.uppercase" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uppercase"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "大文字"
+          }
+        }
+      }
+    },
+    "English" : {
+
+    },
+    "FileRenamer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FileRenamer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FileRenamer"
+          }
+        }
+      }
+    },
+    "FileRenamerを開く" : {
+      "comment" : "A menu item that opens the FileRenamer app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Finder で表示" : {
+
+    },
+    "Finderで表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finderで表示"
+          }
+        }
+      }
+    },
+    "imageFormat.preserve" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Original"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更しない"
+          }
+        }
+      }
+    },
+    "imageResize.off" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフ"
+          }
+        }
+      }
+    },
+    "JPEG 100%・同形式・リサイズなしでは再圧縮しない" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do not recompress JPEG files at 100% when format and size are unchanged"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG 100%・同形式・リサイズなしでは再圧縮しない"
+          }
+        }
+      }
+    },
+    "jpegQuality.compact" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compact — 80%"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "軽量 — 80%"
+          }
+        }
+      }
+    },
+    "jpegQuality.custom" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタム"
+          }
+        }
+      }
+    },
+    "jpegQuality.high" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High — 95% (Recommended)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高品質 — 95%（推奨）"
+          }
+        }
+      }
+    },
+    "jpegQuality.maximum" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum — 100%"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最高品質 — 100%"
+          }
+        }
+      }
+    },
+    "jpegQuality.standard" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard — 90%"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準 — 90%"
+          }
+        }
+      }
+    },
+    "JPEGカスタム品質" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom JPEG Quality"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEGカスタム品質"
+          }
+        }
+      }
+    },
+    "JPEGは保存時に再圧縮されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG files are recompressed when saved."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEGは保存時に再圧縮されます。"
+          }
+        }
+      }
+    },
+    "JPEGは品質100%を含めて再エンコードします" : {
+      "comment" : "A description of how JPEG is encoded when saving.",
+      "isCommentAutoGenerated" : true
+    },
+    "JPEG品質" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG Quality"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JPEG品質"
+          }
+        }
+      }
+    },
+    "menu.addFiles" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Files…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを追加…"
+          }
+        }
+      }
+    },
+    "menu.addFolder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Folder…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォルダを追加…"
+          }
+        }
+      }
+    },
+    "menu.checkForUpdates" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップデートを確認…"
+          }
+        }
+      }
+    },
+    "menu.moveEarlier" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Earlier"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1つ前へ"
+          }
+        }
+      }
+    },
+    "menu.moveLater" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move Later"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1つ後ろへ"
+          }
+        }
+      }
+    },
+    "menu.moveToEnd" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to End"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "末尾へ移動"
+          }
+        }
+      }
+    },
+    "menu.moveToStart" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Start"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先頭へ移動"
+          }
+        }
+      }
+    },
+    "menu.newTab" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Tab"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新規タブ"
+          }
+        }
+      }
+    },
+    "menu.redo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やり直す"
+          }
+        }
+      }
+    },
+    "menu.redoRename" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo Last Rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前回のリネームをやり直す"
+          }
+        }
+      }
+    },
+    "menu.removeSelection" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %lld from List"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件をリストから除外"
+          }
+        }
+      }
+    },
+    "menu.reverseOrder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reverse Order"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並びを反転"
+          }
+        }
+      }
+    },
+    "menu.selectAll" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて選択"
+          }
+        }
+      }
+    },
+    "menu.sort" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "並べ替え"
+          }
+        }
+      }
+    },
+    "menu.togglePositionLock" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lock / Unlock Position"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択項目の位置を固定 / 解除"
+          }
+        }
+      }
+    },
+    "menu.undo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消す"
+          }
+        }
+      }
+    },
+    "menu.undoRename" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo Last Rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前回のリネームを元に戻す"
+          }
+        }
+      }
+    },
+    "OK" : {
+
+    },
+    "people.captureQuality" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quality %lld%%"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "品質 %lld%%"
+          }
+        }
+      }
+    },
+    "people.confirmRemoveRegistration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the registration for “%@”?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」の登録を解除しますか？"
+          }
+        }
+      }
+    },
+    "people.deleteAll" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete All Saved People Data…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存した人物データをすべて削除…"
+          }
+        }
+      }
+    },
+    "people.legacyNeedsConfirmation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People Requiring Confirmation: %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再確認が必要な人物: %lld"
+          }
+        }
+      }
+    },
+    "people.mergePeople" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merge as the Same Person…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じ人物として統合…"
+          }
+        }
+      }
+    },
+    "people.moveToPerson" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Another Person…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別の人物へ移動…"
+          }
+        }
+      }
+    },
+    "people.notThisPerson" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not This Person"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この人ではない"
+          }
+        }
+      }
+    },
+    "people.photoCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Photos"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 枚"
+          }
+        }
+      }
+    },
+    "people.splitPerson" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split as a New Person…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しい人物として分離…"
+          }
+        }
+      }
+    },
+    "people.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物"
+          }
+        }
+      }
+    },
+    "people.unconfirmed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unconfirmed"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未確認"
+          }
+        }
+      }
+    },
+    "people.unknownPerson" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Who is this?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "誰ですか？"
+          }
+        }
+      }
+    },
+    "px" : {
+      "comment" : "A unit of measurement for pixels.",
+      "isCommentAutoGenerated" : true
+    },
+    "RAW + JPEG をまとめる" : {
+      "comment" : "A toggle to group RAW and JPEG files.",
+      "isCommentAutoGenerated" : true
+    },
+    "RAW＋JPEGの組み合わせを候補から除外" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exclude RAW + JPEG pairs from suggestions"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RAW＋JPEGの組み合わせを候補から除外"
+          }
+        }
+      }
+    },
+    "settings.language.japanese" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Japanese"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日本語"
+          }
+        }
+      }
+    },
+    "settings.language.system" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use System Setting"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム設定に従う"
+          }
+        }
+      }
+    },
+    "similarity.broad" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Broad"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "広め"
+          }
+        }
+      }
+    },
+    "similarity.standard" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準"
+          }
+        }
+      }
+    },
+    "similarity.strict" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strict"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "厳密"
+          }
+        }
+      }
+    },
+    "sort.ascending" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascending"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昇順"
+          }
+        }
+      }
+    },
+    "sort.captureDate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date Taken"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "撮影日時"
+          }
+        }
+      }
+    },
+    "sort.creationDate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date Created"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作成日時"
+          }
+        }
+      }
+    },
+    "sort.descending" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descending"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降順"
+          }
+        }
+      }
+    },
+    "sort.fileName" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元ファイル名"
+          }
+        }
+      }
+    },
+    "sort.fileSize" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルサイズ"
+          }
+        }
+      }
+    },
+    "sort.modificationDate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date Modified"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新日時"
+          }
+        }
+      }
+    },
+    "status.checkingDestination" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Destination"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存先を確認中"
+          }
+        }
+      }
+    },
+    "status.checkingSimilarImages" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Similar Images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類似画像を確認中"
+          }
+        }
+      }
+    },
+    "status.classifyingPeople" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grouping People Candidates"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物候補を分類中"
+          }
+        }
+      }
+    },
+    "status.duplicateGroups" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Duplicate Groups"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 組の重複候補"
+          }
+        }
+      }
+    },
+    "status.errorCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Errors"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件のエラー"
+          }
+        }
+      }
+    },
+    "status.fixErrorsHelp" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolve the errors to continue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エラーを解消すると実行できます"
+          }
+        }
+      }
+    },
+    "status.itemAndFileCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld Items (%2$lld Files)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 件（%2$lld ファイル）"
+          }
+        }
+      }
+    },
+    "status.itemCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Items"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件"
+          }
+        }
+      }
+    },
+    "status.noFiles" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Files"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルなし"
+          }
+        }
+      }
+    },
+    "status.peopleCandidates" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld People Candidates"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 組の人物候補"
+          }
+        }
+      }
+    },
+    "status.renameHelp" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change file names, extensions, and image size."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前・拡張子・画像サイズの変更を実行します"
+          }
+        }
+      }
+    },
+    "status.reviewDuplicatesHelp" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review potentially duplicate images before removing any files."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重複している可能性のある画像を確認して削除します"
+          }
+        }
+      }
+    },
+    "status.reviewPeopleHelp" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review photos that may contain the same person."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じ人物の可能性がある写真を確認します"
+          }
+        }
+      }
+    },
+    "status.warningCount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Warnings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件の警告"
+          }
+        }
+      }
+    },
+    "TabBar" : {
+      "comment" : "A label for the sidebar button.",
+      "isCommentAutoGenerated" : true
+    },
+    "TabBarを表示" : {
+      "comment" : "A label for the toolbar button that shows the sidebar.",
+      "isCommentAutoGenerated" : true
+    },
+    "TabBarを隠す" : {
+      "comment" : "A label for hiding the sidebar.",
+      "isCommentAutoGenerated" : true
+    },
+    "Undoの前に確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm before undoing a rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undoの前に確認"
+          }
+        }
+      }
+    },
+    "view.grid" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grid"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グリッド"
+          }
+        }
+      }
+    },
+    "view.people" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物"
+          }
+        }
+      }
+    },
+    "view.list" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リスト"
+          }
+        }
+      }
+    },
+    "yyyyMMdd" : {
+      "comment" : "A label for the date format.",
+      "isCommentAutoGenerated" : true
+    },
+    "アクセス権または対応形式を確認してください。" : {
+      "comment" : "A description of the error that occurred while loading an image.",
+      "isCommentAutoGenerated" : true
+    },
+    "アップデート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updates"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップデート"
+          }
+        }
+      }
+    },
+    "アップデートを確認…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アップデートを確認…"
+          }
+        }
+      }
+    },
+    "ウィンドウを開いたときにサイドバーを表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show sidebar when opening a window"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ウィンドウを開いたときにサイドバーを表示"
+          }
+        }
+      }
+    },
+    "オフ" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフ"
+          }
+        }
+      }
+    },
+    "オフの場合は元画像を置き換えます。ファイル名の衝突防止と失敗時の復元は常に有効です。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When off, the original image is replaced. Name-conflict protection and recovery after failure remain active."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフの場合は元画像を置き換えます。ファイル名の衝突防止と失敗時の復元は常に有効です。"
+          }
+        }
+      }
+    },
+    "オンの場合、対象のJPEGデータは変更せず、必要な名前変更だけを行います。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When on, matching JPEG data remains unchanged and only the file name is changed."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンの場合、対象のJPEGデータは変更せず、必要な名前変更だけを行います。"
+          }
+        }
+      }
+    },
+    "キャンセル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        }
+      }
+    },
+    "クイックルック" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Look"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "クイックルック"
+          }
+        }
+      }
+    },
+    "クリックして選択。ダブルクリックまたはスペースキーでプレビュー" : {
+      "comment" : "A description of how to interact with a grid cell.",
+      "isCommentAutoGenerated" : true
+    },
+    "クリックで設定、ドラッグで移動、Backspace で削除" : {
+      "comment" : "A tooltip for the block.",
+      "isCommentAutoGenerated" : true
+    },
+    "グリッド" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grid"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グリッド"
+          }
+        }
+      }
+    },
+    "グリッドの列数" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grid Columns"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "グリッドの列数"
+          }
+        }
+      }
+    },
+    "このMacに人物データを保存しますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save people data on this Mac?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このMacに人物データを保存しますか？"
+          }
+        }
+      }
+    },
+    "このMac内のみ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On This Mac Only"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このMac内のみ"
+          }
+        }
+      }
+    },
+    "このファイルには%@がありません" : {
+      "comment" : "A tooltip for the \"No \\(column) in this file\" message.",
+      "isCommentAutoGenerated" : true
+    },
+    "このブロックを削除" : {
+      "comment" : "A button that deletes a token from a rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "この位置に固定" : {
+      "comment" : "A button that locks a file in its current position in the list.",
+      "isCommentAutoGenerated" : true
+    },
+    "この組の選択を解除" : {
+      "comment" : "A button that deselects all items in a group.",
+      "isCommentAutoGenerated" : true
+    },
+    "この組はすべて削除対象です。1 枚は残してください。" : {
+      "comment" : "A warning message that appears when all items in a group are selected for deletion.",
+      "isCommentAutoGenerated" : true
+    },
+    "ゴミ箱に移動" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Trash"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ゴミ箱に移動"
+          }
+        }
+      }
+    },
+    "ゴミ箱に移動…" : {
+      "comment" : "A button that moves selected files to the Trash.",
+      "isCommentAutoGenerated" : true
+    },
+    "システム設定に従う" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use System Setting"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システム設定に従う"
+          }
+        }
+      }
+    },
+    "すべてが削除対象の組があります" : {
+
+    },
+    "すべて削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete All"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて削除"
+          }
+        }
+      }
+    },
+    "その他" : {
+      "comment" : "A label for a text field that lets the user enter a custom separator.",
+      "isCommentAutoGenerated" : true
+    },
+    "タブを閉じる" : {
+      "comment" : "A context menu item that closes a tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "データの処理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data Handling"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データの処理"
+          }
+        }
+      }
+    },
+    "ファイルは残したまま、この一覧からだけ外します" : {
+
+    },
+    "ファイルまたはフォルダをドロップ" : {
+      "comment" : "A label describing how to add files or folders.",
+      "isCommentAutoGenerated" : true
+    },
+    "ファイルを追加" : {
+      "comment" : "A button that adds a file.",
+      "isCommentAutoGenerated" : true
+    },
+    "ファイルを追加…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Files…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを追加…"
+          }
+        }
+      }
+    },
+    "ファイル未追加" : {
+      "comment" : "A label displayed in the sidebar of a workspace.",
+      "isCommentAutoGenerated" : true
+    },
+    "フォルダを追加" : {
+      "comment" : "A button that adds a folder.",
+      "isCommentAutoGenerated" : true
+    },
+    "フォルダを追加…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Folder…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォルダを追加…"
+          }
+        }
+      }
+    },
+    "フォルダ名" : {
+
+    },
+    "プライバシー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライバシー"
+          }
+        }
+      }
+    },
+    "プライバシーポリシー" : {
+      "comment" : "The title of the privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "プライバシーポリシーを表示…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Privacy Policy…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライバシーポリシーを表示…"
+          }
+        }
+      }
+    },
+    "プリセット" : {
+      "comment" : "A label for a preset.",
+      "isCommentAutoGenerated" : true
+    },
+    "プリセットを削除しますか？" : {
+      "comment" : "A confirmation prompt for deleting a preset.",
+      "isCommentAutoGenerated" : true
+    },
+    "プリセットを書き出す…" : {
+      "comment" : "A button that writes the current set of presets to a file.",
+      "isCommentAutoGenerated" : true
+    },
+    "プリセットを管理" : {
+      "comment" : "The title of the screen that lets you manage your saved rules.",
+      "isCommentAutoGenerated" : true
+    },
+    "プリセットを管理…" : {
+      "comment" : "A button that opens a sheet for managing presets.",
+      "isCommentAutoGenerated" : true
+    },
+    "プリセットを編集" : {
+
+    },
+    "プリセットを読み込む…" : {
+      "comment" : "A button that lets you load a preset from a file.",
+      "isCommentAutoGenerated" : true
+    },
+    "プレビュー（ダブルクリック / スペースキーでも開きます）" : {
+      "comment" : "A button that opens the preview of a photo.",
+      "isCommentAutoGenerated" : true
+    },
+    "ブロックを挿入" : {
+      "comment" : "A label for a button that inserts a block into a rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "マイプリセット" : {
+      "comment" : "A section for user-created presets.",
+      "isCommentAutoGenerated" : true
+    },
+    "やり直す" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Redo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やり直す"
+          }
+        }
+      }
+    },
+    "リサイズでは拡大を防ぐ設定を初期値にする" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevent upscaling by default when resizing"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リサイズでは拡大を防ぐ設定を初期値にする"
+          }
+        }
+      }
+    },
+    "リサイズを有効にする" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Resizing"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リサイズを有効にする"
+          }
+        }
+      }
+    },
+    "リサイズ時、または100%未満ではJPEGを再エンコードします" : {
+      "comment" : "A description of how JPEG is re-encoded when resizing or when the quality is below 100%.",
+      "isCommentAutoGenerated" : true
+    },
+    "リスト" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リスト"
+          }
+        }
+      }
+    },
+    "リスト / グリッド表示を切り替え" : {
+      "comment" : "A label for the toolbar item that toggles between list and grid views.",
+      "isCommentAutoGenerated" : true
+    },
+    "リストを空にする" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear List"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リストを空にする"
+          }
+        }
+      }
+    },
+    "リネームを元に戻しますか？" : {
+
+    },
+    "並びを反転" : {
+      "comment" : "A menu item that reverses the current sort order.",
+      "isCommentAutoGenerated" : true
+    },
+    "並び順を反転します" : {
+      "comment" : "A tooltip for the sort button.",
+      "isCommentAutoGenerated" : true
+    },
+    "並べ替え" : {
+      "comment" : "A label for the sort options.",
+      "isCommentAutoGenerated" : true
+    },
+    "人物候補" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People Candidates"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物候補"
+          }
+        }
+      }
+    },
+    "人物候補（実験的）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "People Candidates (Experimental)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物候補（実験的）"
+          }
+        }
+      }
+    },
+    "人物候補はありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No People Candidates"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物候補はありません"
+          }
+        }
+      }
+    },
+    "人物候補を確認…" : {
+      "comment" : "A button that shows a list of people in an image.",
+      "isCommentAutoGenerated" : true
+    },
+    "位置の固定を解除" : {
+      "comment" : "A button that removes a file's fixed position.",
+      "isCommentAutoGenerated" : true
+    },
+    "作成" : {
+      "comment" : "A button that creates a new rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "例:" : {
+      "comment" : "A label displayed alongside a sample name.",
+      "isCommentAutoGenerated" : true
+    },
+    "例: TEDxKeio" : {
+      "comment" : "A description of the placeholder text for a text token.",
+      "isCommentAutoGenerated" : true
+    },
+    "例: 旅行写真" : {
+      "comment" : "A description of how to use the sample name.",
+      "isCommentAutoGenerated" : true
+    },
+    "保存" : {
+      "comment" : "A button that saves a rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "保存したプリセットはまだありません" : {
+      "comment" : "A message that appears when there are no saved presets.",
+      "isCommentAutoGenerated" : true
+    },
+    "保存した人物データをすべて削除…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete All Saved People Data…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存した人物データをすべて削除…"
+          }
+        }
+      }
+    },
+    "保存した人物データをすべて削除しますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete all saved people data?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存した人物データをすべて削除しますか？"
+          }
+        }
+      }
+    },
+    "保存先を確認中" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Destination"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存先を確認中"
+          }
+        }
+      }
+    },
+    "保存場所を選ぶ" : {
+
+    },
+    "元" : {
+      "comment" : "A currency symbol.",
+      "isCommentAutoGenerated" : true
+    },
+    "元に戻す" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元に戻す"
+          }
+        }
+      }
+    },
+    "元のファイル名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元のファイル名"
+          }
+        }
+      }
+    },
+    "元の名前" : {
+      "comment" : "A category of block types that use the original name of the file.",
+      "isCommentAutoGenerated" : true
+    },
+    "元画像より小さい場合は拡大しない" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do Not Upscale Smaller Images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "元画像より小さい場合は拡大しない"
+          }
+        }
+      }
+    },
+    "元画像を「%@」に保存します。" : {
+      "comment" : "A label that describes the action of renaming files by copying them to a destination directory.",
+      "isCommentAutoGenerated" : true
+    },
+    "元画像を保存するフォルダ名" : {
+
+    },
+    "元画像を残して保存先を選ぶ" : {
+
+    },
+    "元画像を置き換える" : {
+
+    },
+    "先頭へ移動" : {
+      "comment" : "A button that moves the selected items to the start of the list.",
+      "isCommentAutoGenerated" : true
+    },
+    "先頭を残し、同じ組の残りを削除対象にします" : {
+      "comment" : "A button that selects all but the first item in a group.",
+      "isCommentAutoGenerated" : true
+    },
+    "再試行" : {
+      "comment" : "A button that retries loading a failed image.",
+      "isCommentAutoGenerated" : true
+    },
+    "最初の1枚以外を選択" : {
+      "comment" : "A button that selects all but the first item in a group.",
+      "isCommentAutoGenerated" : true
+    },
+    "写真内の人物候補をまとめる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group people candidates in photos"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写真内の人物候補をまとめる"
+          }
+        }
+      }
+    },
+    "処理中のタブは閉じられません" : {
+      "comment" : "A message that appears when a user tries to close a tab while a task is in progress.",
+      "isCommentAutoGenerated" : true
+    },
+    "分類の感度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grouping Sensitivity"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分類の感度"
+          }
+        }
+      }
+    },
+    "初めから作る" : {
+      "comment" : "A button that creates a new preset from scratch.",
+      "isCommentAutoGenerated" : true
+    },
+    "制定日：2026年8月13日　最終更新日：2026年8月28日" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effective: August 13, 2026 · Updated: August 28, 2026"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制定日：2026年8月13日　最終更新日：2026年8月28日"
+          }
+        }
+      }
+    },
+    "削除" : {
+      "comment" : "A checkbox to select or deselect an item.",
+      "isCommentAutoGenerated" : true
+    },
+    "厳密" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strict"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "厳密"
+          }
+        }
+      }
+    },
+    "同じ人物の可能性がある写真です。確認して、必要な候補だけに名前を登録できます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These photos may contain the same person. Review them and name only the candidates you recognize."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同じ人物の可能性がある写真です。確認して、必要な候補だけに名前を登録できます。"
+          }
+        }
+      }
+    },
+    "同じ人物の可能性がある写真を確認" : {
+      "comment" : "A label for a button that shows a list of possible people in an image.",
+      "isCommentAutoGenerated" : true
+    },
+    "同じ名前のプリセットを上書きします" : {
+      "comment" : "A warning message that appears when creating a new rule with a name that's already in use.",
+      "isCommentAutoGenerated" : true
+    },
+    "同一または類似している画像を比較" : {
+      "comment" : "A button that compares an image with other similar images.",
+      "isCommentAutoGenerated" : true
+    },
+    "同一または類似している画像を確認" : {
+      "comment" : "A tooltip for the \"Duplicate\" button.",
+      "isCommentAutoGenerated" : true
+    },
+    "名前" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前"
+          }
+        }
+      }
+    },
+    "名前とブロックを編集" : {
+      "comment" : "A button that opens a window for editing a preset's name and rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "名前と代表特徴量だけを削除します。写真ファイルは変更しません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the name and representative embedding are deleted. Photo files are not changed."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前と代表特徴量だけを削除します。写真ファイルは変更しません。"
+          }
+        }
+      }
+    },
+    "名前を変更" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前を変更"
+          }
+        }
+      }
+    },
+    "名前を登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Name"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "名前を登録"
+          }
+        }
+      }
+    },
+    "命名規則" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naming Rule"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命名規則"
+          }
+        }
+      }
+    },
+    "命名規則のプリセットを選択・作成します" : {
+      "comment" : "A description of the function of this view.",
+      "isCommentAutoGenerated" : true
+    },
+    "場所" : {
+      "comment" : "A label for the file's location.",
+      "isCommentAutoGenerated" : true
+    },
+    "増分" : {
+      "comment" : "A label for the amount by which the counter increments.",
+      "isCommentAutoGenerated" : true
+    },
+    "変更を実行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更を実行"
+          }
+        }
+      }
+    },
+    "変更内容を確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review Changes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更内容を確認"
+          }
+        }
+      }
+    },
+    "変更前" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更前"
+          }
+        }
+      }
+    },
+    "変更前の元画像を残しますか？" : {
+
+    },
+    "変更前後のファイル名、画像処理、原本の扱いを一覧で確認します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review file names, image processing, and original-file handling before continuing."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更前後のファイル名、画像処理、原本の扱いを一覧で確認します。"
+          }
+        }
+      }
+    },
+    "変更後" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更後"
+          }
+        }
+      }
+    },
+    "大文字・小文字" : {
+      "comment" : "A description of the available options for the extension transform.",
+      "isCommentAutoGenerated" : true
+    },
+    "大文字小文字" : {
+      "comment" : "A label for the case transform picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "完全に同一のファイルだけ検出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find exact duplicate files only"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完全に同一のファイルだけ検出"
+          }
+        }
+      }
+    },
+    "完全一致を含む" : {
+      "comment" : "A label for a group of images that are identical.",
+      "isCommentAutoGenerated" : true
+    },
+    "完全一致を含む組" : {
+      "comment" : "A label for a group of images that are identical.",
+      "isCommentAutoGenerated" : true
+    },
+    "実行前に変更内容を確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review changes before renaming"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "実行前に変更内容を確認"
+          }
+        }
+      }
+    },
+    "実行直前にも保存先の衝突を再確認します。" : {
+      "comment" : "A description of the confirmation step before renaming.",
+      "isCommentAutoGenerated" : true
+    },
+    "広め" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Broad"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "広め"
+          }
+        }
+      }
+    },
+    "形式" : {
+      "comment" : "A label for the date format picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "拡張子" : {
+      "comment" : "A label for the extension block.",
+      "isCommentAutoGenerated" : true
+    },
+    "拡張子の大文字・小文字を設定" : {
+      "comment" : "A help label for the extension transform picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "拡張子ブロック、%@" : {
+      "comment" : "A button that opens a popover with options for customizing how the extension is displayed in the list.",
+      "isCommentAutoGenerated" : true
+    },
+    "挿入" : {
+      "comment" : "A button that inserts the token into the text.",
+      "isCommentAutoGenerated" : true
+    },
+    "新しい命名作業を追加" : {
+      "comment" : "A label for adding a new tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "新しい命名作業を追加（⌘T）" : {
+      "comment" : "A keyboard shortcut to add a new tab.",
+      "isCommentAutoGenerated" : true
+    },
+    "新規プリセット" : {
+      "comment" : "A button that creates a new preset.",
+      "isCommentAutoGenerated" : true
+    },
+    "日付形式を入力してください" : {
+      "comment" : "A warning message when the user hasn't entered a custom date format.",
+      "isCommentAutoGenerated" : true
+    },
+    "日本語" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Japanese"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日本語"
+          }
+        }
+      }
+    },
+    "日本語以外のシステム言語では英語で表示します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When your system language is not Japanese, FileRenamer uses English."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日本語以外のシステム言語では英語で表示します。"
+          }
+        }
+      }
+    },
+    "昇順" : {
+      "comment" : "A button that sorts files in ascending order.",
+      "isCommentAutoGenerated" : true
+    },
+    "更新情報の確認時も、ファイルや画像は送信しません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking for updates never sends your files or images."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新情報の確認時も、ファイルや画像は送信しません。"
+          }
+        }
+      }
+    },
+    "末尾へ移動" : {
+      "comment" : "A button that moves the selected items to the end of the list.",
+      "isCommentAutoGenerated" : true
+    },
+    "桁数" : {
+      "comment" : "A label for the number of digits in a counter.",
+      "isCommentAutoGenerated" : true
+    },
+    "検出感度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detection Sensitivity"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検出感度"
+          }
+        }
+      }
+    },
+    "検索（空なら置換なし）" : {
+      "comment" : "A label for the search term in a token's original name.",
+      "isCommentAutoGenerated" : true
+    },
+    "標準" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準"
+          }
+        }
+      }
+    },
+    "標準の表示形式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default View"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準の表示形式"
+          }
+        }
+      }
+    },
+    "横の列数" : {
+      "comment" : "A label displayed above the number of columns.",
+      "isCommentAutoGenerated" : true
+    },
+    "次の内容でファイルを変更します。実行前に確認してください。" : {
+      "comment" : "A description of the confirmation message.",
+      "isCommentAutoGenerated" : true
+    },
+    "正規表現が正しくありません" : {
+      "comment" : "A warning that a regular expression is invalid.",
+      "isCommentAutoGenerated" : true
+    },
+    "正規表現を使う" : {
+      "comment" : "A toggle to enable or disable regular expressions.",
+      "isCommentAutoGenerated" : true
+    },
+    "現在のプリセットを保存…" : {
+      "comment" : "A button that saves the current preset as a new one.",
+      "isCommentAutoGenerated" : true
+    },
+    "現在の規則を複製して作る" : {
+      "comment" : "A button that creates a new preset by copying the current rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像データを再生成し、元画像を置き換えます。" : {
+      "comment" : "A warning message that indicates that the renamed images will be replaced with their original data.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像の比較はこのMac内で行われます" : {
+      "comment" : "A warning that the review is happening in the current app.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像リサイズ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resize Images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像リサイズ"
+          }
+        }
+      }
+    },
+    "画像リサイズ設定を閉じる" : {
+      "comment" : "A label for closing the image resize settings.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像リサイズ設定を開く" : {
+      "comment" : "A label for a button that opens a popover for configuring image resizing.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像を変換・リサイズする前に原本の扱いを確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm original-file handling before converting or resizing images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像を変換・リサイズする前に原本の扱いを確認"
+          }
+        }
+      }
+    },
+    "画像を読み込めませんでした" : {
+      "comment" : "A label for when an image fails to load.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像処理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image Processing"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像処理"
+          }
+        }
+      }
+    },
+    "画像変換・リサイズでは画像データを再生成します。元画像を残す場合は、フォルダ名を入力してから作成場所を選択します。" : {
+
+    },
+    "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image conversion and resizing support JPEG and PNG. Transparent areas become white in JPEG."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。"
+          }
+        }
+      }
+    },
+    "画像形式" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image Format"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像形式"
+          }
+        }
+      }
+    },
+    "画像形式と画像サイズを設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set image format and dimensions"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像形式と画像サイズを設定"
+          }
+        }
+      }
+    },
+    "画像形式は「画像設定」から変更できます。" : {
+      "comment" : "A description of how to change the image format.",
+      "isCommentAutoGenerated" : true
+    },
+    "画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image-feature comparisons stay on this Mac. FileRenamer only shows suggestions; it never removes or excludes files automatically."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。"
+          }
+        }
+      }
+    },
+    "画像設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image Settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像設定"
+          }
+        }
+      }
+    },
+    "画像設定でリサイズを新しく有効にしたときに適用します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applied when you first enable resizing in Image Settings."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画像設定でリサイズを新しく有効にしたときに適用します。"
+          }
+        }
+      }
+    },
+    "番号のリセット" : {
+      "comment" : "A label for the reset mode of a counter token.",
+      "isCommentAutoGenerated" : true
+    },
+    "登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletes registered names and representative embeddings from this Mac. Photo files are not changed."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。"
+          }
+        }
+      }
+    },
+    "登録した名前と代表特徴量をこのMac内に保存します。顔画像や写真の場所は保存しません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The name and representative embedding are saved on this Mac. Face images and photo locations are not saved."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登録した名前と代表特徴量をこのMac内に保存します。顔画像や写真の場所は保存しません。"
+          }
+        }
+      }
+    },
+    "登録を解除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Registration"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登録を解除"
+          }
+        }
+      }
+    },
+    "登録を解除…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Registration…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登録を解除…"
+          }
+        }
+      }
+    },
+    "確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認"
+          }
+        }
+      }
+    },
+    "種類" : {
+      "comment" : "A label for the date type picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "組を切り替えます" : {
+      "comment" : "A button that cycles through groups.",
+      "isCommentAutoGenerated" : true
+    },
+    "統一する長辺" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum Long Edge"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "統一する長辺"
+          }
+        }
+      }
+    },
+    "編集…" : {
+      "comment" : "A button that opens a token editor.",
+      "isCommentAutoGenerated" : true
+    },
+    "置換後" : {
+      "comment" : "A label for the replacement text in a metadata token.",
+      "isCommentAutoGenerated" : true
+    },
+    "表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示"
+          }
+        }
+      }
+    },
+    "表示できる組がありません" : {
+      "comment" : "A message displayed when there are no groups to show.",
+      "isCommentAutoGenerated" : true
+    },
+    "表示言語" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display Language"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示言語"
+          }
+        }
+      }
+    },
+    "設定" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
+    "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録を確認した場合だけ、登録名と代表特徴量も保存します。顔画像や元写真の場所は保存しません。保存した人物データは設定から削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings, naming rules, Undo history, recovery data, and required image backups are stored on this Mac. A registered name and representative embedding are also stored only after you confirm naming a person. Face images and source-photo locations are not saved, and saved people data can be deleted from Settings. Older Undo history and related backups are deleted according to the app's storage limit."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録を確認した場合だけ、登録名と代表特徴量も保存します。顔画像や元写真の場所は保存しません。保存した人物データは設定から削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。"
+          }
+        }
+      }
+    },
+    "設定を有効にして写真を読み込むと、候補がここに表示されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable the setting and import photos to see candidates here."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を有効にして写真を読み込むと、候補がここに表示されます。"
+          }
+        }
+      }
+    },
+    "誰ですか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Who is this?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "誰ですか？"
+          }
+        }
+      }
+    },
+    "起動後にアップデートを自動確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatically check for updates after launch"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動後にアップデートを自動確認"
+          }
+        }
+      }
+    },
+    "連番と日付" : {
+
+    },
+    "適用" : {
+      "comment" : "A button that applies a preset to the current rule.",
+      "isCommentAutoGenerated" : true
+    },
+    "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、任意で有効にした人物候補のローカル分類、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access to selected files is used only for importing, previewing, renaming, image conversion and resizing, local similar-image comparison, optional local people-candidate classification, moving files explicitly selected by the user to the Trash, Undo, and failure recovery."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、任意で有効にした人物候補のローカル分類、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。"
+          }
+        }
+      }
+    },
+    "選択したファイルをゴミ箱に移動します" : {
+      "comment" : "A description of the action of moving selected files to the trash.",
+      "isCommentAutoGenerated" : true
+    },
+    "選択する保存場所の中に、この名前の新しいフォルダを作成します。" : {
+
+    },
+    "重複している可能性のある画像" : {
+      "comment" : "A title for the review of similar images.",
+      "isCommentAutoGenerated" : true
+    },
+    "重複候補を確認…" : {
+      "comment" : "A context menu item that shows a list of similar images.",
+      "isCommentAutoGenerated" : true
+    },
+    "閉じる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閉じる"
+          }
+        }
+      }
+    },
+    "閉じる（Esc）" : {
+      "comment" : "A keyboard shortcut to close a sheet.",
+      "isCommentAutoGenerated" : true
+    },
+    "開始番号" : {
+      "comment" : "A label for the starting number of a counter.",
+      "isCommentAutoGenerated" : true
+    },
+    "降順" : {
+      "comment" : "A button that sorts files in descending order.",
+      "isCommentAutoGenerated" : true
+    },
+    "項目" : {
+      "comment" : "A label for a picker that lets the user choose a metadata field.",
+      "isCommentAutoGenerated" : true
+    },
+    "顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face images and embeddings are processed only on this Mac. Only representative embeddings for people you name are saved locally. Files are never removed, excluded, or renamed automatically."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。"
+          }
+        }
+      }
+    },
+    "類似" : {
+      "comment" : "A label for a group of photos that are similar to each other.",
+      "isCommentAutoGenerated" : true
+    },
+    "類似している可能性のある画像を比較" : {
+      "comment" : "A button that compares images with similar contents.",
+      "isCommentAutoGenerated" : true
+    },
+    "類似している可能性のある画像を確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for potentially similar images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類似している可能性のある画像を確認"
+          }
+        }
+      }
+    },
+    "類似している組" : {
+      "comment" : "A label for a group of similar images.",
+      "isCommentAutoGenerated" : true
+    },
+    "類似画像" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Similar Images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類似画像"
+          }
+        }
+      }
+    },
+    "類似画像を確認中" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking Similar Images"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類似画像を確認中"
+          }
+        }
+      }
+    }
   },
-  "version" : "1.0"
+  "version" : "1.1"
 }

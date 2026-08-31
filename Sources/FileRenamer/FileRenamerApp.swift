@@ -176,6 +176,12 @@ final class WorkspaceModel: ObservableObject {
     @Published private(set) var hasSelection = false
     @Published private(set) var canShiftSelectionEarlier = false
     @Published private(set) var canShiftSelectionLater = false
+    @Published private(set) var personStatistics = PersonStoreStatistics(
+        savedPersonCount: 0,
+        legacyProfileCount: 0,
+        positivePrototypeCount: 0,
+        rejectionPrototypeCount: 0
+    )
 
     private let preferences: AppPreferences
     private(set) var personStore: PersonStore?
@@ -189,6 +195,9 @@ final class WorkspaceModel: ObservableObject {
         let model = AppModel(preferences: preferences, personStore: personStore)
         tabs = [Tab(id: id, model: model)]
         selectedTabID = id
+        if let statistics = try? personStore?.statistics() {
+            personStatistics = statistics
+        }
 
         preferences.$defaultViewMode
             .dropFirst()
@@ -253,6 +262,7 @@ final class WorkspaceModel: ObservableObject {
         let selected = !model.selection.isEmpty
         let earlier = model.canShift(ids: model.selection, by: -1)
         let later = model.canShift(ids: model.selection, by: 1)
+        let statistics = (try? personStore?.statistics()) ?? personStatistics
         guard undo != canUndoOrderChange
                 || redo != canRedoOrderChange
                 || editing != isRuleTextEditing
@@ -264,6 +274,7 @@ final class WorkspaceModel: ObservableObject {
                 || selected != hasSelection
                 || earlier != canShiftSelectionEarlier
                 || later != canShiftSelectionLater
+                || statistics != personStatistics
         else { return }
 
         canUndoOrderChange = undo
@@ -277,6 +288,7 @@ final class WorkspaceModel: ObservableObject {
         hasSelection = selected
         canShiftSelectionEarlier = earlier
         canShiftSelectionLater = later
+        personStatistics = statistics
     }
 
     var activeModel: AppModel {
@@ -604,7 +616,7 @@ private struct PreferencesView: View {
             }
 
             Section("人物候補（実験的）") {
-                Toggle("写真内の人物候補をまとめる", isOn: $preferences.classifiesPeople)
+                Toggle("人物候補を分類", isOn: $preferences.classifiesPeople)
 
                 Picker("分類の感度", selection: $preferences.faceGroupingSensitivity) {
                     Text("厳密").tag(FaceGroupingSensitivity.strict)
@@ -614,11 +626,38 @@ private struct PreferencesView: View {
                 .pickerStyle(.segmented)
                 .disabled(!preferences.classifiesPeople)
 
-                Text("顔画像と特徴量の計算はこのMac内だけで行います。名前を登録した人物の代表特徴量だけをこのMacに保存します。自動的な削除・除外・名前変更は行いません。")
+                Text("顔の検出と分類はこのMac内だけで行います。現在読み込んでいる写真だけが人物表示に並びます。オフにしても保存済みの人物データは削除されません。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Button("保存した人物データをすべて削除…", role: .destructive) {
+                LabeledContent("保存した人物") {
+                    Text("\(workspace.personStatistics.savedPersonCount)人")
+                        .monospacedDigit()
+                }
+
+                if workspace.personStatistics.legacyProfileCount > 0 {
+                    Label(
+                        L10n.format(
+                            "people.legacyNeedsConfirmation",
+                            defaultValue: "People Requiring Confirmation: %lld",
+                            arguments: [workspace.personStatistics.legacyProfileCount],
+                            language: preferences.resolvedLanguage
+                        ),
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(Palette.warning)
+                }
+
+                Text("名前と、確認操作で追加された正例・拒否例の特徴量をローカルに保存します。写真の場所や顔画像は保存しません。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(L10n.string(
+                    "people.deleteAll",
+                    defaultValue: "Delete All Saved People Data…",
+                    language: preferences.resolvedLanguage
+                ), role: .destructive) {
                     confirmsDeletingPeople = true
                 }
                 .disabled(workspace.personStore == nil)
@@ -706,7 +745,7 @@ private struct PreferencesView: View {
             }
             Button("キャンセル", role: .cancel) {}
         } message: {
-            Text("登録した名前と代表特徴量をこのMacから削除します。写真ファイルは変更しません。")
+            Text("登録名、正例の特徴量、拒否例の特徴量をこのMacから削除します。写真ファイルは変更しません。")
         }
     }
 }
@@ -731,13 +770,13 @@ private struct PrivacyPolicyView: View {
                     )
                     policySection(
                         "このMacに保存する情報",
-                        "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録を確認した場合だけ、登録名と代表特徴量も保存します。顔画像や元写真の場所は保存しません。保存した人物データは設定から削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。"
+                        "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。人物名の登録や分類の補正を確認した場合だけ、登録名と正例・拒否例の特徴量も保存します。顔画像や元写真の場所は保存しません。人物分類をオフにしても保存済みデータは残り、設定からすべて削除できます。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。"
                     )
                     policySection(
                         "追跡と第三者提供",
                         "広告、分析、ユーザー追跡を行わず、データを第三者へ提供しません。更新確認を有効にした場合は、最新バージョンの有無を確認するため更新情報サーバーへ接続しますが、ファイル、画像、利用状況は送信しません。"
                     )
-                    Text("制定日：2026年8月13日　最終更新日：2026年8月28日")
+                    Text("制定日：2026年8月13日　最終更新日：2026年8月31日")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

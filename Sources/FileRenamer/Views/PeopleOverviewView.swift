@@ -4,6 +4,7 @@ import SwiftUI
 
 struct PeopleOverviewView: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
     @ObservedObject var workspace: PeopleWorkspaceModel
 
     @State private var selectedGroupIDs = Set<PeopleGroupID>()
@@ -63,7 +64,11 @@ struct PeopleOverviewView: View {
     private var header: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("人物")
+                Text(L10n.string(
+                    "people.title",
+                    defaultValue: "People",
+                    language: preferences.resolvedLanguage
+                ))
                     .font(.title2.weight(.semibold))
                 Text("現在読み込んでいる写真の人物候補")
                     .font(.callout)
@@ -71,7 +76,11 @@ struct PeopleOverviewView: View {
             }
             Spacer()
             if selectedGroupIDs.count >= 2 {
-                Button("同じ人物として統合…") { confirmsMerge = true }
+                Button(L10n.string(
+                    "people.mergePeople",
+                    defaultValue: "Merge as the Same Person…",
+                    language: preferences.resolvedLanguage
+                )) { confirmsMerge = true }
                     .buttonStyle(.borderedProminent)
             }
         }
@@ -157,7 +166,11 @@ struct PeopleOverviewView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(width: 128, height: 128)
-                Text("未確認").font(.headline)
+                Text(L10n.string(
+                    "people.unconfirmed",
+                    defaultValue: "Unconfirmed",
+                    language: preferences.resolvedLanguage
+                )).font(.headline)
                 Text("\(Set(workspace.projection.unconfirmed.map(\.itemID)).count)枚")
                     .font(.caption)
                     .foregroundStyle(.secondary)

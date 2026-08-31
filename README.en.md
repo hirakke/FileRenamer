@@ -50,7 +50,7 @@ Review your photos with larger previews and both the original and proposed names
 
 Similarity analysis stays on your Mac. FileRenamer never removes files or excludes them from the list automatically. Files can only be moved to the Finder Trash after you explicitly choose them and confirm.
 
-People-candidate analysis also stays on your Mac and runs only after you enable it in Settings. It detects faces and groups photos that may show the same person. Results are suggestions and never rename, exclude, or delete files automatically. If you choose to name someone, FileRenamer asks first, then stores only the name and a representative embedding on this Mac. It does not save face crops or source-photo locations, and saved people data can be deleted from Settings.
+People-candidate analysis also stays on your Mac and runs only after you enable it in Settings. It detects faces and groups photos that may show the same person in the People view. Results are suggestions and never rename, exclude, or delete files automatically. After you confirm naming or a manual correction, FileRenamer stores only the name and capped positive or rejection embeddings on this Mac. It does not save face crops or source-photo locations, and saved People data can be deleted from Settings.
 
 ## Languages
 
@@ -135,7 +135,7 @@ Files, thumbnails, image analysis, metadata reading, renaming, conversion, resiz
 
 When update checking is enabled, the app contacts the update feed only to learn whether a newer version is available. It does not upload file or usage data.
 
-Experimental people grouping is off by default. When enabled, face detection, alignment, embeddings, and grouping are computed locally. Face crops are temporary and are not persisted. A name and representative embedding are saved only after your confirmation, and can be removed from Settings.
+Experimental people grouping is off by default. When enabled, face detection, alignment, embeddings, and grouping are computed locally for the currently imported files. Face crops, source paths, and file identifiers are not persisted in the People database. After your confirmation, names and capped positive or rejection embeddings may be saved locally. Disabling analysis does not delete them; the confirmed delete action in Settings removes all saved People data without touching photos.
 
 Read the full [Privacy Policy](https://hirakke.github.io/FileRenamer/privacy.html).
 
