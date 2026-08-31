@@ -737,6 +737,80 @@ func runFaceGroupingTests() async {
         try store.deleteAllPeople()
         try expect(try store.people().isEmpty)
     }
+
+    runner.suite("PeopleWorkspaceProjection — 現在のリスト表示")
+
+    await runner.test("人物・候補・未確認を漏れなく読み込み順へ投影する") {
+        let itemIDs = makeFaceDescriptorIDs(count: 3).map(\.itemID)
+        let firstPersonFace = FaceDescriptorID(itemID: itemIDs[0], faceIndex: 0)
+        let secondPersonFace = FaceDescriptorID(itemID: itemIDs[0], faceIndex: 1)
+        let candidateFaces = [
+            FaceDescriptorID(itemID: itemIDs[1], faceIndex: 0),
+            FaceDescriptorID(itemID: itemIDs[2], faceIndex: 0)
+        ]
+        let ambiguousFace = FaceDescriptorID(itemID: itemIDs[1], faceIndex: 1)
+        let displayOnlyFace = FaceDescriptorID(itemID: itemIDs[2], faceIndex: 1)
+        let singletonFace = FaceDescriptorID(itemID: itemIDs[0], faceIndex: 2)
+        let firstPerson = try makePersonSnapshot(
+            idSuffix: 31,
+            name: "Keiju",
+            positiveValues: [[1, 0]],
+            contract: contract
+        )
+        let secondPerson = try makePersonSnapshot(
+            idSuffix: 32,
+            name: "Friend",
+            positiveValues: [[0, 1]],
+            contract: contract
+        )
+        let cluster = PeopleCandidateCluster(members: candidateFaces)
+        let result = PeopleClassificationResult(
+            faceIDsByItemID: [
+                itemIDs[0]: [firstPersonFace, secondPersonFace, singletonFace],
+                itemIDs[1]: [candidateFaces[0], ambiguousFace],
+                itemIDs[2]: [candidateFaces[1], displayOnlyFace]
+            ],
+            namedAssignments: [
+                firstPerson.id: [firstPersonFace],
+                secondPerson.id: [secondPersonFace]
+            ],
+            unnamedClusters: [cluster],
+            unconfirmedFaceIDs: [ambiguousFace, displayOnlyFace]
+        )
+
+        let projection = PeopleWorkspaceProjection.make(
+            orderedItemIDs: itemIDs,
+            result: result,
+            people: [secondPerson, firstPerson]
+        )
+
+        try expectEqual(
+            projection.groups.map(\.id),
+            [
+                .person(firstPerson.id),
+                .person(secondPerson.id),
+                .candidate(cluster.id)
+            ]
+        )
+        try expectEqual(projection.groups[0].itemIDs, [itemIDs[0]])
+        try expectEqual(projection.groups[1].itemIDs, [itemIDs[0]])
+        try expectEqual(projection.groups[2].itemIDs, [itemIDs[1], itemIDs[2]])
+        try expectEqual(
+            Set(projection.unconfirmed.map(\.faceID)),
+            [ambiguousFace, displayOnlyFace, singletonFace]
+        )
+
+        let reordered = PeopleWorkspaceProjection.make(
+            orderedItemIDs: Array(itemIDs.reversed()),
+            result: result,
+            people: [firstPerson, secondPerson]
+        )
+        try expect(projection.groups.map(\.id) != reordered.groups.map(\.id))
+        try expectEqual(
+            Dictionary(uniqueKeysWithValues: projection.groups.map { ($0.id, Set($0.faceIDs)) }),
+            Dictionary(uniqueKeysWithValues: reordered.groups.map { ($0.id, Set($0.faceIDs)) })
+        )
+    }
 }
 
 private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {

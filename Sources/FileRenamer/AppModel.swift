@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import Combine
 import SwiftUI
 import UniformTypeIdentifiers
 import RenameKit
@@ -108,9 +109,6 @@ final class AppModel: ObservableObject {
     @Published private(set) var isValidatingDestinations = false
     @Published private(set) var isScanningSimilarImages = false
     @Published private(set) var similarImageMatchesByItemID: [UUID: [SimilarImageMatch]] = [:]
-    @Published private(set) var isClassifyingPeople = false
-    @Published private(set) var faceClassificationResult = OfflineFaceClassificationResult.empty
-    @Published private(set) var faceClassificationError: String?
     @Published var similarityReview: SimilarityReview?
     @Published var peopleReview: PeopleReview?
     @Published var pendingPersonRegistration: PendingPersonRegistration?
@@ -146,14 +144,14 @@ final class AppModel: ObservableObject {
     private let imageSettingsStore: ImageSettingsStore
     private let preferences: AppPreferences
     private let personStore: PersonStore?
+    let peopleWorkspace: PeopleWorkspaceModel
     private var busyTask: Task<Void, Never>?
     private var validationTask: Task<Void, Never>?
     private var similarityTask: Task<Void, Never>?
-    private var faceClassificationTask: Task<Void, Never>?
+    private var peopleWorkspaceCancellable: AnyCancellable?
     private var isPreviewRefreshScheduled = false
     private var previewRevision = 0
     private var similarityRevision = 0
-    private var faceClassificationRevision = 0
 
     /// Ordering is intentionally separate from filesystem Undo. It only remembers
     /// the row sequence (and selection), so ⌘Z can immediately correct an accidental
@@ -299,6 +297,7 @@ final class AppModel: ObservableObject {
         self.imageSettingsStore = imageSettingsStore
         self.preferences = preferences ?? AppPreferences()
         self.personStore = personStore
+        peopleWorkspace = PeopleWorkspaceModel(personStore: personStore)
         jpegQualitySetting = imageSettingsStore.loadJPEGQuality()
         viewMode = self.preferences.defaultViewMode
         history = historyStore.load()
@@ -314,6 +313,9 @@ final class AppModel: ObservableObject {
         if recoversPendingRenames {
             Task { [weak self] in await self?.recoverPendingRenames() }
         }
+        peopleWorkspaceCancellable = peopleWorkspace.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
     }
 
     // MARK: Derived
@@ -327,6 +329,11 @@ final class AppModel: ObservableObject {
     var canRedo: Bool { !isBusy && history.canRedo }
     var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
     var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
+    var isClassifyingPeople: Bool { peopleWorkspace.isAnalyzing }
+    var faceClassificationError: String? { peopleWorkspace.errorMessage }
+    private var faceClassificationResult: OfflineFaceClassificationResult {
+        peopleWorkspace.result
+    }
     var showsJPEGQualitySetting: Bool {
         rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
     }
@@ -396,7 +403,7 @@ final class AppModel: ObservableObject {
     }
 
     func peopleStoreDidChange() {
-        scheduleFaceClassification()
+        peopleWorkspace.reclassifyUsingCachedEmbeddings()
     }
 
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
@@ -428,50 +435,28 @@ final class AppModel: ObservableObject {
     }
 
     var peopleReviewGroups: [PeopleReviewGroup] {
-        var facesByID: [FaceDescriptorID: ClassifiedFace] = [:]
-        for faces in faceClassificationResult.facesByItemID.values {
-            for face in faces where face.embedding != nil { facesByID[face.id] = face }
-        }
-        guard !facesByID.isEmpty else { return [] }
-
-        var unknownGroupByFaceID: [FaceDescriptorID: String] = [:]
-        for cluster in faceClassificationResult.unknownClusters {
-            for member in cluster.members { unknownGroupByFaceID[member] = "unknown:\(cluster.id)" }
-        }
-        var orderedGroupIDs: [String] = []
-        var groupedFaces: [String: [ClassifiedFace]] = [:]
-        var peopleByGroupID: [String: PersonProfileSnapshot] = [:]
-        for item in items {
-            let faces = (faceClassificationResult.facesByItemID[item.id] ?? [])
-                .filter { $0.embedding != nil }
-                .sorted { $0.id.faceIndex < $1.id.faceIndex }
-            for face in faces {
-                let groupID: String
-                if let person = face.knownPersonMatch?.person {
-                    groupID = "known:\(person.id.uuidString)"
-                    peopleByGroupID[groupID] = person
-                } else if let unknownGroupID = unknownGroupByFaceID[face.id] {
-                    groupID = unknownGroupID
-                } else {
-                    continue
-                }
-                if groupedFaces[groupID] == nil { orderedGroupIDs.append(groupID) }
-                groupedFaces[groupID, default: []].append(face)
-            }
-        }
-
-        return orderedGroupIDs.compactMap { groupID in
-            guard let faces = groupedFaces[groupID], !faces.isEmpty else { return nil }
-            let person = peopleByGroupID[groupID]
+        peopleWorkspace.projection.groups.compactMap { projection in
+            let faces = peopleWorkspace.faces(for: projection.id)
+            guard !faces.isEmpty else { return nil }
+            let person = faces.compactMap(\.knownPersonMatch?.person).first
             return PeopleReviewGroup(
-                id: groupID,
+                id: legacyGroupID(projection.id),
                 faces: faces,
                 person: person
             )
         }
     }
 
-    var peopleCandidateCount: Int { peopleReviewGroups.count }
+    var peopleCandidateCount: Int { peopleWorkspace.projection.groups.count }
+
+    private func legacyGroupID(_ id: PeopleGroupID) -> String {
+        switch id {
+        case let .person(personID):
+            return "known:\(personID.uuidString)"
+        case let .candidate(candidateID):
+            return "unknown:\(candidateID)"
+        }
+    }
 
     func showPeople(for itemID: UUID) {
         let focused = peopleReviewGroups.first { group in
@@ -1244,6 +1229,7 @@ final class AppModel: ObservableObject {
         }
         orderRedoStack.removeAll()
         refreshPreviews()
+        peopleWorkspace.updatePresentationOrder(items: items)
     }
 
     private func makeOrderSnapshot() -> OrderSnapshot {
@@ -1260,6 +1246,7 @@ final class AppModel: ObservableObject {
         items = ItemSorter.reindexed(snapshot.itemIDs.compactMap { itemsByID[$0] })
         selection = snapshot.selection.intersection(Set(snapshot.itemIDs))
         refreshPreviews()
+        peopleWorkspace.updatePresentationOrder(items: items)
         return true
     }
 
@@ -1358,81 +1345,17 @@ final class AppModel: ObservableObject {
 
     // MARK: - People candidates
 
-    /// Starts an independent local analysis task. File order changes intentionally
-    /// do not restart it because every result is keyed by RenameItem/face IDs.
     private func scheduleFaceClassification() {
-        faceClassificationTask?.cancel()
-        faceClassificationRevision &+= 1
-        let revision = faceClassificationRevision
-
-        guard preferences.classifiesPeople else {
-            clearFaceClassificationResults(cancelTask: false)
-            return
-        }
-        guard let personStore else {
-            clearFaceClassificationResults(cancelTask: false)
-            faceClassificationError = "人物データの保存領域を開けませんでした。"
-            return
-        }
-
-        let candidates = items.compactMap { item -> FaceClassificationCandidate? in
-            let imageURLs = item.allURLs.filter(FileKinds.isImage)
-            guard !imageURLs.isEmpty else { return nil }
-            let analysisURL = imageURLs.first(where: { !FileKinds.isRAW($0) }) ?? imageURLs[0]
-            return FaceClassificationCandidate(itemID: item.id, analysisURL: analysisURL)
-        }
-        guard !candidates.isEmpty else {
-            clearFaceClassificationResults(cancelTask: false)
-            return
-        }
-
-        let knownPeople: [PersonProfileSnapshot]
-        do {
-            knownPeople = try personStore.people()
-        } catch {
-            clearFaceClassificationResults(cancelTask: false)
-            faceClassificationError = error.localizedDescription
-            return
-        }
-
-        let configuration = OfflineFaceClassifierConfiguration(
-            sensitivity: preferences.faceGroupingSensitivity
+        peopleWorkspace.schedule(
+            items: items,
+            sensitivity: preferences.faceGroupingSensitivity,
+            enabled: preferences.classifiesPeople
         )
-        faceClassificationError = nil
-        isClassifyingPeople = true
-        faceClassificationTask = Task { [weak self] in
-            guard let self else { return }
-            do {
-                let result = try await OfflineFaceClassifier.shared.scan(
-                    candidates: candidates,
-                    knownPeople: knownPeople,
-                    configuration: configuration
-                )
-                guard !Task.isCancelled,
-                      self.faceClassificationRevision == revision
-                else { return }
-                self.faceClassificationResult = result
-                self.isClassifyingPeople = false
-            } catch is CancellationError {
-                if self.faceClassificationRevision == revision {
-                    self.isClassifyingPeople = false
-                }
-            } catch {
-                if self.faceClassificationRevision == revision {
-                    self.faceClassificationResult = .empty
-                    self.faceClassificationError = error.localizedDescription
-                    self.isClassifyingPeople = false
-                }
-            }
-        }
     }
 
     private func clearFaceClassificationResults(cancelTask: Bool = true) {
-        if cancelTask { faceClassificationTask?.cancel() }
-        faceClassificationTask = nil
-        faceClassificationResult = .empty
-        faceClassificationError = nil
-        isClassifyingPeople = false
+        peopleWorkspace.clear(cancelTask: cancelTask)
+        peopleReview = nil
     }
 
     // MARK: - Preview

@@ -15,26 +15,20 @@ struct ClassifiedFace: Identifiable, Sendable {
     let knownPersonMatch: PersonMatch?
 }
 
-struct FaceCandidateCluster: Identifiable, Hashable, Sendable {
-    let members: [FaceDescriptorID]
-
-    var id: String {
-        members.map { "\($0.itemID.uuidString):\($0.faceIndex)" }.joined(separator: "|")
-    }
-}
+typealias FaceCandidateCluster = PeopleCandidateCluster
 
 struct OfflineFaceClassificationResult: Sendable {
     let facesByItemID: [UUID: [ClassifiedFace]]
-    let namedAssignments: [UUID: [FaceDescriptorID]]
-    let unknownClusters: [FaceCandidateCluster]
-    let unconfirmedFaceIDs: [FaceDescriptorID]
+    let classification: PeopleClassificationResult
     let unreadableItemIDs: Set<UUID>
+
+    var namedAssignments: [UUID: [FaceDescriptorID]] { classification.namedAssignments }
+    var unknownClusters: [FaceCandidateCluster] { classification.unnamedClusters }
+    var unconfirmedFaceIDs: [FaceDescriptorID] { classification.unconfirmedFaceIDs }
 
     static let empty = OfflineFaceClassificationResult(
         facesByItemID: [:],
-        namedAssignments: [:],
-        unknownClusters: [],
-        unconfirmedFaceIDs: [],
+        classification: .empty,
         unreadableItemIDs: []
     )
 }
@@ -149,9 +143,12 @@ actor OfflineFaceClassifier {
         }
         return OfflineFaceClassificationResult(
             facesByItemID: facesByItemID,
-            namedAssignments: namedAssignments,
-            unknownClusters: clustered.clusters.map(FaceCandidateCluster.init(members:)),
-            unconfirmedFaceIDs: unconfirmedFaceIDs,
+            classification: PeopleClassificationResult(
+                faceIDsByItemID: facesByItemID.mapValues { $0.map(\.id) },
+                namedAssignments: namedAssignments,
+                unnamedClusters: clustered.clusters.map(FaceCandidateCluster.init(members:)),
+                unconfirmedFaceIDs: unconfirmedFaceIDs
+            ),
             unreadableItemIDs: batch.unreadableItemIDs
         )
     }
