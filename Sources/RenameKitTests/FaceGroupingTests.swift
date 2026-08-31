@@ -957,6 +957,82 @@ func runFaceGroupingTests() async {
             differentPersonPairCount: 0
         ))
     }
+
+    runner.suite("People Performance — 生成特徴量の規模確認")
+
+    await runner.test("200件と1,000件の照合・クラスタ・投影を実用時間内に完了する") {
+        for count in [200, 1_000] {
+            let ids = makeFaceDescriptorIDs(count: count)
+            let people = try (0..<10).map { personIndex in
+                let angle = Double(personIndex) / 10 * 2 * Double.pi
+                return try makePersonSnapshot(
+                    idSuffix: personIndex + 1,
+                    name: "Person \(personIndex + 1)",
+                    positiveValues: [[Float(cos(angle)), Float(sin(angle))]],
+                    contract: contract
+                )
+            }
+            let embeddings = try (0..<count).map { index in
+                let angle = Double(index % 10) / 10 * 2 * Double.pi
+                return try FaceEmbedding(
+                    contract: contract,
+                    values: [Float(cos(angle)), Float(sin(angle))]
+                )
+            }
+
+            let clock = ContinuousClock()
+            let matchingStart = clock.now
+            for embedding in embeddings {
+                _ = try PeopleMatcher(policy: .standard).decide(
+                    embedding: embedding,
+                    people: people,
+                    blockedPersonIDs: []
+                )
+            }
+            let matchingElapsed = matchingStart.duration(to: clock.now)
+
+            var distances: [FaceDescriptorPair: Float] = [:]
+            distances.reserveCapacity(count * (count - 1) / 2)
+            for first in 0..<(count - 1) {
+                for second in (first + 1)..<count {
+                    distances[FaceDescriptorPair(ids[first], ids[second])] =
+                        first / 10 == second / 10 ? 0.10 : 0.80
+                }
+            }
+            let clusteringStart = clock.now
+            let clustered = FaceDensityClusterer().cluster(
+                ids: ids,
+                epsilon: FaceGroupingSensitivity.standard.policy.clusterEpsilon,
+                distances: distances
+            )
+            let clusteringElapsed = clusteringStart.duration(to: clock.now)
+
+            let projectionStart = clock.now
+            let projection = PeopleWorkspaceProjection.make(
+                orderedItemIDs: ids.map(\.itemID),
+                result: PeopleClassificationResult(
+                    faceIDsByItemID: Dictionary(uniqueKeysWithValues: ids.map {
+                        ($0.itemID, [$0])
+                    }),
+                    namedAssignments: [:],
+                    unnamedClusters: clustered.clusters.map(PeopleCandidateCluster.init),
+                    unconfirmedFaceIDs: clustered.outliers
+                ),
+                people: []
+            )
+            let projectionElapsed = projectionStart.duration(to: clock.now)
+
+            try expectEqual(projection.groups.flatMap(\.faceIDs).count, count)
+            try expectEqual(projection.unconfirmed.count, 0)
+            try expect(
+                matchingElapsed + clusteringElapsed + projectionElapsed < .seconds(30),
+                "\(count)件: 照合 \(matchingElapsed)、クラスタ \(clusteringElapsed)、投影 \(projectionElapsed)"
+            )
+            print(
+                "    \(count)件 — 照合 \(matchingElapsed)、クラスタ \(clusteringElapsed)、投影 \(projectionElapsed)"
+            )
+        }
+    }
 }
 
 private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {
