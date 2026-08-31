@@ -98,6 +98,8 @@ public enum FaceGroupingSensitivity: String, CaseIterable, Codable, Identifiable
             return FaceGroupingPolicy(
                 minimumCaptureQuality: 0.30,
                 knownPersonMaximumDistance: 0.28,
+                knownPersonAmbiguityMargin: 0.10,
+                rejectionMaximumDistance: 0.24,
                 clusterEpsilon: 0.32,
                 clusterMinimumPoints: 2
             )
@@ -105,6 +107,8 @@ public enum FaceGroupingSensitivity: String, CaseIterable, Codable, Identifiable
             return FaceGroupingPolicy(
                 minimumCaptureQuality: 0.20,
                 knownPersonMaximumDistance: 0.36,
+                knownPersonAmbiguityMargin: 0.08,
+                rejectionMaximumDistance: 0.24,
                 clusterEpsilon: 0.42,
                 clusterMinimumPoints: 2
             )
@@ -112,6 +116,8 @@ public enum FaceGroupingSensitivity: String, CaseIterable, Codable, Identifiable
             return FaceGroupingPolicy(
                 minimumCaptureQuality: 0.10,
                 knownPersonMaximumDistance: 0.44,
+                knownPersonAmbiguityMargin: 0.06,
+                rejectionMaximumDistance: 0.24,
                 clusterEpsilon: 0.52,
                 clusterMinimumPoints: 2
             )
@@ -122,17 +128,23 @@ public enum FaceGroupingSensitivity: String, CaseIterable, Codable, Identifiable
 public struct FaceGroupingPolicy: Equatable, Sendable {
     public let minimumCaptureQuality: Float
     public let knownPersonMaximumDistance: Float
+    public let knownPersonAmbiguityMargin: Float
+    public let rejectionMaximumDistance: Float
     public let clusterEpsilon: Float
     public let clusterMinimumPoints: Int
 
     public init(
         minimumCaptureQuality: Float,
         knownPersonMaximumDistance: Float,
+        knownPersonAmbiguityMargin: Float,
+        rejectionMaximumDistance: Float,
         clusterEpsilon: Float,
         clusterMinimumPoints: Int
     ) {
         self.minimumCaptureQuality = minimumCaptureQuality
         self.knownPersonMaximumDistance = knownPersonMaximumDistance
+        self.knownPersonAmbiguityMargin = knownPersonAmbiguityMargin
+        self.rejectionMaximumDistance = rejectionMaximumDistance
         self.clusterEpsilon = clusterEpsilon
         self.clusterMinimumPoints = clusterMinimumPoints
     }

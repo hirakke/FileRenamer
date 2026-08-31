@@ -25,28 +25,30 @@ struct FaceCandidateCluster: Identifiable, Hashable, Sendable {
 
 struct OfflineFaceClassificationResult: Sendable {
     let facesByItemID: [UUID: [ClassifiedFace]]
+    let namedAssignments: [UUID: [FaceDescriptorID]]
     let unknownClusters: [FaceCandidateCluster]
-    let unknownOutliers: [FaceDescriptorID]
+    let unconfirmedFaceIDs: [FaceDescriptorID]
     let unreadableItemIDs: Set<UUID>
 
     static let empty = OfflineFaceClassificationResult(
         facesByItemID: [:],
+        namedAssignments: [:],
         unknownClusters: [],
-        unknownOutliers: [],
+        unconfirmedFaceIDs: [],
         unreadableItemIDs: []
     )
 }
 
 struct OfflineFaceClassifierConfiguration: Sendable {
     let eligibilityPolicy: FaceEligibilityPolicy
-    let knownPersonMaximumDistance: Float
+    let matchingPolicy: FaceGroupingPolicy
     let clusterEpsilon: Float
     let clusterMinimumPoints: Int
 
     init(sensitivity: FaceGroupingSensitivity) {
         let groupingPolicy = sensitivity.policy
         eligibilityPolicy = FaceEligibilityPolicy(sensitivity: sensitivity)
-        knownPersonMaximumDistance = groupingPolicy.knownPersonMaximumDistance
+        matchingPolicy = groupingPolicy
         clusterEpsilon = groupingPolicy.clusterEpsilon
         clusterMinimumPoints = groupingPolicy.clusterMinimumPoints
     }
@@ -54,9 +56,8 @@ struct OfflineFaceClassifierConfiguration: Sendable {
     static let standard = OfflineFaceClassifierConfiguration(sensitivity: .standard)
 }
 
-/// Orchestrates analysis and the current compatibility matcher. Vision, file
-/// access, and embedding are isolated in `FaceAnalyzer`; matching moves to the
-/// pure multi-prototype matcher in the next implementation phase.
+/// Orchestrates local analysis, conservative known-person matching, and
+/// cannot-link clustering without moving file or UI work onto this actor.
 actor OfflineFaceClassifier {
     static let shared = OfflineFaceClassifier()
 
@@ -71,19 +72,44 @@ actor OfflineFaceClassifier {
         )
         try Task.checkCancellation()
 
+        let peopleByID = Dictionary(uniqueKeysWithValues: knownPeople.map { ($0.id, $0) })
+        let matcher = PeopleMatcher(policy: configuration.matchingPolicy)
         var facesByItemID: [UUID: [ClassifiedFace]] = [:]
         var orderedFaces: [ClassifiedFace] = []
+        var namedAssignments: [UUID: [FaceDescriptorID]] = [:]
+        var ambiguousFaceIDs = Set<FaceDescriptorID>()
+        var displayOnlyFaceIDs = Set<FaceDescriptorID>()
         for candidate in candidates {
-            let analyzed = batch.facesByItemID[candidate.itemID] ?? []
-            let classified = try analyzed.map { face in
-                let match = try face.embedding.flatMap {
-                    try bestKnownMatch(
-                        for: $0,
+            let analyzed = (batch.facesByItemID[candidate.itemID] ?? [])
+                .sorted { $0.id.faceIndex < $1.id.faceIndex }
+            var blockedPersonIDs = Set<UUID>()
+            var classified: [ClassifiedFace] = []
+            classified.reserveCapacity(analyzed.count)
+            for face in analyzed {
+                var match: PersonMatch?
+                if let embedding = face.embedding,
+                   face.eligibility != .displayOnly {
+                    let decision = try matcher.decide(
+                        embedding: embedding,
                         people: knownPeople,
-                        maximumDistance: configuration.knownPersonMaximumDistance
+                        blockedPersonIDs: blockedPersonIDs
                     )
+                    switch decision {
+                    case let .accepted(personID, score):
+                        if let person = peopleByID[personID] {
+                            match = PersonMatch(person: person, distance: score)
+                            blockedPersonIDs.insert(personID)
+                            namedAssignments[personID, default: []].append(face.id)
+                        }
+                    case .ambiguous:
+                        ambiguousFaceIDs.insert(face.id)
+                    case .unconfirmed:
+                        break
+                    }
+                } else {
+                    displayOnlyFaceIDs.insert(face.id)
                 }
-                return ClassifiedFace(
+                classified.append(ClassifiedFace(
                     id: face.id,
                     normalizedBoundingBox: face.normalizedBoundingBox,
                     captureQuality: face.captureQuality,
@@ -92,51 +118,46 @@ actor OfflineFaceClassifier {
                     ineligibilityReason: face.ineligibilityReason,
                     embedding: face.embedding,
                     knownPersonMatch: match
-                )
+                ))
             }
             facesByItemID[candidate.itemID] = classified
             orderedFaces.append(contentsOf: classified)
         }
 
-        let unknown = orderedFaces.filter { $0.embedding != nil && $0.knownPersonMatch == nil }
+        let unknown = orderedFaces.filter {
+            $0.eligibility != .displayOnly
+                && $0.embedding != nil
+                && $0.knownPersonMatch == nil
+        }
         let distances = try makeDistanceTable(unknown)
+        let cannotLink = makeSamePhotoCannotLinks(unknown)
         let clustered = FaceDensityClusterer().cluster(
             ids: unknown.map(\.id),
             epsilon: configuration.clusterEpsilon,
             minimumPoints: configuration.clusterMinimumPoints,
-            distances: distances
+            distances: distances,
+            cannotLink: cannotLink
         )
+        let outlierIDs = Set(clustered.outliers)
+        var seenUnconfirmed = Set<FaceDescriptorID>()
+        let unconfirmedFaceIDs = orderedFaces.compactMap { face -> FaceDescriptorID? in
+            let isUnconfirmed = displayOnlyFaceIDs.contains(face.id)
+                || ambiguousFaceIDs.contains(face.id)
+                || outlierIDs.contains(face.id)
+            guard isUnconfirmed, seenUnconfirmed.insert(face.id).inserted else { return nil }
+            return face.id
+        }
         return OfflineFaceClassificationResult(
             facesByItemID: facesByItemID,
+            namedAssignments: namedAssignments,
             unknownClusters: clustered.clusters.map(FaceCandidateCluster.init(members:)),
-            unknownOutliers: clustered.outliers,
+            unconfirmedFaceIDs: unconfirmedFaceIDs,
             unreadableItemIDs: batch.unreadableItemIDs
         )
     }
 
     func clearCache() async {
         await FaceAnalyzer.shared.clearCache()
-    }
-
-    private func bestKnownMatch(
-        for embedding: FaceEmbedding,
-        people: [PersonProfileSnapshot],
-        maximumDistance: Float
-    ) throws -> PersonMatch? {
-        guard maximumDistance.isFinite, maximumDistance >= 0 else { return nil }
-        var best: PersonMatch?
-        for person in people {
-            let compatible = person.positives.filter {
-                $0.embedding.contract == embedding.contract
-            }
-            guard let distance = try compatible.map({
-                try embedding.cosineDistance(to: $0.embedding)
-            }).min() else { continue }
-            if distance <= maximumDistance, distance < (best?.distance ?? .infinity) {
-                best = PersonMatch(person: person, distance: distance)
-            }
-        }
-        return best
     }
 
     private func makeDistanceTable(
@@ -152,6 +173,24 @@ actor OfflineFaceClassifier {
                 else { continue }
                 result[FaceDescriptorPair(faces[leftIndex].id, faces[rightIndex].id)] =
                     try left.cosineDistance(to: right)
+            }
+        }
+        return result
+    }
+
+    private func makeSamePhotoCannotLinks(
+        _ faces: [ClassifiedFace]
+    ) -> Set<FaceDescriptorPair> {
+        var result = Set<FaceDescriptorPair>()
+        for itemFaces in Dictionary(grouping: faces, by: { $0.id.itemID }).values
+            where itemFaces.count > 1 {
+            for leftIndex in 0..<(itemFaces.count - 1) {
+                for rightIndex in (leftIndex + 1)..<itemFaces.count {
+                    result.insert(FaceDescriptorPair(
+                        itemFaces[leftIndex].id,
+                        itemFaces[rightIndex].id
+                    ))
+                }
             }
         }
         return result

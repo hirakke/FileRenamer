@@ -22,7 +22,8 @@ public struct FaceDensityClusterer: Sendable {
         ids: [FaceDescriptorID],
         epsilon: Float,
         minimumPoints: Int = 2,
-        distances: [FaceDescriptorPair: Float]
+        distances: [FaceDescriptorPair: Float],
+        cannotLink: Set<FaceDescriptorPair> = []
     ) -> FaceClusterResult {
         let orderedIDs = unique(ids)
         guard !orderedIDs.isEmpty else {
@@ -45,6 +46,13 @@ public struct FaceDensityClusterer: Sendable {
             }
         }
 
+        func conflictsWithCluster(_ id: FaceDescriptorID, clusterIndex: Int) -> Bool {
+            orderedIDs.contains { member in
+                clusterIndexByID[member] == clusterIndex
+                    && cannotLink.contains(FaceDescriptorPair(id, member))
+            }
+        }
+
         for id in orderedIDs where !visited.contains(id) {
             visited.insert(id)
             let initialNeighbors = neighbors(of: id)
@@ -62,6 +70,11 @@ public struct FaceDensityClusterer: Sendable {
                 let neighbor = queue[cursor]
                 cursor += 1
 
+                if clusterIndexByID[neighbor] != nil { continue }
+                // A rejected point remains unvisited so it can seed or join a
+                // later compatible cluster instead of disappearing silently.
+                if conflictsWithCluster(neighbor, clusterIndex: clusterIndex) { continue }
+
                 if !visited.contains(neighbor) {
                     visited.insert(neighbor)
                     let expandedNeighbors = neighbors(of: neighbor)
@@ -74,17 +87,25 @@ public struct FaceDensityClusterer: Sendable {
                 }
 
                 // A point previously marked as noise can become density-reachable.
-                if clusterIndexByID[neighbor] == nil {
-                    clusterIndexByID[neighbor] = clusterIndex
-                }
+                clusterIndexByID[neighbor] = clusterIndex
             }
         }
 
-        let clusters = (0..<nextClusterIndex).compactMap { clusterIndex -> [FaceDescriptorID]? in
-            let members = orderedIDs.filter { clusterIndexByID[$0] == clusterIndex }
-            return members.isEmpty ? nil : members
+        let allClusters = (0..<nextClusterIndex).map { clusterIndex in
+            orderedIDs.filter { clusterIndexByID[$0] == clusterIndex }
         }
-        let outliers = orderedIDs.filter { clusterIndexByID[$0] == nil }
+        let validClusterIndexes = Set(allClusters.indices.filter {
+            allClusters[$0].count >= safeMinimumPoints
+        })
+        let clusters = allClusters.enumerated().compactMap {
+            clusterIndex, members -> [FaceDescriptorID]? in
+            guard validClusterIndexes.contains(clusterIndex) else { return nil }
+            return members
+        }
+        let outliers = orderedIDs.filter { id in
+            guard let clusterIndex = clusterIndexByID[id] else { return true }
+            return !validClusterIndexes.contains(clusterIndex)
+        }
         return FaceClusterResult(clusters: clusters, outliers: outliers)
     }
 

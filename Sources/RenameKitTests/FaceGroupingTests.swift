@@ -250,6 +250,12 @@ func runFaceGroupingTests() async {
         try expect(standard.clusterEpsilon < broad.clusterEpsilon)
         try expect(strict.minimumCaptureQuality > standard.minimumCaptureQuality)
         try expect(standard.minimumCaptureQuality > broad.minimumCaptureQuality)
+        try expectEqual(strict.knownPersonAmbiguityMargin, 0.10)
+        try expectEqual(standard.knownPersonAmbiguityMargin, 0.08)
+        try expectEqual(broad.knownPersonAmbiguityMargin, 0.06)
+        try expectEqual(strict.rejectionMaximumDistance, 0.24)
+        try expectEqual(standard.rejectionMaximumDistance, 0.24)
+        try expectEqual(broad.rejectionMaximumDistance, 0.24)
         try expectEqual(strict.clusterMinimumPoints, 2)
         try expectEqual(standard.clusterMinimumPoints, 2)
         try expectEqual(broad.clusterMinimumPoints, 2)
@@ -275,6 +281,122 @@ func runFaceGroupingTests() async {
                 expected
             )
         }
+    }
+
+    runner.suite("PeopleMatcher — 保守的な既知人物判定")
+
+    await runner.test("近い正例2件の平均と候補差から人物を確定する") {
+        let query = try FaceEmbedding(contract: contract, values: [1, 0])
+        let best = try makePersonSnapshot(
+            idSuffix: 1,
+            name: "Best",
+            positiveValues: [[0.995, 0.1], [0.98, -0.2]],
+            contract: contract
+        )
+        let runnerUp = try makePersonSnapshot(
+            idSuffix: 2,
+            name: "Runner-up",
+            positiveValues: [[0.7, 0.7]],
+            contract: contract
+        )
+        let nearest = try best.positives.map {
+            try query.cosineDistance(to: $0.embedding)
+        }.sorted().prefix(2)
+        let expectedScore = nearest.reduce(0, +) / Float(nearest.count)
+
+        let decision = try PeopleMatcher(policy: .standard).decide(
+            embedding: query,
+            people: [runnerUp, best],
+            blockedPersonIDs: []
+        )
+
+        try expectEqual(decision, .accepted(personID: best.id, score: expectedScore))
+    }
+
+    await runner.test("次点との差が0.08未満なら人物名を確定しない") {
+        let query = try FaceEmbedding(contract: contract, values: [1, 0])
+        let best = try makePersonSnapshot(
+            idSuffix: 1,
+            name: "Best",
+            positiveValues: [[1, 0]],
+            contract: contract
+        )
+        let runnerUp = try makePersonSnapshot(
+            idSuffix: 2,
+            name: "Runner-up",
+            positiveValues: [[0.95, 0.3122499]],
+            contract: contract
+        )
+
+        let decision = try PeopleMatcher(policy: .standard).decide(
+            embedding: query,
+            people: [runnerUp, best],
+            blockedPersonIDs: []
+        )
+
+        if case let .ambiguous(candidates) = decision {
+            try expectEqual(candidates.map(\.personID), [best.id, runnerUp.id])
+        } else {
+            try expect(false, "曖昧候補として返されませんでした")
+        }
+    }
+
+    await runner.test("拒否例に近い顔・互換性のない顔・割当済み人物は未確定にする") {
+        let query = try FaceEmbedding(contract: contract, values: [1, 0])
+        let rejected = try makePersonSnapshot(
+            idSuffix: 1,
+            name: "Rejected",
+            positiveValues: [[1, 0]],
+            rejectionValues: [[0.999, 0.001]],
+            contract: contract
+        )
+        let blockable = try makePersonSnapshot(
+            idSuffix: 3,
+            name: "Already assigned in this photo",
+            positiveValues: [[1, 0]],
+            contract: contract
+        )
+        let incompatibleContract = FacePipelineContract(
+            embeddingModel: FaceEmbeddingModel(
+                identifier: model.identifier,
+                version: "future",
+                dimension: model.dimension
+            ),
+            preprocessingVersion: contract.preprocessingVersion,
+            alignmentVersion: contract.alignmentVersion,
+            distanceMetricVersion: contract.distanceMetricVersion
+        )
+        let incompatible = try makePersonSnapshot(
+            idSuffix: 2,
+            name: "Incompatible",
+            positiveValues: [[1, 0]],
+            contract: incompatibleContract
+        )
+
+        try expectEqual(
+            try PeopleMatcher(policy: .standard).decide(
+                embedding: query,
+                people: [rejected],
+                blockedPersonIDs: []
+            ),
+            .unconfirmed
+        )
+        try expectEqual(
+            try PeopleMatcher(policy: .standard).decide(
+                embedding: query,
+                people: [incompatible],
+                blockedPersonIDs: []
+            ),
+            .unconfirmed
+        )
+        try expectEqual(
+            try PeopleMatcher(policy: .standard).decide(
+                embedding: query,
+                people: [blockable],
+                blockedPersonIDs: [blockable.id]
+            ),
+            .unconfirmed
+        )
     }
 
     runner.suite("FaceDensityClusterer — 人物候補")
@@ -343,6 +465,35 @@ func runFaceGroupingTests() async {
 
         try expect(result.clusters.isEmpty)
         try expectEqual(result.outliers, ids)
+    }
+
+    await runner.test("同じ写真の別の顔を同一クラスタへ入れない") {
+        let sharedItemID = UUID(uuidString: "00000000-0000-0000-0000-000000000100")!
+        let ids = [
+            FaceDescriptorID(itemID: sharedItemID, faceIndex: 0),
+            FaceDescriptorID(itemID: sharedItemID, faceIndex: 1),
+            FaceDescriptorID(
+                itemID: UUID(uuidString: "00000000-0000-0000-0000-000000000200")!,
+                faceIndex: 0
+            )
+        ]
+        let distances = Dictionary(uniqueKeysWithValues: [
+            (FaceDescriptorPair(ids[0], ids[1]), Float(0.05)),
+            (FaceDescriptorPair(ids[0], ids[2]), Float(0.06)),
+            (FaceDescriptorPair(ids[1], ids[2]), Float(0.07))
+        ])
+
+        let result = FaceDensityClusterer().cluster(
+            ids: ids,
+            epsilon: 0.42,
+            minimumPoints: 2,
+            distances: distances,
+            cannotLink: [FaceDescriptorPair(ids[0], ids[1])]
+        )
+
+        try expect(!result.clusters.contains {
+            Set($0).isSuperset(of: [ids[0], ids[1]])
+        })
     }
 
     runner.suite("FacePrototypeSelector — 代表顔の選択")
@@ -611,6 +762,55 @@ private func makePersonEmbeddingSample(
         ),
         captureQuality: Float(0.5 + Double(index % 5) * 0.1),
         createdAt: Date(timeIntervalSince1970: TimeInterval(index + 1))
+    )
+}
+
+private func makePersonSnapshot(
+    idSuffix: Int,
+    name: String,
+    positiveValues: [[Float]],
+    rejectionValues: [[Float]] = [],
+    contract: FacePipelineContract
+) throws -> PersonProfileSnapshot {
+    let personID = UUID(
+        uuidString: String(format: "00000000-0000-0000-0002-%012d", idSuffix)
+    )!
+    let positives = try positiveValues.enumerated().map { index, values in
+        PersonEmbeddingSample(
+            id: UUID(
+                uuidString: String(
+                    format: "00000000-0000-0000-%04d-%012d",
+                    idSuffix + 10,
+                    index + 1
+                )
+            )!,
+            embedding: try FaceEmbedding(contract: contract, values: values),
+            captureQuality: 0.8,
+            createdAt: Date(timeIntervalSince1970: TimeInterval(index + 1))
+        )
+    }
+    let rejections = try rejectionValues.enumerated().map { index, values in
+        PersonEmbeddingSample(
+            id: UUID(
+                uuidString: String(
+                    format: "00000000-0000-0000-%04d-%012d",
+                    idSuffix + 20,
+                    index + 1
+                )
+            )!,
+            embedding: try FaceEmbedding(contract: contract, values: values),
+            captureQuality: 0.8,
+            createdAt: Date(timeIntervalSince1970: TimeInterval(index + 101))
+        )
+    }
+    return PersonProfileSnapshot(
+        id: personID,
+        displayName: name,
+        positives: positives,
+        rejections: rejections,
+        isLegacyOnly: positives.isEmpty,
+        createdAt: .distantPast,
+        updatedAt: .distantPast
     )
 }
 
