@@ -123,8 +123,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isScanningSimilarImages = false
     @Published private(set) var similarImageMatchesByItemID: [UUID: [SimilarImageMatch]] = [:]
     @Published var similarityReview: SimilarityReview?
-    @Published var peopleReview: PeopleReview?
-    @Published var pendingPersonRegistration: PendingPersonRegistration?
+    @Published var pendingPeopleStorageEdit: PendingPeopleStorageEdit?
     @Published var alertMessage: AlertMessage?
     @Published var resultMessage: ResultMessage?
     @Published var quickLookURL: URL?
@@ -277,24 +276,9 @@ final class AppModel: ObservableObject {
         let knownName: String?
     }
 
-    struct PeopleReview: Identifiable {
+    struct PendingPeopleStorageEdit: Identifiable {
         let id = UUID()
-        let focusedGroupID: String?
-    }
-
-    struct PeopleReviewGroup: Identifiable {
-        let id: String
-        let faces: [ClassifiedFace]
-        let person: PersonProfileSnapshot?
-
-        var isKnownPerson: Bool { person != nil }
-    }
-
-    struct PendingPersonRegistration: Identifiable {
-        let id = UUID()
-        let groupID: String
-        let displayName: String
-        let embeddings: [FaceEmbedding]
+        let command: PeopleEditCommand
     }
 
     init(
@@ -345,6 +329,7 @@ final class AppModel: ObservableObject {
     var canUndoPeopleEdit: Bool { peopleWorkspace.canUndoPeopleEdit }
     var canRedoPeopleEdit: Bool { peopleWorkspace.canRedoPeopleEdit }
     var isClassifyingPeople: Bool { peopleWorkspace.isAnalyzing }
+    var peopleAnalysisProgress: PeopleAnalysisProgress { peopleWorkspace.progress }
     var faceClassificationError: String? { peopleWorkspace.errorMessage }
     private var faceClassificationResult: OfflineFaceClassificationResult {
         peopleWorkspace.result
@@ -432,6 +417,25 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func requestPeopleEdit(_ command: PeopleEditCommand, persistsBiometricData: Bool = true) {
+        if persistsBiometricData && !preferences.hasConfirmedPeopleStorage {
+            pendingPeopleStorageEdit = PendingPeopleStorageEdit(command: command)
+        } else {
+            performPeopleEdit(command)
+        }
+    }
+
+    func confirmPeopleStorageEdit() {
+        guard let pending = pendingPeopleStorageEdit else { return }
+        pendingPeopleStorageEdit = nil
+        preferences.confirmPeopleStorage()
+        performPeopleEdit(pending.command)
+    }
+
+    func cancelPeopleStorageEdit() {
+        pendingPeopleStorageEdit = nil
+    }
+
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
 
     func similarityBadge(for itemID: UUID) -> SimilarityBadge? {
@@ -460,118 +464,37 @@ final class AppModel: ObservableObject {
         )
     }
 
-    var peopleReviewGroups: [PeopleReviewGroup] {
-        peopleWorkspace.projection.groups.compactMap { projection in
-            let faces = peopleWorkspace.faces(for: projection.id)
-            guard !faces.isEmpty else { return nil }
-            let person = faces.compactMap(\.knownPersonMatch?.person).first
-            return PeopleReviewGroup(
-                id: legacyGroupID(projection.id),
-                faces: faces,
-                person: person
-            )
-        }
-    }
-
-    var peopleCandidateCount: Int { peopleWorkspace.projection.groups.count }
-
-    private func legacyGroupID(_ id: PeopleGroupID) -> String {
-        switch id {
-        case let .person(personID):
-            return "known:\(personID.uuidString)"
-        case let .candidate(candidateID):
-            return "unknown:\(candidateID)"
-        }
+    var peopleCandidateCount: Int {
+        peopleWorkspace.projection.groups.count
+            + (peopleWorkspace.projection.unconfirmed.isEmpty ? 0 : 1)
     }
 
     func showPeople(for itemID: UUID) {
-        let focused = peopleReviewGroups.first { group in
-            group.faces.contains { $0.id.itemID == itemID }
+        let focused = peopleWorkspace.projection.groups.first { group in
+            group.itemIDs.contains(itemID)
         }
-        guard let focused else { return }
-        peopleReview = PeopleReview(focusedGroupID: focused.id)
+        if let focused {
+            peopleWorkspace.route = .group(focused.id)
+        } else if peopleWorkspace.projection.unconfirmed.contains(where: { $0.itemID == itemID }) {
+            peopleWorkspace.route = .unconfirmed
+        } else {
+            return
+        }
+        viewMode = .people
     }
 
     func showPeopleReview() {
-        guard let first = peopleReviewGroups.first else { return }
-        peopleReview = PeopleReview(focusedGroupID: first.id)
+        guard !peopleWorkspace.projection.groups.isEmpty
+                || !peopleWorkspace.projection.unconfirmed.isEmpty
+        else { return }
+        peopleWorkspace.route = .overview
+        viewMode = .people
     }
 
     func faceAnalysisURL(for itemID: UUID) -> URL? {
         guard let item = items.first(where: { $0.id == itemID }) else { return nil }
         let imageURLs = item.allURLs.filter(FileKinds.isImage)
         return imageURLs.first(where: { !FileKinds.isRAW($0) }) ?? imageURLs.first
-    }
-
-    func requestPersonRegistration(groupID: String, displayName: String) {
-        let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty,
-              let group = peopleReviewGroups.first(where: { $0.id == groupID }),
-              group.person == nil
-        else { return }
-        let embeddings = group.faces.compactMap(\.embedding)
-        guard !embeddings.isEmpty else { return }
-        let registration = PendingPersonRegistration(
-            groupID: groupID,
-            displayName: name,
-            embeddings: embeddings
-        )
-        if preferences.hasConfirmedPeopleStorage {
-            savePerson(registration)
-        } else {
-            pendingPersonRegistration = registration
-        }
-    }
-
-    func confirmPersonRegistration() {
-        guard let registration = pendingPersonRegistration else { return }
-        pendingPersonRegistration = nil
-        preferences.confirmPeopleStorage()
-        savePerson(registration)
-    }
-
-    func cancelPersonRegistration() {
-        pendingPersonRegistration = nil
-    }
-
-    func renamePerson(id: UUID, displayName: String) {
-        do {
-            _ = try personStore?.renamePerson(id: id, displayName: displayName)
-            scheduleFaceClassification()
-        } catch {
-            alertMessage = AlertMessage(
-                title: "人物名を変更できませんでした",
-                detail: error.localizedDescription
-            )
-        }
-    }
-
-    func deletePerson(id: UUID) {
-        do {
-            try personStore?.deletePerson(id: id)
-            scheduleFaceClassification()
-        } catch {
-            alertMessage = AlertMessage(
-                title: "人物の登録を解除できませんでした",
-                detail: error.localizedDescription
-            )
-        }
-    }
-
-    private func savePerson(_ registration: PendingPersonRegistration) {
-        do {
-            _ = try personStore?.savePerson(
-                displayName: registration.displayName,
-                embeddings: registration.embeddings
-            )
-            resultMessage = ResultMessage(text: "「\(registration.displayName)」をこのMacに登録しました")
-            scheduleFaceClassification()
-        } catch {
-            alertMessage = AlertMessage(
-                title: "人物を登録できませんでした",
-                detail: error.localizedDescription
-            )
-        }
     }
 
     /// Connected components of the match graph, in list order.
@@ -1381,7 +1304,6 @@ final class AppModel: ObservableObject {
 
     private func clearFaceClassificationResults(cancelTask: Bool = true) {
         peopleWorkspace.clear(cancelTask: cancelTask)
-        peopleReview = nil
     }
 
     // MARK: - Preview

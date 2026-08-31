@@ -100,9 +100,6 @@ struct ContentView: View {
         .sheet(item: $model.similarityReview) { review in
             SimilarImageReviewView(review: review)
         }
-        .sheet(item: $model.peopleReview) { review in
-            PeopleReviewView(review: review)
-        }
         .sheet(item: $model.renameConfirmation) { confirmation in
             RenameConfirmationView(confirmation: confirmation) {
                 model.confirmRename()
@@ -207,12 +204,7 @@ struct ContentView: View {
             switch model.viewMode {
             case .list: FileListView()
             case .grid: FileGridView()
-            case .people:
-                ContentUnavailableView(
-                    "人物",
-                    systemImage: "person.2",
-                    description: Text(model.isClassifyingPeople ? "人物を確認しています…" : "人物候補を表示します")
-                )
+            case .people: PeopleView(workspace: model.peopleWorkspace)
             }
         }
     }

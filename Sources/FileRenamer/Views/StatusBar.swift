@@ -72,43 +72,8 @@ struct StatusBar: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            if model.isClassifyingPeople {
-                ProgressView()
-                    .controlSize(.small)
-                Text(L10n.string(
-                    "status.classifyingPeople",
-                    defaultValue: "Grouping People Candidates",
-                    language: preferences.resolvedLanguage
-                ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else if model.peopleCandidateCount > 0 {
-                Button {
-                    model.showPeopleReview()
-                } label: {
-                    Label(
-                        L10n.format(
-                            "status.peopleCandidates",
-                            defaultValue: "%lld People Candidates",
-                            arguments: [model.peopleCandidateCount],
-                            language: preferences.resolvedLanguage
-                        ),
-                        systemImage: "person.2"
-                    )
-                    .font(.callout)
-                    .foregroundStyle(Palette.accent)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.string(
-                    "status.reviewPeopleHelp",
-                    defaultValue: "Review photos that may contain the same person.",
-                    language: preferences.resolvedLanguage
-                ))
-            } else if let error = model.faceClassificationError {
-                Image(systemName: "exclamationmark.triangle")
-                    .foregroundStyle(Palette.warning)
-                    .help(error)
-            }
+            peopleStatus
+                .frame(width: 230, alignment: .leading)
 
             Spacer()
 
@@ -133,6 +98,53 @@ struct StatusBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .workSurface(opacity: 0.96)
+    }
+
+    @ViewBuilder
+    private var peopleStatus: some View {
+        if model.isClassifyingPeople {
+            HStack(spacing: 7) {
+                ProgressView(value: model.peopleAnalysisProgress.fraction)
+                    .progressViewStyle(.circular)
+                    .controlSize(.small)
+                Text(L10n.string(
+                    "status.classifyingPeople",
+                    defaultValue: "Grouping People Candidates",
+                    language: preferences.resolvedLanguage
+                ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        } else if model.peopleCandidateCount > 0 {
+            Button {
+                model.showPeopleReview()
+            } label: {
+                Label(
+                    L10n.format(
+                        "status.peopleCandidates",
+                        defaultValue: "%lld People Candidates",
+                        arguments: [model.peopleCandidateCount],
+                        language: preferences.resolvedLanguage
+                    ),
+                    systemImage: "person.2"
+                )
+                .font(.callout)
+                .foregroundStyle(Palette.accent)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.string(
+                "status.reviewPeopleHelp",
+                defaultValue: "Review photos that may contain the same person.",
+                language: preferences.resolvedLanguage
+            ))
+        } else if let error = model.faceClassificationError {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(Palette.warning)
+                .help(error)
+        } else {
+            Color.clear.frame(height: 1)
+        }
     }
 
     private var countSummary: String {

@@ -41,14 +41,7 @@ struct FileGridView: View {
                                     similarityBadge: model.similarityBadge(for: item.id),
                                     onShowSimilarity: { model.showSimilarImages(for: item.id) },
                                     peopleBadge: model.peopleBadge(for: item.id),
-                                    onShowPeople: {
-                                        let previousSelection = model.selection
-                                        model.showPeople(for: item.id)
-                                        Task { @MainActor in
-                                            await Task.yield()
-                                            model.selection = previousSelection
-                                        }
-                                    }
+                                    onShowPeople: { model.showPeople(for: item.id) }
                                 )
                                 .opacity(draggingIDs.contains(item.id) ? 0.35 : 1)
                                 .overlay(alignment: .leading) {
@@ -64,11 +57,17 @@ struct FileGridView: View {
                                     )
                                     .offset(x: gridSpacing / 2)
                                 }
-                                .onTapGesture { handleTap(on: item) }
-                                .simultaneousGesture(
-                                    TapGesture(count: 2).onEnded {
-                                        model.selection = [item.id]
-                                        model.quickLookURL = item.originalURL
+                                .gesture(
+                                    TapGesture(count: 2)
+                                        .exclusively(before: TapGesture(count: 1))
+                                        .onEnded { value in
+                                            switch value {
+                                            case .first:
+                                                model.selection = [item.id]
+                                                model.quickLookURL = item.originalURL
+                                            case .second:
+                                                handleTap(on: item)
+                                            }
                                     }
                                 )
                                 .onForceClick {
@@ -144,59 +143,12 @@ struct FileGridView: View {
             }
 
             Divider()
-            columnCountControl
+            DiscreteGridColumnControl(
+                columnCount: $preferences.gridColumnCount,
+                range: 2...8
+            )
         }
         .workSurface(opacity: 0.90)
-    }
-
-    private var columnCountControl: some View {
-        HStack(spacing: 10) {
-            Spacer()
-
-            Text("横の列数")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 1) {
-                Slider(
-                    value: columnSliderValue,
-                    in: Double(columnChoices.first ?? 3)...Double(columnChoices.last ?? 8),
-                    step: 1
-                )
-                .accessibilityLabel("横の列数")
-                .accessibilityValue("\(preferences.gridColumnCount)列")
-
-                HStack(spacing: 0) {
-                    ForEach(columnChoices, id: \.self) { count in
-                        Text("\(count)")
-                            .font(.system(size: 9, design: .rounded))
-                            .foregroundStyle(count == preferences.gridColumnCount ? Color.primary : Color.secondary)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-            }
-            .frame(width: 210)
-
-            Text("\(preferences.gridColumnCount)列")
-                .font(.system(.caption, design: .monospaced).weight(.medium))
-                .frame(width: 30, alignment: .trailing)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .workSurface(opacity: 0.96)
-    }
-
-    /// The system slider supplies pointer and keyboard behavior, while this binding
-    /// guarantees that layout state can only ever be one of the six integer steps.
-    private var columnSliderValue: Binding<Double> {
-        Binding(
-            get: { Double(preferences.gridColumnCount) },
-            set: { newValue in
-                let lower = columnChoices.first ?? 3
-                let upper = columnChoices.last ?? 8
-                preferences.gridColumnCount = min(max(Int(newValue.rounded()), lower), upper)
-            }
-        )
     }
 
     /// A selected column count is invariant. Resizing the window only redistributes

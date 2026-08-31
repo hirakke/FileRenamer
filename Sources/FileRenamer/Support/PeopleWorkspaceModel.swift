@@ -332,7 +332,7 @@ final class PeopleWorkspaceModel: ObservableObject {
                 return group
             }
             let faceIDs = Set(groups.flatMap(\.faceIDs))
-            let samples = try prototypeSamples(for: faceIDs)
+            let samples = availablePrototypeSamples(for: faceIDs)
             let storedPersonIDs = Set(groupIDs.compactMap { id -> UUID? in
                 if case let .person(personID) = id { return personID }
                 return nil
@@ -354,6 +354,7 @@ final class PeopleWorkspaceModel: ObservableObject {
             } else {
                 let name = newPersonName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 guard !name.isEmpty else { throw PeopleWorkspaceError.mergeNeedsName }
+                guard !samples.isEmpty else { throw PeopleWorkspaceError.noEligibleFaces }
                 destinationID = try store.createPerson(
                     displayName: name,
                     prototypes: samples
@@ -368,7 +369,15 @@ final class PeopleWorkspaceModel: ObservableObject {
     private func prototypeSamples(
         for faceIDs: Set<FaceDescriptorID>
     ) throws -> [PersonEmbeddingSample] {
-        let samples = faceIDs.sorted(by: Self.faceOrder).compactMap { faceID -> PersonEmbeddingSample? in
+        let samples = availablePrototypeSamples(for: faceIDs)
+        guard !samples.isEmpty else { throw PeopleWorkspaceError.noEligibleFaces }
+        return samples
+    }
+
+    private func availablePrototypeSamples(
+        for faceIDs: Set<FaceDescriptorID>
+    ) -> [PersonEmbeddingSample] {
+        faceIDs.sorted(by: Self.faceOrder).compactMap { faceID -> PersonEmbeddingSample? in
             guard let face = face(faceID),
                   face.eligibility == .prototypeEligible,
                   let embedding = face.embedding
@@ -378,8 +387,6 @@ final class PeopleWorkspaceModel: ObservableObject {
                 captureQuality: face.captureQuality
             )
         }
-        guard !samples.isEmpty else { throw PeopleWorkspaceError.noEligibleFaces }
-        return samples
     }
 
     private func setOverride(

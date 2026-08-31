@@ -29,14 +29,7 @@ struct FileListView: View {
                                 similarityBadge: model.similarityBadge(for: item.id),
                                 onShowSimilarity: { model.showSimilarImages(for: item.id) },
                                 peopleBadge: model.peopleBadge(for: item.id),
-                                onShowPeople: {
-                                    let previousSelection = model.selection
-                                    model.showPeople(for: item.id)
-                                    Task { @MainActor in
-                                        await Task.yield()
-                                        model.selection = previousSelection
-                                    }
-                                }
+                                onShowPeople: { model.showPeople(for: item.id) }
                             )
                             OrderStepper(id: item.id, axis: .vertical)
                         }
@@ -49,21 +42,25 @@ struct FileListView: View {
                                 isActive: index == model.items.count - 1 && insertionIndex == model.items.count
                             )
                         }
-                        .onTapGesture {
-                            handleTap(on: item)
-                        }
+                        .gesture(
+                            TapGesture(count: 2)
+                                .exclusively(before: TapGesture(count: 1))
+                                .onEnded { value in
+                                    switch value {
+                                    case .first:
+                                        model.selection = [item.id]
+                                        selectionAnchor = item.id
+                                        model.quickLookURL = item.originalURL
+                                    case .second:
+                                        handleTap(on: item)
+                                    }
+                                }
+                        )
                         .onForceClick {
                             model.selection = [item.id]
                             selectionAnchor = item.id
                             model.quickLookURL = item.originalURL
                         }
-                        .simultaneousGesture(
-                            TapGesture(count: 2).onEnded {
-                                model.selection = [item.id]
-                                selectionAnchor = item.id
-                                model.quickLookURL = item.originalURL
-                            }
-                        )
                         .onDrag {
                             beginDrag(from: item)
                             return NSItemProvider(object: item.id.uuidString as NSString)
