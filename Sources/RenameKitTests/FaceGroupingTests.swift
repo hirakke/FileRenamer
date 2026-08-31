@@ -345,6 +345,66 @@ func runFaceGroupingTests() async {
         try expectEqual(result.outliers, ids)
     }
 
+    runner.suite("FacePrototypeSelector — 代表顔の選択")
+
+    await runner.test("正例12件・拒否例24件へ決定的に間引く") {
+        let candidates = try (0..<30).map { index in
+            try makePersonEmbeddingSample(
+                index: index,
+                count: 30,
+                contract: contract
+            )
+        }
+
+        let positives = try FacePrototypeSelector.select(
+            existing: Array(candidates.prefix(4)),
+            adding: Array(candidates.dropFirst(4)),
+            limit: 12,
+            nearDuplicateDistance: 0.02
+        )
+        let rejections = try FacePrototypeSelector.select(
+            existing: [],
+            adding: candidates,
+            limit: 24,
+            nearDuplicateDistance: 0.02
+        )
+
+        try expectEqual(positives.count, 12)
+        try expectEqual(rejections.count, 24)
+        try expectEqual(
+            positives.map(\.id),
+            positives.sorted(by: FacePrototypeSelector.stableOrder).map(\.id)
+        )
+        try expectEqual(
+            rejections.map(\.id),
+            rejections.sorted(by: FacePrototypeSelector.stableOrder).map(\.id)
+        )
+    }
+
+    await runner.test("距離0.02未満のほぼ同じ代表顔を重複保存しない") {
+        let first = PersonEmbeddingSample(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            embedding: try FaceEmbedding(contract: contract, values: [1, 0]),
+            captureQuality: 0.8,
+            createdAt: Date(timeIntervalSince1970: 1)
+        )
+        let duplicate = PersonEmbeddingSample(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            embedding: try FaceEmbedding(contract: contract, values: [0.999, 0.001]),
+            captureQuality: 0.9,
+            createdAt: Date(timeIntervalSince1970: 2)
+        )
+
+        let selected = try FacePrototypeSelector.select(
+            existing: [first],
+            adding: [duplicate],
+            limit: 12,
+            nearDuplicateDistance: 0.02
+        )
+
+        try expectEqual(selected.map(\.id), [first.id])
+    }
+
     runner.suite("PersonStore — 確認した人物")
 
     await runner.test("複数の顔から正規化した代表埋め込みを作る") {
@@ -378,24 +438,40 @@ func runFaceGroupingTests() async {
         }
     }
 
-    await runner.test("人物を保存して再取得・改名・削除できる") {
-        let store = try makeInMemoryPersonStore()
-        let embeddings = [
-            try FaceEmbedding(contract: contract, values: [1, 0]),
-            try FaceEmbedding(contract: contract, values: [0.8, 0.2])
-        ]
-        let saved = try store.savePerson(
+    await runner.test("正例と拒否例を保存領域を開き直しても保持する") {
+        let container = try makeInMemoryPersonContainer()
+        let firstStore = PersonStore(container: container)
+        let positive = PersonEmbeddingSample(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+            embedding: try FaceEmbedding(contract: contract, values: [1, 0]),
+            captureQuality: 0.8,
+            createdAt: Date(timeIntervalSince1970: 100)
+        )
+        let rejection = PersonEmbeddingSample(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000102")!,
+            embedding: try FaceEmbedding(contract: contract, values: [0, 1]),
+            captureQuality: 0.7,
+            createdAt: Date(timeIntervalSince1970: 110)
+        )
+        let saved = try firstStore.createPerson(
             displayName: "  Keiju  ",
-            embeddings: embeddings,
+            prototype: positive,
             now: Date(timeIntervalSince1970: 100)
         )
+        _ = try firstStore.addRejection(
+            personID: saved.id,
+            sample: rejection,
+            now: Date(timeIntervalSince1970: 120)
+        )
 
-        try expectEqual(saved.displayName, "Keiju")
-        try expectEqual(saved.sampleCount, 2)
-        try expectEqual(saved.embedding.model, model)
-        try expectEqual(try store.people().map(\.id), [saved.id])
+        let reopened = PersonStore(container: container)
+        let loaded = try reopened.people().first
+        try expectEqual(loaded?.displayName, "Keiju")
+        try expectEqual(loaded?.positives.map(\.id), [positive.id])
+        try expectEqual(loaded?.rejections.map(\.id), [rejection.id])
+        try expectEqual(loaded?.isLegacyOnly, false)
 
-        let renamed = try store.renamePerson(
+        let renamed = try reopened.renamePerson(
             id: saved.id,
             displayName: "慶樹",
             now: Date(timeIntervalSince1970: 200)
@@ -403,8 +479,51 @@ func runFaceGroupingTests() async {
         try expectEqual(renamed.displayName, "慶樹")
         try expectEqual(renamed.updatedAt, Date(timeIntervalSince1970: 200))
 
-        try store.deletePerson(id: saved.id)
-        try expect(try store.people().isEmpty)
+        try reopened.deletePerson(id: saved.id)
+        try expect(try reopened.people().isEmpty)
+    }
+
+    await runner.test("旧代表値だけの人物は名前を残して再確認対象にする") {
+        let container = try makeInMemoryPersonContainer()
+        let context = ModelContext(container)
+        let legacy = PersonProfile(
+            displayName: "以前の人物名",
+            embedding: try FaceEmbedding(contract: contract, values: [1, 0]),
+            sampleCount: 3,
+            createdAt: Date(timeIntervalSince1970: 10),
+            updatedAt: Date(timeIntervalSince1970: 20)
+        )
+        context.insert(legacy)
+        try context.save()
+
+        let people = try PersonStore(container: container).people()
+        try expectEqual(people.count, 1)
+        try expectEqual(people[0].displayName, "以前の人物名")
+        try expect(people[0].positives.isEmpty)
+        try expect(people[0].rejections.isEmpty)
+        try expect(people[0].isLegacyOnly)
+    }
+
+    await runner.test("人物の統合をスナップショットから元に戻せる") {
+        let store = try makeInMemoryPersonStore()
+        let first = try store.createPerson(
+            displayName: "One",
+            prototype: makePersonEmbeddingSample(index: 0, count: 8, contract: contract)
+        )
+        let second = try store.createPerson(
+            displayName: "Two",
+            prototype: makePersonEmbeddingSample(index: 2, count: 8, contract: contract)
+        )
+        let before = try store.snapshot()
+
+        let merged = try store.mergePeople(
+            sourceIDs: [second.id],
+            destinationID: first.id
+        )
+        try expectEqual(try store.people().map(\.id), [merged.id])
+
+        try store.restore(before)
+        try expectEqual(Set(try store.people().map(\.id)), [first.id, second.id])
     }
 
     await runner.test("空の名前・顔なし・壊れた埋め込みを保存しない") {
@@ -478,12 +597,34 @@ private func makeFaceDescriptorIDs(count: Int) -> [FaceDescriptorID] {
     }
 }
 
+private func makePersonEmbeddingSample(
+    index: Int,
+    count: Int,
+    contract: FacePipelineContract
+) throws -> PersonEmbeddingSample {
+    let angle = (Double(index) / Double(count)) * 2 * Double.pi
+    return PersonEmbeddingSample(
+        id: UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", index + 1))!,
+        embedding: try FaceEmbedding(
+            contract: contract,
+            values: [Float(cos(angle)), Float(sin(angle))]
+        ),
+        captureQuality: Float(0.5 + Double(index % 5) * 0.1),
+        createdAt: Date(timeIntervalSince1970: TimeInterval(index + 1))
+    )
+}
+
 @MainActor
-private func makeInMemoryPersonStore() throws -> PersonStore {
+private func makeInMemoryPersonContainer() throws -> ModelContainer {
     let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try ModelContainer(
+    return try ModelContainer(
         for: PersonProfile.self,
+        PersonEmbeddingRecord.self,
         configurations: configuration
     )
-    return PersonStore(container: container)
+}
+
+@MainActor
+private func makeInMemoryPersonStore() throws -> PersonStore {
+    try PersonStore(container: makeInMemoryPersonContainer())
 }

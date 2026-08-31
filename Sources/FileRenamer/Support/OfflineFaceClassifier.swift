@@ -125,8 +125,13 @@ actor OfflineFaceClassifier {
     ) throws -> PersonMatch? {
         guard maximumDistance.isFinite, maximumDistance >= 0 else { return nil }
         var best: PersonMatch?
-        for person in people where person.embedding.contract == embedding.contract {
-            let distance = try embedding.cosineDistance(to: person.embedding)
+        for person in people {
+            let compatible = person.positives.filter {
+                $0.embedding.contract == embedding.contract
+            }
+            guard let distance = try compatible.map({
+                try embedding.cosineDistance(to: $0.embedding)
+            }).min() else { continue }
             if distance <= maximumDistance, distance < (best?.distance ?? .infinity) {
                 best = PersonMatch(person: person, distance: distance)
             }
