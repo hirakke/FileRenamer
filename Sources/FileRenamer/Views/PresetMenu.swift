@@ -7,6 +7,7 @@ import RenameKit
 /// hand — so it is always clear whether what you see came from a preset or not.
 struct PresetMenu: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
 
     @State private var sheetMode: PresetSheetMode?
 
@@ -39,7 +40,8 @@ struct PresetMenu: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "square.stack.3d.up")
-                Text(model.selectedPresetName ?? "カスタム")
+                Text(model.selectedPresetName
+                     ?? L10n.string("カスタム", defaultValue: "Custom", language: preferences.resolvedLanguage))
                     .lineLimit(1)
             }
         }
@@ -57,9 +59,9 @@ struct PresetMenu: View {
             model.applyPreset(preset)
         } label: {
             if model.selectedPresetID == preset.id {
-                Label(preset.name, systemImage: "checkmark")
+                Label(preset.localizedDisplayName(in: preferences.resolvedLanguage), systemImage: "checkmark")
             } else {
-                Text(preset.name)
+                Text(preset.localizedDisplayName(in: preferences.resolvedLanguage))
             }
         }
     }
@@ -86,6 +88,7 @@ enum PresetSheetMode: Identifiable {
 /// is assembled here from scratch, not just captured from the toolbar.
 struct ManagePresetsSheet: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
     let initialMode: PresetSheetMode
     let dismiss: () -> Void
 
@@ -128,7 +131,14 @@ struct ManagePresetsSheet: View {
                 presetPendingDeletion = nil
             }
         } message: {
-            Text(presetPendingDeletion.map { "「\($0.name)」は元に戻せません。" } ?? "")
+            Text(presetPendingDeletion.map {
+                L10n.format(
+                    "preset.delete.irreversible",
+                    defaultValue: "“%@” can’t be restored.",
+                    arguments: [$0.name],
+                    language: preferences.resolvedLanguage
+                )
+            } ?? "")
         }
     }
 
@@ -281,7 +291,7 @@ struct ManagePresetsSheet: View {
         if let item = model.items.first {
             return RenameEngine().makePreviews(items: [item], rule: rule).first?.proposedName ?? "—"
         }
-        return rule.tokens.map(\.summary).joined()
+        return rule.tokens.map { $0.localizedSummary(in: preferences.resolvedLanguage) }.joined()
     }
 
     private var canCommit: Bool {
@@ -327,7 +337,7 @@ struct ManagePresetsSheet: View {
 
     /// "マイプリセット", "マイプリセット 2", … so the field is never empty.
     private func suggestedName() -> String {
-        let base = "マイプリセット"
+        let base = L10n.string("preset.suggestedName", defaultValue: "My Preset", language: preferences.resolvedLanguage)
         guard model.userPresets.contains(where: { $0.name == base }) else { return base }
         var index = 2
         while model.userPresets.contains(where: { $0.name == "\(base) \(index)" }) { index += 1 }
@@ -337,10 +347,15 @@ struct ManagePresetsSheet: View {
 
 /// Compact textual rendering of a rule's blocks, e.g. `撮影日 · _ · Event · _ · 001`.
 struct RulePreviewLine: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let rule: RenameRule
 
     var body: some View {
-        Text(rule.tokens.isEmpty ? "（ブロックなし）" : rule.tokens.map(\.summary).joined(separator: " · "))
+        Text(
+            rule.tokens.isEmpty
+                ? "（ブロックなし）"
+                : rule.tokens.map { $0.localizedSummary(in: preferences.resolvedLanguage) }.joined(separator: " · ")
+        )
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)

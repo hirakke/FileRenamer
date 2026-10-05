@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// The app's colours.
 ///
@@ -35,6 +36,15 @@ enum Palette {
     /// "rename error", and "looks alike" never reads as "something is wrong".
     static let duplicateExact = jalapenoRed
     static let duplicateSimilar = dupain
+
+    /// Tints are tuned for light surfaces; on dark ones they are lifted toward white so
+    /// coloured text keeps its contrast.
+    static func legible(_ color: Color, in scheme: ColorScheme) -> Color {
+        guard scheme == .dark,
+              let lifted = NSColor(color).usingColorSpace(.sRGB)?.blended(withFraction: 0.45, of: .white)
+        else { return color }
+        return Color(nsColor: lifted)
+    }
 
     static let error = Color(nsColor: .systemRed)
     static let warning = Color(nsColor: .systemOrange)

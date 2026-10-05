@@ -4,51 +4,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import RenameKit
 
-/// Serial workers keep expensive synchronous RenameKit work off the main actor.
-/// Separate workers mean a slow destination scan never blocks generation of the
-/// newest names while the user keeps typing or arranging files.
-private actor PreviewGenerationWorker {
-    private let engine = RenameEngine()
-    private let validator = RenameValidator()
-
-    func generate(
-        items: [RenameItem],
-        rule: RenameRule,
-        jpegQuality: JPEGQualitySetting,
-        preservesJPEGAtMaximumQuality: Bool
-    ) throws -> [RenamePreview] {
-        try Task.checkCancellation()
-        let generated = engine.makePreviews(
-            items: items,
-            rule: rule,
-            jpegQuality: jpegQuality,
-            preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality
-        )
-        try Task.checkCancellation()
-        return validator.validate(generated, checkExistingFiles: false)
-    }
-}
-
-private actor DestinationValidationWorker {
-    private let validator = RenameValidator()
-
-    func validate(_ previews: [RenamePreview]) throws -> [RenamePreview] {
-        try Task.checkCancellation()
-        let validated = validator.validate(previews)
-        try Task.checkCancellation()
-        return validated
-    }
-}
-
-enum ViewMode: String, CaseIterable, Identifiable {
-    case list
-    case grid
-
-    var id: String { rawValue }
-    var displayName: String { self == .list ? "リスト" : "グリッド" }
-    var systemImageName: String { self == .list ? "list.bullet" : "square.grid.2x2" }
-}
-
 /// The single piece of app state. Owns the item order, the naming rule and the
 /// history; delegates every non-trivial decision to RenameKit.
 ///
@@ -118,6 +73,9 @@ final class AppModel: ObservableObject {
     @Published var isImageResizeOriginalChoicePresented = false
     @Published var isOriginalImagesFolderNamePresented = false
     @Published var originalImagesFolderName = ""
+    @Published private(set) var renameDestination: RenameDestination = .inPlace
+    @Published var isNewDestinationFolderNamePresented = false
+    @Published var newDestinationFolderName = ""
     @Published var jpegQualitySetting: JPEGQualitySetting {
         didSet {
             guard jpegQualitySetting != oldValue else { return }
@@ -178,81 +136,6 @@ final class AppModel: ObservableObject {
     private var folderAccess: [String: FolderAccess] = [:]
     private var pendingFolderAccessDirectory: URL?
 
-    struct AlertMessage: Identifiable {
-        enum Action {
-            case addWorkingFolder
-        }
-
-        let id = UUID()
-        var title: String
-        var detail: String
-        var action: Action?
-        var actionTitle: String?
-    }
-
-    struct ResultMessage: Identifiable {
-        let id = UUID()
-        var text: String
-        var offersUndo: Bool = false
-    }
-
-    struct RenameConfirmation: Identifiable {
-        let id = UUID()
-        let rows: [RenameConfirmationRow]
-        let changedItemCount: Int
-        let renamedFileCount: Int
-        let processedImageCount: Int
-        let warningCount: Int
-        let originalImagesDirectory: URL?
-
-        var replacesOriginalImages: Bool {
-            processedImageCount > 0 && originalImagesDirectory == nil
-        }
-    }
-
-    struct RenameConfirmationRow: Identifiable {
-        let id = UUID()
-        let sourceName: String
-        let destinationName: String
-        let sourceDirectoryPath: String
-        let changesName: Bool
-        let imageChange: String?
-        let warning: String?
-    }
-
-    struct TrashConfirmation: Identifiable {
-        let id = UUID()
-        let itemIDs: Set<UUID>
-    }
-
-    /// One cluster of pictures that resemble each other.
-    ///
-    /// Similarity is transitive in practice — if A matches B and B matches C, the
-    /// three are one burst, not two separate pairs — so groups are the connected
-    /// components of the match graph rather than raw pairs. Reviewing a burst of five
-    /// as one group is the difference between one decision and ten.
-    struct DuplicateGroup: Identifiable {
-        let id: UUID
-        let items: [RenameItem]
-        let containsExactMatch: Bool
-
-        var count: Int { items.count }
-
-        /// All-exact groups are safe to sweep; mixed ones need looking at.
-        var isEntirelyExact: Bool { containsExactMatch }
-    }
-
-    struct SimilarityReview: Identifiable {
-        let id = UUID()
-        let groups: [DuplicateGroup]
-        let focusedGroupID: UUID
-    }
-
-    struct SimilarityBadge {
-        let count: Int
-        let containsExactMatch: Bool
-    }
-
     init(
         presetStore: RulePresetStore = RulePresetStore(),
         historyStore: RenameHistoryStore = RenameHistoryStore(),
@@ -274,7 +157,10 @@ final class AppModel: ObservableObject {
             selectedPresetID = first.id
         }
         if let recoveryMessage = loadedPresets.recoveryMessage {
-            alertMessage = AlertMessage(title: "プリセットを復旧しました", detail: recoveryMessage)
+            alertMessage = AlertMessage(
+                title: localized("preset.recovered.title", defaultValue: "Presets Recovered"),
+                detail: localized(recoveryMessage)
+            )
         }
         if recoversPendingRenames {
             Task { [weak self] in await self?.recoverPendingRenames() }
@@ -292,6 +178,47 @@ final class AppModel: ObservableObject {
     var canRedo: Bool { !isBusy && history.canRedo }
     var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
     var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
+
+    var displayLanguage: ResolvedAppLanguage {
+        preferences.resolvedLanguage
+    }
+
+    func localized(_ key: String, defaultValue: String) -> String {
+        L10n.string(key, defaultValue: defaultValue, language: displayLanguage)
+    }
+
+    func localized(_ key: String, defaultValue: String, arguments: [CVarArg]) -> String {
+        L10n.format(key, defaultValue: defaultValue, arguments: arguments, language: displayLanguage)
+    }
+
+    func localized(_ message: LocalizableMessage) -> String {
+        L10n.string(message, language: displayLanguage)
+    }
+
+    func describe(_ error: Error) -> String {
+        if let kept = error as? RenamesKeptAfterFailure {
+            return [
+                describe(kept.failure),
+                describe(kept.rollbackFailure),
+                localized(
+                    "rollback.renamesKept",
+                    defaultValue: "The file names couldn’t be changed back, so the files keep their new names. Choose Undo Last Rename to restore them."
+                )
+            ].joined(separator: "\n\n")
+        }
+        if let kept = error as? ImagesRestoredButNamesKept {
+            return [
+                describe(kept.failure),
+                describe(kept.reapplyFailure),
+                localized(
+                    "rollback.imagesRestoredNamesKept",
+                    defaultValue: "The images were restored to their originals, but the files still have their new names."
+                )
+            ].joined(separator: "\n\n")
+        }
+        return L10n.describe(error, language: displayLanguage)
+    }
+
     var showsJPEGQualitySetting: Bool {
         rule.showsJPEGQuality(for: items.flatMap(\.allURLs))
     }
@@ -327,9 +254,13 @@ final class AppModel: ObservableObject {
     }
     var undoConfirmationMessage: String {
         guard let transaction = history.lastTransaction else {
-            return "元に戻せるリネーム履歴がありません。"
+            return localized("undo.unavailable", defaultValue: "There is no rename history to undo.")
         }
-        return "直前に変更した\(transaction.fileCount)ファイルを、元の状態に戻します。"
+        return localized(
+            "undo.confirmation.detail",
+            defaultValue: "The last change to %d file(s) will be undone.",
+            arguments: [transaction.fileCount]
+        )
     }
 
     func imageChangeSummary(for item: RenameItem, preview: RenamePreview?) -> String? {
@@ -344,7 +275,11 @@ final class AppModel: ObservableObject {
         let targetDimensions = "\(target.width)×\(target.height)"
         let targetFormat = preview.destinationURL.pathExtension.uppercased()
         return sourceDimensions == targetDimensions
-            ? "\(sourceDimensions) • \(targetFormat)へ再保存"
+            ? localized(
+                "imageChange.resaved",
+                defaultValue: "%@ • Re-saved as %@",
+                arguments: [sourceDimensions, targetFormat]
+            )
             : "\(sourceDimensions) → \(targetDimensions) • \(targetFormat)"
     }
 
@@ -358,102 +293,6 @@ final class AppModel: ObservableObject {
 
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
 
-    func similarityBadge(for itemID: UUID) -> SimilarityBadge? {
-        guard let matches = similarImageMatchesByItemID[itemID], !matches.isEmpty else { return nil }
-        return SimilarityBadge(
-            count: matches.count,
-            containsExactMatch: matches.contains { $0.kind == .exact }
-        )
-    }
-
-    /// Connected components of the match graph, in list order.
-    ///
-    /// Rebuilt on demand rather than cached: the input is at most a few hundred
-    /// items, and a stale group list would be far worse than a recomputation.
-    var duplicateGroups: [DuplicateGroup] {
-        guard !similarImageMatchesByItemID.isEmpty else { return [] }
-
-        var parent: [UUID: UUID] = [:]
-        func find(_ id: UUID) -> UUID {
-            var root = id
-            while let next = parent[root], next != root { root = next }
-            // Path compression keeps repeated lookups flat.
-            var cursor = id
-            while let next = parent[cursor], next != root {
-                parent[cursor] = root
-                cursor = next
-            }
-            return root
-        }
-        func union(_ lhs: UUID, _ rhs: UUID) {
-            let left = find(lhs)
-            let right = find(rhs)
-            guard left != right else { return }
-            parent[left] = right
-        }
-
-        for (itemID, matches) in similarImageMatchesByItemID {
-            parent[itemID] = parent[itemID] ?? itemID
-            for match in matches {
-                parent[match.otherItemID] = parent[match.otherItemID] ?? match.otherItemID
-                union(itemID, match.otherItemID)
-            }
-        }
-
-        // Walking `items` rather than the dictionary keeps groups, and the pictures
-        // inside them, in the order the user already sees.
-        var membersByRoot: [UUID: [RenameItem]] = [:]
-        var rootOrder: [UUID] = []
-        for item in items where parent[item.id] != nil {
-            let root = find(item.id)
-            if membersByRoot[root] == nil { rootOrder.append(root) }
-            membersByRoot[root, default: []].append(item)
-        }
-
-        return rootOrder.compactMap { root in
-            guard let members = membersByRoot[root], members.count > 1 else { return nil }
-            let memberIDs = Set(members.map(\.id))
-            let containsExact = members.contains { item in
-                (similarImageMatchesByItemID[item.id] ?? []).contains {
-                    $0.kind == .exact && memberIDs.contains($0.otherItemID)
-                }
-            }
-            return DuplicateGroup(id: root, items: members, containsExactMatch: containsExact)
-        }
-    }
-
-    var duplicateGroupCount: Int { duplicateGroups.count }
-
-    /// True when at least one group is byte-identical rather than merely alike.
-    /// Drives the colour of the aggregate badge: the stronger verdict wins.
-    var hasExactDuplicates: Bool {
-        similarImageMatchesByItemID.values.contains { matches in
-            matches.contains { $0.kind == .exact }
-        }
-    }
-
-    func showSimilarImages(for itemID: UUID) {
-        let groups = duplicateGroups
-        guard let focused = groups.first(where: { group in
-            group.items.contains { $0.id == itemID }
-        }) else { return }
-        similarityReview = SimilarityReview(groups: groups, focusedGroupID: focused.id)
-    }
-
-    func showFirstSimilarImageGroup() {
-        let groups = duplicateGroups
-        guard let first = groups.first else { return }
-        similarityReview = SimilarityReview(groups: groups, focusedGroupID: first.id)
-    }
-
-    /// One row's validation problem, flattened for the status-bar popover.
-    struct Issue: Identifiable, Hashable {
-        let id: UUID
-        let name: String
-        let message: String
-        let isError: Bool
-    }
-
     func issues(errorsOnly: Bool) -> [Issue] {
         items.compactMap { item in
             guard let preview = previewsByItemID[item.id],
@@ -463,7 +302,7 @@ final class AppModel: ObservableObject {
             return Issue(
                 id: item.id,
                 name: item.displayName,
-                message: message,
+                message: localized(message),
                 isError: preview.validation.isError
             )
         }
@@ -478,7 +317,7 @@ final class AppModel: ObservableObject {
     func importURLs(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
         requestFolderAccessForIndividuallyImportedFiles(in: urls)
-        guard beginBusy("読み込み中…", cancellable: true) else { return }
+        guard beginBusy(localized("busy.loading", defaultValue: "Loading…"), cancellable: true) else { return }
         let transientAccess = beginImportAccess(for: urls)
         // Resolve directory metadata only after opening the security-scoped URLs;
         // external volumes and sandboxed drag-and-drop locations may require it.
@@ -512,11 +351,14 @@ final class AppModel: ObservableObject {
             try Task.checkCancellation()
         } catch is CancellationError {
             workingDirectories = calculateWorkingDirectories()
-            resultMessage = ResultMessage(text: "読み込みをキャンセルしました")
+            resultMessage = ResultMessage(text: localized("import.cancelled", defaultValue: "Loading was cancelled."))
             return
         } catch {
             workingDirectories = calculateWorkingDirectories()
-            alertMessage = AlertMessage(title: "読み込めませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("import.failed.title", defaultValue: "Couldn’t Load Files"),
+                detail: describe(error)
+            )
             return
         }
 
@@ -539,12 +381,19 @@ final class AppModel: ObservableObject {
         scheduleSimilarityScan()
 
         if fresh.isEmpty && !result.items.isEmpty {
-            alertMessage = AlertMessage(title: "追加できるファイルがありません", detail: "すべて既にリストに含まれています。")
+            alertMessage = AlertMessage(
+                title: localized("import.none.title", defaultValue: "No Files to Add"),
+                detail: localized("import.none.detail", defaultValue: "All selected files are already in the list.")
+            )
         } else if !result.skippedPackages.isEmpty {
             let names = result.skippedPackages.prefix(5).map(\.lastPathComponent).joined(separator: ", ")
             alertMessage = AlertMessage(
-                title: "パッケージを除外しました",
-                detail: "アプリやパッケージ形式の書類は中身を壊す恐れがあるため対象外です: \(names)"
+                title: localized("import.packageExcluded.title", defaultValue: "Packages Were Excluded"),
+                detail: localized(
+                    "import.packageExcluded.detail",
+                    defaultValue: "Apps and package documents were excluded to avoid damaging their contents: %@",
+                    arguments: [names]
+                )
             )
         }
     }
@@ -565,8 +414,10 @@ final class AppModel: ObservableObject {
         panel.canChooseFiles = !directories
         panel.canChooseDirectories = directories
         panel.allowsMultipleSelection = true
-        panel.prompt = "追加"
-        panel.message = directories ? "追加するフォルダを選択" : "追加するファイルを選択"
+        panel.prompt = localized("panel.add.prompt", defaultValue: "Add")
+        panel.message = directories
+            ? localized("panel.addFolder.message", defaultValue: "Choose a folder to add")
+            : localized("panel.addFiles.message", defaultValue: "Choose files to add")
         guard panel.runModal() == .OK else { return }
         importURLs(panel.urls)
     }
@@ -602,17 +453,32 @@ final class AppModel: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
         panel.directoryURL = directory.deletingLastPathComponent()
-        panel.title = "「\(directory.lastPathComponent)」へのアクセスを許可"
-        panel.prompt = "アクセスを許可"
-        panel.message = "「\(directory.lastPathComponent)」または親フォルダへのアクセスを許可してください。"
+        panel.title = localized(
+            "access.panel.title",
+            defaultValue: "Allow Access to “%@”",
+            arguments: [directory.lastPathComponent]
+        )
+        panel.prompt = localized("access.panel.prompt", defaultValue: "Allow Access")
+        panel.message = localized(
+            "access.panel.message",
+            defaultValue: "Allow access to “%@” or its parent folder.",
+            arguments: [directory.lastPathComponent]
+        )
 
         guard panel.runModal() == .OK, let selected = panel.url else { return false }
         guard selected.standardizedFileURL == directory.standardizedFileURL
                 || isAncestor(selected, of: directory) else {
             if reportsErrors {
                 alertMessage = AlertMessage(
-                    title: "「\(directory.lastPathComponent)」を選択してください",
-                    detail: "このフォルダ、または親フォルダを選択してください。"
+                    title: localized(
+                        "access.selection.title",
+                        defaultValue: "Select “%@”",
+                        arguments: [directory.lastPathComponent]
+                    ),
+                    detail: localized(
+                        "access.selection.detail",
+                        defaultValue: "Select this folder or its parent folder."
+                    )
                 )
             }
             return false
@@ -627,8 +493,8 @@ final class AppModel: ObservableObject {
             if started { selected.stopAccessingSecurityScopedResource() }
             if reportsErrors {
                 alertMessage = AlertMessage(
-                    title: "アクセスを許可できませんでした",
-                    detail: "もう一度お試しください。"
+                    title: localized("access.failed.title", defaultValue: "Couldn’t Allow Access"),
+                    detail: localized("access.failed.detail", defaultValue: "Please try again.")
                 )
             }
             return false
@@ -695,10 +561,21 @@ final class AppModel: ObservableObject {
             if showCancellationAlert {
                 pendingFolderAccessDirectory = directory
                 alertMessage = AlertMessage(
-                    title: "「\(directory.lastPathComponent)」へのアクセスを許可",
-                    detail: "リネームを続けるには、現在読み込んでいるフォルダへのアクセスを許可してください。",
+                    title: localized(
+                        "access.rename.title",
+                        defaultValue: "Allow Access to “%@”",
+                        arguments: [directory.lastPathComponent]
+                    ),
+                    detail: localized(
+                        "access.rename.detail",
+                        defaultValue: "To continue renaming, allow access to the folder currently loaded."
+                    ),
                     action: .addWorkingFolder,
-                    actionTitle: "「\(directory.lastPathComponent)」を選択…"
+                    actionTitle: localized(
+                        "access.rename.action",
+                        defaultValue: "Select “%@”…",
+                        arguments: [directory.lastPathComponent]
+                    )
                 )
             }
             return false
@@ -729,7 +606,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func registerFolderAccess(url: URL, bookmark: Data, isActive: Bool) {
+    func registerFolderAccess(url: URL, bookmark: Data, isActive: Bool) {
         let normalized = url.standardizedFileURL
         let key = normalized.path
         if let old = folderAccess[key], old.isActivelyAccessed {
@@ -742,7 +619,7 @@ final class AppModel: ObservableObject {
         )
     }
 
-    private func hasFolderAccess(covering directory: URL) -> Bool {
+    func hasFolderAccess(covering directory: URL) -> Bool {
         folderAccess.values.contains { access in
             access.url.standardizedFileURL == directory.standardizedFileURL
                 || isAncestor(access.url, of: directory)
@@ -863,7 +740,7 @@ final class AppModel: ObservableObject {
             .map { $0.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
 
-        guard beginBusy("ゴミ箱に移動中…", critical: true) else { return }
+        guard beginBusy(localized("busy.trashing", defaultValue: "Moving to Trash…"), critical: true) else { return }
         let outcome = await trasher.moveToTrash(groups: targets.map(\.allURLs))
         endBusy()
 
@@ -884,18 +761,30 @@ final class AppModel: ObservableObject {
             let itemCount = removedIDs.count
             resultMessage = ResultMessage(
                 text: fileCount == 0
-                    ? "既に見つからない \(itemCount) 件をリストから除外しました"
+                    ? localized(
+                        "trash.removedMissing",
+                        defaultValue: "Removed %d missing item(s) from the list.",
+                        arguments: [itemCount]
+                    )
                     : itemCount == fileCount
-                        ? "\(itemCount) 件をゴミ箱に移動しました"
-                        : "\(itemCount) 件（\(fileCount) ファイル）をゴミ箱に移動しました"
+                        ? localized(
+                            "trash.movedItems",
+                            defaultValue: "Moved %d item(s) to Trash.",
+                            arguments: [itemCount]
+                        )
+                        : localized(
+                            "trash.movedFiles",
+                            defaultValue: "Moved %d item(s) (%d files) to Trash.",
+                            arguments: [itemCount, fileCount]
+                        )
             )
         } else {
             let detail = outcome.failures
                 .prefix(5)
-                .map { "\($0.url.lastPathComponent): \($0.message)" }
+                .map { "\($0.url.lastPathComponent): \(localized($0.message))" }
                 .joined(separator: "\n")
             alertMessage = AlertMessage(
-                title: "ゴミ箱に移動できないファイルがあります",
+                title: localized("trash.failed.title", defaultValue: "Some Files Couldn’t Be Moved to Trash"),
                 detail: detail
             )
         }
@@ -907,8 +796,15 @@ final class AppModel: ObservableObject {
         importedFolderRoots = []
         workingDirectories = []
         selection.removeAll()
+        renameDestination = .inPlace
         refreshPreviews()
         scheduleSimilarityScan()
+    }
+
+    /// Single write point for the destination: the property stays `private(set)`
+    /// while the folder-choice flows in `AppModel+Destination` can change it.
+    func setRenameDestination(_ destination: RenameDestination) {
+        renameDestination = destination
     }
 
     func selectAll() {
@@ -1165,6 +1061,7 @@ final class AppModel: ObservableObject {
         let revision = previewRevision
         let itemSnapshot = items
         let ruleSnapshot = rule
+        let destinationSnapshot = renameDestination.directory
         guard !itemSnapshot.isEmpty else {
             applyPreviews([])
             isValidatingDestinations = false
@@ -1179,7 +1076,8 @@ final class AppModel: ObservableObject {
                     items: itemSnapshot,
                     rule: ruleSnapshot,
                     jpegQuality: self.jpegQualitySetting,
-                    preservesJPEGAtMaximumQuality: self.preferences.preservesJPEGAtMaximumQuality
+                    preservesJPEGAtMaximumQuality: self.preferences.preservesJPEGAtMaximumQuality,
+                    destinationDirectory: destinationSnapshot
                 )
                 guard !Task.isCancelled, self.previewRevision == revision else { return }
                 self.applyPreviews(structural)
@@ -1228,7 +1126,9 @@ final class AppModel: ObservableObject {
     // `RuleBuilderView`, which is why there are no per-token methods here.
 
     var selectedPresetName: String? {
-        selectedPresetID.flatMap { id in presets.first { $0.id == id }?.name }
+        selectedPresetID.flatMap { id in
+            presets.first { $0.id == id }?.localizedDisplayName(in: displayLanguage)
+        }
     }
 
     var userPresets: [RenameRulePreset] { presets.filter { !$0.isBuiltIn } }
@@ -1314,8 +1214,8 @@ final class AppModel: ObservableObject {
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.prompt = "読み込む"
-        panel.message = "FileRenamerのプリセットJSONを選択"
+        panel.prompt = localized("preset.import.prompt", defaultValue: "Import")
+        panel.message = localized("preset.import.message", defaultValue: "Choose a FileRenamer presets JSON file.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
@@ -1328,29 +1228,50 @@ final class AppModel: ObservableObject {
                 }
             }
             persistPresets()
-            resultMessage = ResultMessage(text: "\(imported.count) 件のプリセットを読み込みました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "preset.imported",
+                    defaultValue: "Imported %d preset(s).",
+                    arguments: [imported.count]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "プリセットを読み込めませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("preset.import.failed", defaultValue: "Couldn’t Import Presets"),
+                detail: describe(error)
+            )
         }
     }
 
     func exportPresets() {
         guard !userPresets.isEmpty else {
-            alertMessage = AlertMessage(title: "書き出すプリセットがありません", detail: "マイプリセットを作成してから実行してください。")
+            alertMessage = AlertMessage(
+                title: localized("preset.export.none.title", defaultValue: "No Presets to Export"),
+                detail: localized("preset.export.none.detail", defaultValue: "Create a custom preset first.")
+            )
             return
         }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "FileRenamer-Presets.json"
         panel.canCreateDirectories = true
-        panel.prompt = "書き出す"
+        panel.prompt = localized("preset.export.prompt", defaultValue: "Export")
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
             try presetStore.exportData(userPresets).write(to: url, options: .atomic)
-            resultMessage = ResultMessage(text: "\(userPresets.count) 件のプリセットを書き出しました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "preset.exported",
+                    defaultValue: "Exported %d preset(s).",
+                    arguments: [userPresets.count]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "プリセットを書き出せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("preset.export.failed", defaultValue: "Couldn’t Export Presets"),
+                detail: describe(error)
+            )
         }
     }
 
@@ -1359,8 +1280,8 @@ final class AppModel: ObservableObject {
             try presetStore.save(presets)
         } catch {
             alertMessage = AlertMessage(
-                title: "プリセットを保存できませんでした",
-                detail: error.localizedDescription
+                title: localized("preset.save.failed", defaultValue: "Couldn’t Save Presets"),
+                detail: describe(error)
             )
         }
     }
@@ -1398,8 +1319,11 @@ final class AppModel: ObservableObject {
         guard !name.isEmpty, name != ".", name != "..",
               !name.contains("/"), !name.contains(":") else {
             alertMessage = AlertMessage(
-                title: "フォルダ名を使用できません",
-                detail: "空欄、`.`、`..`、`/`、`:` はフォルダ名に使用できません。"
+                title: localized("originalFolder.invalid.title", defaultValue: "This Folder Name Can’t Be Used"),
+                detail: localized(
+                    "originalFolder.invalid.detail",
+                    defaultValue: "A folder name can’t be blank, `.`, `..`, or contain `/` or `:`."
+                )
             )
             return
         }
@@ -1417,8 +1341,11 @@ final class AppModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.prompt = "保存場所を選択"
-        panel.message = "選択した場所に元画像専用の新しいフォルダを作成します。"
+        panel.prompt = localized("originalFolder.destination.prompt", defaultValue: "Choose Location")
+        panel.message = localized(
+            "originalFolder.destination.message",
+            defaultValue: "A new folder for original images will be created in the selected location."
+        )
         panel.directoryURL = importedDirectories.count == 1 ? importedDirectories.first : nil
         guard panel.runModal() == .OK, let parentDirectory = panel.url else { return }
 
@@ -1430,8 +1357,8 @@ final class AppModel: ObservableObject {
         ) else {
             if started { parentDirectory.stopAccessingSecurityScopedResource() }
             alertMessage = AlertMessage(
-                title: "保存先へのアクセスを許可できませんでした",
-                detail: "別のフォルダを選択して、もう一度お試しください。"
+                title: localized("originalFolder.access.failed.title", defaultValue: "Couldn’t Allow Access to This Location"),
+                detail: localized("originalFolder.access.failed.detail", defaultValue: "Choose another folder and try again.")
             )
             return
         }
@@ -1443,8 +1370,12 @@ final class AppModel: ObservableObject {
         )
         guard !FileManager.default.fileExists(atPath: originalsDirectory.path) else {
             alertMessage = AlertMessage(
-                title: "同名の保存フォルダがあります",
-                detail: "「\(originalsDirectory.lastPathComponent)」が既に存在します。ファイルは変更していません。もう一度保存場所を選択してください。"
+                title: localized("originalFolder.exists.title", defaultValue: "A Folder with This Name Already Exists"),
+                detail: localized(
+                    "originalFolder.exists.detail",
+                    defaultValue: "“%@” already exists. No files were changed. Choose a location again.",
+                    arguments: [originalsDirectory.lastPathComponent]
+                )
             )
             return
         }
@@ -1452,10 +1383,16 @@ final class AppModel: ObservableObject {
         let collisions = originalImageNameCollisions()
         guard collisions.isEmpty else {
             let shownNames = collisions.prefix(5).joined(separator: "、")
-            let remainder = collisions.count > 5 ? " ほか\(collisions.count - 5)件" : ""
+            let remainder = collisions.count > 5
+                ? localized("originalFolder.collisions.remainder", defaultValue: " and %d more", arguments: [collisions.count - 5])
+                : ""
             alertMessage = AlertMessage(
-                title: "同名の元画像があります",
-                detail: "保存対象内で「\(shownNames)」\(remainder)の名前が重複しています。ファイルは変更していません。重複する画像名を変更してから、もう一度実行してください。"
+                title: localized("originalFolder.collisions.title", defaultValue: "Original Image Names Conflict"),
+                detail: localized(
+                    "originalFolder.collisions.detail",
+                    defaultValue: "The names %@%@ are duplicated among the originals. No files were changed. Rename the duplicate images and try again.",
+                    arguments: [shownNames, remainder]
+                )
             )
             return
         }
@@ -1464,9 +1401,13 @@ final class AppModel: ObservableObject {
 
     private func defaultOriginalImagesFolderName() -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = Locale(identifier: displayLanguage.localeIdentifier)
         formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        return "FileRenamer 元画像 \(formatter.string(from: Date()))"
+        return localized(
+            "originalFolder.defaultName",
+            defaultValue: "FileRenamer Originals %@",
+            arguments: [formatter.string(from: Date())]
+        )
     }
 
     private func originalImageNameCollisions() -> [String] {
@@ -1538,7 +1479,7 @@ final class AppModel: ObservableObject {
                     imageChange: imageConfiguration == nil
                         ? nil
                         : imageConfirmationSummary(for: item, operation: operation),
-                    warning: preview.validation.message
+                    warning: preview.validation.message.map(localized)
                 ))
                 includedItem = true
             }
@@ -1553,7 +1494,9 @@ final class AppModel: ObservableObject {
             warningCount: changedItemIDs.reduce(into: 0) { count, itemID in
                 if previewsByItemID[itemID]?.validation.isWarning == true { count += 1 }
             },
-            originalImagesDirectory: originalImagesDirectory
+            originalImagesDirectory: originalImagesDirectory,
+            destinationDirectory: renameDestination.directory,
+            actionTitle: renameActionTitle
         )
     }
 
@@ -1568,27 +1511,54 @@ final class AppModel: ObservableObject {
            let height = item.metadata.pixelHeight {
             let target = rule.imageResize.targetDimensions(width: width, height: height)
             if width == target.width, height == target.height {
-                details.append("サイズ維持 \(width)×\(height) px")
+                details.append(
+                    localized(
+                        "imageConfirmation.sizeUnchanged",
+                        defaultValue: "Size unchanged: %d×%d px",
+                        arguments: [width, height]
+                    )
+                )
             } else {
                 details.append("\(width)×\(height) → \(target.width)×\(target.height) px")
             }
         } else if rule.imageResize.isEnabled {
-            details.append("長辺 \(rule.imageResize.normalizedLongEdge) px")
+            details.append(
+                localized(
+                    "imageConfirmation.longEdge",
+                    defaultValue: "Long edge %d px",
+                    arguments: [rule.imageResize.normalizedLongEdge]
+                )
+            )
         }
 
         let sourceExtension = operation.source.pathExtension.uppercased()
         let destinationExtension = operation.destination.pathExtension.uppercased()
         if sourceExtension != destinationExtension {
-            details.append("\(sourceExtension.isEmpty ? "拡張子なし" : sourceExtension) → \(destinationExtension.isEmpty ? "拡張子なし" : destinationExtension)")
+            let noExtension = localized("imageConfirmation.noExtension", defaultValue: "No Extension")
+            details.append("\(sourceExtension.isEmpty ? noExtension : sourceExtension) → \(destinationExtension.isEmpty ? noExtension : destinationExtension)")
         } else if !destinationExtension.isEmpty {
-            details.append("\(destinationExtension)で再保存")
+            details.append(
+                localized(
+                    "imageConfirmation.resaved",
+                    defaultValue: "Re-saved as %@",
+                    arguments: [destinationExtension]
+                )
+            )
         }
 
         if FileKinds.isJPEG(operation.destination) {
-            details.append("品質 \(jpegQualitySetting.percent)%")
+            details.append(
+                localized(
+                    "imageConfirmation.quality",
+                    defaultValue: "Quality %d%%",
+                    arguments: [jpegQualitySetting.percent]
+                )
+            )
         }
 
-        return details.isEmpty ? "画像データを再生成" : details.joined(separator: "・")
+        return details.isEmpty
+            ? localized("imageConfirmation.recreate", defaultValue: "Recreate Image Data")
+            : details.joined(separator: " • ")
     }
 
     private func beginRename(originalImagesDirectory: URL?) {
@@ -1599,8 +1569,12 @@ final class AppModel: ObservableObject {
             }
             .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
         if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
+        // A folder to be created cannot grant access itself; its parent's grant covers it.
+        if case .newFolder(let url) = renameDestination {
+            changedDirectories.append(url.deletingLastPathComponent())
+        }
         guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
-        guard beginBusy("ファイルを変更中…", critical: true) else { return }
+        guard beginBusy(localized("busy.changingFiles", defaultValue: "Changing Files…"), critical: true) else { return }
         busyTask = Task { [weak self] in
             await self?.performRename(originalImagesDirectory: originalImagesDirectory)
         }
@@ -1618,29 +1592,46 @@ final class AppModel: ObservableObject {
         let ruleSnapshot = rule
         let structural: [RenamePreview]
         let validated: [RenamePreview]
+        let destinationDirectory = renameDestination.directory
         do {
             structural = try await previewWorker.generate(
                 items: itemSnapshot,
                 rule: ruleSnapshot,
                 jpegQuality: jpegQualitySetting,
-                preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+                preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality,
+                destinationDirectory: destinationDirectory
             )
             validated = try await destinationWorker.validate(structural)
         } catch {
-            alertMessage = AlertMessage(title: "検証に失敗しました", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("rename.validation.failed", defaultValue: "Validation Failed"),
+                detail: describe(error)
+            )
             return
         }
         applyPreviews(validated)
         guard errorCount == 0 else {
-            alertMessage = AlertMessage(title: "実行できません", detail: "\(errorCount) 件のエラーを解消してください。")
+            alertMessage = AlertMessage(
+                title: localized("rename.cannotRun.title", defaultValue: "Can’t Make Changes"),
+                detail: localized(
+                    "rename.cannotRun.detail",
+                    defaultValue: "Resolve %d error(s) before continuing.",
+                    arguments: [errorCount]
+                )
+            )
             return
         }
 
         let snapshot = previews
-        let accessBookmarks = bookmarks(
-            covering: itemSnapshot.flatMap(\.allURLs).map { $0.deletingLastPathComponent() }
-                + [originalImagesDirectory].compactMap { $0 }
-        )
+        var coveredDirectories = itemSnapshot.flatMap(\.allURLs).map { $0.deletingLastPathComponent() }
+            + [originalImagesDirectory].compactMap { $0 }
+        if let destinationDirectory {
+            coveredDirectories.append(destinationDirectory)
+            if case .newFolder = renameDestination {
+                coveredDirectories.append(destinationDirectory.deletingLastPathComponent())
+            }
+        }
+        let accessBookmarks = bookmarks(covering: coveredDirectories)
         do {
             let hasMoves = snapshot.contains { !$0.effectiveOperations.isEmpty }
             var transaction: RenameTransaction
@@ -1683,23 +1674,52 @@ final class AppModel: ObservableObject {
                         Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
                     }
                     transaction = transaction.addingImageEdits(records)
-                } catch {
-                    if hasMoves { _ = try? await executor.revert(transaction) }
-                    throw error
+                } catch let imageError {
+                    if hasMoves {
+                        do {
+                            _ = try await executor.revert(transaction)
+                        } catch {
+                            keepUndoableRenames(transaction)
+                            throw RenamesKeptAfterFailure(failure: imageError, rollbackFailure: error)
+                        }
+                    }
+                    throw imageError
                 }
             }
             let discardedHistory = history.record(transaction)
             imageProcessor.removeBackups(for: discardedHistory)
             persistHistory()
+            // The items live in the destination now; a second rename must not
+            // move them there again.
+            renameDestination = .inPlace
             adoptRenamedURLs(from: transaction)
             progress = 1
-            let action = imageRequests.isEmpty ? "リネーム" : "変更"
-            resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルを\(action)しました",
-                offersUndo: true
-            )
+            let completionText: String
+            if let destinationDirectory, imageRequests.isEmpty {
+                completionText = localized(
+                    "rename.movedToFolder",
+                    defaultValue: "Moved %d file(s) to “%@”.",
+                    arguments: [transaction.fileCount, destinationDirectory.lastPathComponent]
+                )
+            } else if imageRequests.isEmpty {
+                completionText = localized(
+                    "rename.completed",
+                    defaultValue: "Renamed %d file(s).",
+                    arguments: [transaction.fileCount]
+                )
+            } else {
+                completionText = localized(
+                    "imageChange.completed",
+                    defaultValue: "Changed %d file(s).",
+                    arguments: [transaction.fileCount]
+                )
+            }
+            resultMessage = ResultMessage(text: completionText, offersUndo: true)
         } catch {
-            alertMessage = AlertMessage(title: "変更に失敗しました", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("rename.failed", defaultValue: "Couldn’t Make Changes"),
+                detail: describe(error)
+            )
         }
     }
 
@@ -1726,7 +1746,7 @@ final class AppModel: ObservableObject {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
         } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
-        guard beginBusy("元に戻しています…", critical: true) else { return }
+        guard beginBusy(localized("busy.undoing", defaultValue: "Undoing…"), critical: true) else { return }
         busyTask = Task { [weak self] in await self?.revert(transaction) }
     }
 
@@ -1737,7 +1757,7 @@ final class AppModel: ObservableObject {
             [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()]
         } + transaction.imageEdits.map { $0.fileURL.deletingLastPathComponent() }
         guard ensureFolderAccess(forDirectories: directories, showCancellationAlert: true) else { return }
-        guard beginBusy("やり直しています…", critical: true) else { return }
+        guard beginBusy(localized("busy.redoing", defaultValue: "Redoing…"), critical: true) else { return }
         busyTask = Task { [weak self] in await self?.reapply(transaction) }
     }
 
@@ -1756,17 +1776,32 @@ final class AppModel: ObservableObject {
                     _ = try await executor.revert(transaction) { [weak self] value in
                         Task { @MainActor in self?.progress = 0.45 + value * 0.55 }
                     }
-                } catch {
-                    if restoredImages { try? await imageProcessor.reapply(transaction.imageEdits) }
-                    throw error
+                } catch let renameError {
+                    if restoredImages {
+                        do {
+                            try await imageProcessor.reapply(transaction.imageEdits)
+                        } catch {
+                            throw ImagesRestoredButNamesKept(failure: renameError, reapplyFailure: error)
+                        }
+                    }
+                    throw renameError
                 }
             }
             history.finishUndo()
             persistHistory()
             adoptRenamedURLs(from: transaction.inverted)
-            resultMessage = ResultMessage(text: "\(transaction.fileCount) ファイルを元の状態に戻しました")
+            resultMessage = ResultMessage(
+                text: localized(
+                    "undo.completed",
+                    defaultValue: "Restored %d file(s) to their original state.",
+                    arguments: [transaction.fileCount]
+                )
+            )
         } catch {
-            alertMessage = AlertMessage(title: "元に戻せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("undo.failed", defaultValue: "Couldn’t Undo Changes"),
+                detail: describe(error)
+            )
         }
     }
 
@@ -1795,21 +1830,51 @@ final class AppModel: ObservableObject {
                     try await imageProcessor.reapply(transaction.imageEdits) { [weak self] value in
                         Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
                     }
-                } catch {
-                    if let reappliedRename { _ = try? await executor.revert(reappliedRename) }
-                    throw error
+                } catch let imageError {
+                    if let reappliedRename {
+                        do {
+                            _ = try await executor.revert(reappliedRename)
+                        } catch {
+                            keepUndoableRenames(reappliedRename)
+                            throw RenamesKeptAfterFailure(failure: imageError, rollbackFailure: error)
+                        }
+                    }
+                    throw imageError
                 }
             }
-            history.finishRedo()
+            imageProcessor.removeBackups(for: history.finishRedo())
             persistHistory()
             adoptRenamedURLs(from: transaction)
             resultMessage = ResultMessage(
-                text: "\(transaction.fileCount) ファイルの変更をやり直しました",
+                text: localized(
+                    "redo.completed",
+                    defaultValue: "Redid changes to %d file(s).",
+                    arguments: [transaction.fileCount]
+                ),
                 offersUndo: true
             )
         } catch {
-            alertMessage = AlertMessage(title: "やり直せませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("redo.failed", defaultValue: "Couldn’t Redo Changes"),
+                detail: describe(error)
+            )
         }
+    }
+
+    /// The renames are on disk but the step that followed failed and could not be
+    /// rolled back. Recording them keeps the rows truthful and lets Undo restore the
+    /// original names later instead of leaving an untracked change behind.
+    private func keepUndoableRenames(_ transaction: RenameTransaction) {
+        let renamesOnly = RenameTransaction(
+            moves: transaction.moves,
+            accessBookmarks: transaction.accessBookmarks,
+            createdDirectories: transaction.createdDirectories
+        )
+        // Backups of discarded redo entries are kept on purpose: after a failed
+        // image step they may hold the only intact copy of an original.
+        history.record(renamesOnly)
+        persistHistory()
+        adoptRenamedURLs(from: renamesOnly)
     }
 
     /// After a successful batch the rows must point at the new paths, otherwise the
@@ -1847,34 +1912,11 @@ final class AppModel: ObservableObject {
         do {
             try historyStore.save(history)
         } catch {
-            alertMessage = AlertMessage(title: "履歴を保存できませんでした", detail: error.localizedDescription)
+            alertMessage = AlertMessage(
+                title: localized("history.save.failed", defaultValue: "Couldn’t Save History"),
+                detail: describe(error)
+            )
         }
-    }
-
-    // MARK: - Finder integration
-
-    func revealInFinder(ids: Set<UUID>) {
-        let urls = items.filter { ids.contains($0.id) }.flatMap(\.allURLs)
-        guard !urls.isEmpty else { return }
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
-    }
-
-    func openDirectoryInFinder(_ directory: URL) {
-        NSWorkspace.shared.open(directory)
-    }
-
-    func copyDirectoryPath(_ directory: URL) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(directory.path, forType: .string)
-    }
-
-    func quickLookSelection() {
-        if quickLookURL != nil {
-            quickLookURL = nil
-            return
-        }
-        guard let id = selection.first, let item = items.first(where: { $0.id == id }) else { return }
-        quickLookURL = item.originalURL
     }
 
     // MARK: - Busy state
@@ -1915,7 +1957,7 @@ final class AppModel: ObservableObject {
     }
 
     private func recoverPendingRenames() async {
-        guard beginBusy("前回の処理を確認中…", critical: true) else { return }
+        guard beginBusy(localized("busy.recovering", defaultValue: "Checking Previous Work…"), critical: true) else { return }
         defer { endBusy() }
         let imageReport = await imageProcessor.recoverPendingTransactions()
         let report = await executor.recoverPendingTransactions()
@@ -1923,14 +1965,31 @@ final class AppModel: ObservableObject {
 
         if imageReport.hasUnresolvedWork || report.hasUnresolvedWork {
             alertMessage = AlertMessage(
-                title: "自動復旧できない処理があります",
-                detail: (imageReport.messages + report.messages).joined(separator: "\n")
+                title: localized("recovery.unresolved.title", defaultValue: "Some Work Couldn’t Be Recovered Automatically"),
+                detail: (imageReport.messages + report.messages).map(localized).joined(separator: "\n")
             )
         } else {
             let recoveredCount = imageReport.recoveredFileCount + report.recoveredFileCount
             resultMessage = ResultMessage(
-                text: "前回中断された \(recoveredCount) ファイルを元の状態へ復旧しました"
+                text: localized(
+                    "recovery.completed",
+                    defaultValue: "Restored %d file(s) from interrupted previous work.",
+                    arguments: [recoveredCount]
+                )
             )
         }
     }
+}
+
+/// A follow-up step failed after files were renamed, and renaming them back failed too.
+private struct RenamesKeptAfterFailure: Error {
+    let failure: Error
+    let rollbackFailure: Error
+}
+
+/// Undo restored image contents, could not restore the names, and could not re-apply
+/// the image edits either.
+private struct ImagesRestoredButNamesKept: Error {
+    let failure: Error
+    let reapplyFailure: Error
 }

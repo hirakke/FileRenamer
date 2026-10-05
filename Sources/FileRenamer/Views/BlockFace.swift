@@ -39,11 +39,16 @@ extension Binding where Value == RenameRule {
 /// The face is the *format* (`YYYYMMDD`, `001`), so the field reads as the shape of
 /// the name rather than as one file's particular result.
 struct BlockFace: View {
+    @EnvironmentObject private var preferences: AppPreferences
     let token: RenameToken
     var isSelected: Bool = false
 
     var body: some View {
-        RuleBlockFace(label: BlockLabel.text(for: token), tint: token.tint, isSelected: isSelected)
+        RuleBlockFace(
+            label: BlockLabel.text(for: token, language: preferences.resolvedLanguage),
+            tint: token.tint,
+            isSelected: isSelected
+        )
     }
 }
 
@@ -58,6 +63,8 @@ struct ExtensionBlockFace: View {
 }
 
 private struct RuleBlockFace: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let label: String
     let tint: Color
     let isSelected: Bool
@@ -71,13 +78,14 @@ private struct RuleBlockFace: View {
         // content, and coloured text on a strongly tinted ground disappears. The
         // block keeps the rounded shape but draws its own light wash, so the
         // contrast between text and ground is known rather than inherited.
-        Text(label)
+        let isDark = colorScheme == .dark
+        return Text(label)
             .font(.system(.body, design: .monospaced).weight(.semibold))
-            .foregroundStyle(tint)
+            .foregroundStyle(Palette.legible(tint, in: colorScheme))
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
-            .background(tint.opacity(isSelected ? 0.26 : 0.15), in: shape)
+            .background(tint.opacity(isSelected ? (isDark ? 0.30 : 0.26) : (isDark ? 0.20 : 0.15)), in: shape)
             .overlay {
                 if isSelected {
                     shape.strokeBorder(Color.accentColor.opacity(0.65), lineWidth: 1)
@@ -92,16 +100,19 @@ private struct RuleBlockFace: View {
 /// would read as a literal string that happens to be there, when the point is that
 /// this part of the name is derived per file.
 enum BlockLabel {
-    static func text(for token: RenameToken) -> String {
+    static func text(for token: RenameToken, language: ResolvedAppLanguage) -> String {
         switch token {
         case .counter(let config):
             return config.formatted(at: 0)
         case .date(let config):
             return displayPattern(config.pattern)
         case .originalName(let config):
-            return config.transform == .none ? "元のファイル名" : "元のファイル名(\(config.transform.displayName))"
+            let originalName = L10n.string("block.originalName", defaultValue: "Original Name", language: language)
+            return config.transform == .none
+                ? originalName
+                : "\(originalName) (\(config.transform.localizedDisplayName(in: language)))"
         case .metadata(let config):
-            return config.field.displayName
+            return config.field.localizedDisplayName(in: language)
         case .text(let config):
             return config.value
         case .separator(let config):

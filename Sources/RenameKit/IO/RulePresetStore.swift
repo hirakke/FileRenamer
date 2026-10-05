@@ -22,7 +22,7 @@ public struct RulePresetStore: Sendable {
 
     public struct LoadResult: Sendable {
         public var presets: [RenameRulePreset]
-        public var recoveryMessage: String?
+        public var recoveryMessage: LocalizableMessage?
     }
 
     /// A corrupt file never prevents launch. It is copied aside for inspection and
@@ -43,7 +43,11 @@ public struct RulePresetStore: Sendable {
             try? FileManager.default.copyItem(at: fileURL, to: backup)
             return LoadResult(
                 presets: [],
-                recoveryMessage: "プリセットファイルを読み取れませんでした。壊れたデータは \(backup.lastPathComponent) に退避しました。"
+                recoveryMessage: LocalizableMessage(
+                    "preset.recovered.detail",
+                    defaultValue: "The presets file couldn’t be read. The damaged data was moved to %@.",
+                    arguments: [.text(backup.lastPathComponent)]
+                )
             )
         }
     }

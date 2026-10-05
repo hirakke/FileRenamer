@@ -22,6 +22,188 @@ private func makeDate(_ string: String) -> Date {
     return formatter.date(from: string) ?? Date(timeIntervalSince1970: 0)
 }
 
+private func localizedCatalogValue(for key: String, language: String) throws -> String? {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let catalogURL = repositoryURL
+        .appendingPathComponent("Sources/FileRenamer/Resources/Localizable.xcstrings")
+    let data = try Data(contentsOf: catalogURL)
+    let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    let strings = catalog?["strings"] as? [String: Any]
+    let entry = strings?[key] as? [String: Any]
+    let localizations = entry?["localizations"] as? [String: Any]
+    let localization = localizations?[language] as? [String: Any]
+    let stringUnit = localization?["stringUnit"] as? [String: Any]
+    return stringUnit?["value"] as? String
+}
+
+private func untranslatedVisibleJapaneseLiterals() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let sourceDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let pattern = #"\"(?:\\.|[^\"\\])*\""#
+    let expression = try NSRegularExpression(pattern: pattern)
+    let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
+    var visibleLiterals = Set<String>()
+
+    let enumerator = FileManager.default.enumerator(
+        at: sourceDirectory,
+        includingPropertiesForKeys: [.isRegularFileKey]
+    )
+    while let fileURL = enumerator?.nextObject() as? URL {
+        guard fileURL.pathExtension == "swift" else { continue }
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        let range = NSRange(source.startIndex..., in: source)
+        for match in expression.matches(in: source, range: range) {
+            guard let matchRange = Range(match.range, in: source) else { continue }
+            let literal = String(source[matchRange])
+            // Interpolated copy is represented by semantic L10n keys at the call
+            // site, because its rendered value cannot be a string-catalog key.
+            guard !literal.contains("\\(") else { continue }
+            guard japanese.firstMatch(in: literal, range: NSRange(literal.startIndex..., in: literal)) != nil else { continue }
+            visibleLiterals.insert(String(literal.dropFirst().dropLast()))
+        }
+    }
+
+    return try visibleLiterals.sorted().filter { literal in
+        guard let english = try localizedCatalogValue(for: literal, language: "en") else { return true }
+        return english == literal
+    }
+}
+
+private func untranslatedRuntimeAppModelCopy() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let appDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let appModelFiles = try FileManager.default.contentsOfDirectory(atPath: appDirectory.path)
+        .filter { $0.hasPrefix("AppModel") && $0.hasSuffix(".swift") }
+    let source = try appModelFiles
+        .map { try String(contentsOf: appDirectory.appendingPathComponent($0), encoding: .utf8) }
+        .joined(separator: "\n")
+    let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
+    let runtimeMarkers = ["beginBusy(", "AlertMessage(", "ResultMessage(", "panel.prompt", "panel.message"]
+
+    return source
+        .split(separator: "\n", omittingEmptySubsequences: false)
+        .map(String.init)
+        .filter { line in
+            runtimeMarkers.contains(where: line.contains)
+                && japanese.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) != nil
+                && !line.contains("localized(")
+        }
+}
+
+private func semanticLocalizationKeysMissingTranslation() throws -> [String] {
+    let sourceURL = URL(fileURLWithPath: #filePath)
+    let repositoryURL = sourceURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let sourceDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let pattern = #"(?:localized|L10n\.(?:string|format))\(\s*\"([^\"]+\.[^\"]+)\""#
+    let expression = try NSRegularExpression(pattern: pattern)
+    var keys = Set<String>()
+    let enumerator = FileManager.default.enumerator(at: sourceDirectory, includingPropertiesForKeys: [.isRegularFileKey])
+    while let fileURL = enumerator?.nextObject() as? URL {
+        guard fileURL.pathExtension == "swift" else { continue }
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        for match in expression.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+            guard let range = Range(match.range(at: 1), in: source) else { continue }
+            keys.insert(String(source[range]))
+        }
+    }
+
+    return try keys.sorted().filter { key in
+        try localizedCatalogValue(for: key, language: "en")?.isEmpty != false
+            || localizedCatalogValue(for: key, language: "ja")?.isEmpty != false
+    }
+}
+
+
+private func repositorySourceFiles(in relativeDirectory: String) -> [URL] {
+    let repositoryURL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let directory = repositoryURL.appendingPathComponent(relativeDirectory)
+    let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey])
+    var files: [URL] = []
+    while let fileURL = enumerator?.nextObject() as? URL {
+        if fileURL.pathExtension == "swift" { files.append(fileURL) }
+    }
+    return files
+}
+
+/// `Text("\(count) 件")` renders through a key Xcode derives from the interpolated
+/// types, which the catalog does not carry; such copy would stay Japanese in English.
+private func interpolatedJapaneseLiterals() throws -> [String] {
+    let literal = try NSRegularExpression(pattern: #"\"(?:\\.|[^\"\\\n])*\""#)
+    let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
+    var found: [String] = []
+    for fileURL in repositorySourceFiles(in: "Sources/FileRenamer") {
+        let source = try String(contentsOf: fileURL, encoding: .utf8)
+        for match in literal.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+            guard let range = Range(match.range, in: source) else { continue }
+            let text = String(source[range])
+            guard text.contains("\\("),
+                  japanese.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+            else { continue }
+            found.append("\(fileURL.lastPathComponent): \(text)")
+        }
+    }
+    return found.sorted()
+}
+
+/// Keys RenameKit and the app hand over as `LocalizableMessage`s, with the English
+/// source text written next to them.
+private func localizableMessageDefinitions() throws -> [(key: String, defaultValue: String)] {
+    let patterns = [
+        #"LocalizableMessage\(\s*"([^"]+)",\s*defaultValue:\s*"((?:[^"\\]|\\.)*)""#,
+        #"Self\.message\(\s*"([^"]+)",\s*"((?:[^"\\]|\\.)*)""#
+    ].map { try! NSRegularExpression(pattern: $0) }
+    var definitions: [(String, String)] = []
+    for directory in ["Sources/RenameKit", "Sources/FileRenamer"] {
+        for fileURL in repositorySourceFiles(in: directory) {
+            let source = try String(contentsOf: fileURL, encoding: .utf8)
+            for expression in patterns {
+                for match in expression.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+                    guard let key = Range(match.range(at: 1), in: source),
+                          let value = Range(match.range(at: 2), in: source) else { continue }
+                    definitions.append((String(source[key]), String(source[value])))
+                }
+            }
+        }
+    }
+    return definitions
+}
+
+private func formatSpecifiers(in text: String) -> [String] {
+    let expression = try! NSRegularExpression(pattern: #"%(?:\d+\$)?l{0,2}[@dDiuUxXoOfeEgGcCsSp]"#)
+    return expression.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap {
+        Range($0.range, in: text).map { String(text[$0]) }
+    }
+}
+
+private func catalogKeys() throws -> [String] {
+    let repositoryURL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let data = try Data(contentsOf: repositoryURL
+        .appendingPathComponent("Sources/FileRenamer/Resources/Localizable.xcstrings"))
+    let catalog = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+    return ((catalog?["strings"] as? [String: Any]) ?? [:]).keys.sorted()
+}
+
 @MainActor
 func runEngineTests() async {
     let runner = TestRunner.shared
@@ -50,6 +232,35 @@ func runEngineTests() async {
         let previews = RenameEngine().makePreviews(items: items, rule: rule)
         try expectEqual(previews.map(\.proposedName), ["001.jpg", "002.jpg", "003.jpg", "004.jpg"])
         try expectEqual(previews[1].sourceURL.lastPathComponent, "D.jpg")
+    }
+
+    await runner.test("日付ごとのリセットは日付ブロックと同じ日付を基準にする") {
+        func item(_ name: String, created: String, captured: String) -> RenameItem {
+            var metadata = FileMetadata()
+            metadata.creationDate = makeDate(created)
+            metadata.captureDate = makeDate(captured)
+            return RenameItem(originalURL: folder.appendingPathComponent(name), metadata: metadata)
+        }
+        let items = [
+            item("a.jpg", created: "2026-08-01 10:00:00", captured: "2026-07-01 10:00:00"),
+            item("b.jpg", created: "2026-08-01 11:00:00", captured: "2026-07-02 10:00:00"),
+            item("c.jpg", created: "2026-08-02 09:00:00", captured: "2026-07-02 11:00:00")
+        ]
+        let counter = CounterConfiguration(start: 1, digits: 2, resetMode: .day)
+        let byCreation = RenameRule(tokens: [
+            .date(DateConfiguration(source: .creation, preset: .compact)),
+            .text(TextConfiguration(value: "_")),
+            .counter(counter)
+        ])
+        try expectEqual(
+            RenameEngine().makePreviews(items: items, rule: byCreation).map(\.proposedName),
+            ["20260801_01.jpg", "20260801_02.jpg", "20260802_01.jpg"]
+        )
+        let counterOnly = RenameRule(tokens: [.counter(counter)])
+        try expectEqual(
+            RenameEngine().makePreviews(items: items, rule: counterOnly).map(\.proposedName),
+            ["01.jpg", "01.jpg", "02.jpg"]
+        )
     }
 
     await runner.test("開始番号と桁数が反映される") {
@@ -580,5 +791,80 @@ func runLocalizationTests() async {
     await runner.test("明示した表示言語はシステム設定より優先される") {
         try expectEqual(AppLanguage.japanese.resolved(preferredLanguageIdentifier: "en-US"), .japanese)
         try expectEqual(AppLanguage.english.resolved(preferredLanguageIdentifier: "ja-JP"), .english)
+    }
+
+    await runner.test("画面の固定日本語には英語訳を必ず登録する") {
+        let missing = try untranslatedVisibleJapaneseLiterals()
+        try expect(missing.isEmpty, "英語訳がありません: \(missing.joined(separator: ", "))")
+    }
+
+    await runner.test("実行中のメッセージは選択した表示言語を使う") {
+        let missing = try untranslatedRuntimeAppModelCopy()
+        try expect(missing.isEmpty, "AppModelで翻訳されない実行時メッセージがあります: \(missing.joined(separator: " | "))")
+    }
+
+    await runner.test("意味ベースの翻訳キーは日英とも登録する") {
+        let missing = try semanticLocalizationKeysMissingTranslation()
+        try expect(missing.isEmpty, "翻訳カタログにないキーがあります: \(missing.joined(separator: ", "))")
+    }
+
+    await runner.test("補間付きの日本語文言を画面に直接書かない") {
+        let found = try interpolatedJapaneseLiterals()
+        try expect(found.isEmpty, "L10n.formatへ置き換えてください: \(found.joined(separator: " | "))")
+    }
+
+    await runner.test("RenameKitのメッセージキーは日英とも登録され英語の原文と一致する") {
+        let definitions = try localizableMessageDefinitions()
+        try expect(definitions.count >= 40, "メッセージ定義を検出できません")
+        var problems: [String] = []
+        for definition in definitions {
+            let english = try localizedCatalogValue(for: definition.key, language: "en")
+            let japanese = try localizedCatalogValue(for: definition.key, language: "ja")
+            if english == nil || japanese?.isEmpty != false {
+                problems.append("\(definition.key)（未登録）")
+            } else if english != definition.defaultValue {
+                problems.append("\(definition.key)（英語の原文と不一致）")
+            }
+        }
+        try expect(problems.isEmpty, problems.joined(separator: ", "))
+    }
+
+    await runner.test("翻訳の書式指定子は日英で一致する") {
+        var mismatched: [String] = []
+        for key in try catalogKeys() {
+            guard let english = try localizedCatalogValue(for: key, language: "en"),
+                  let japanese = try localizedCatalogValue(for: key, language: "ja") else { continue }
+            let englishSpecifiers = formatSpecifiers(in: english).sorted()
+            let japaneseSpecifiers = formatSpecifiers(in: japanese).sorted()
+            if englishSpecifiers != japaneseSpecifiers { mismatched.append(key) }
+        }
+        try expect(mismatched.isEmpty, "書式指定子が一致しません: \(mismatched.joined(separator: ", "))")
+    }
+
+    await runner.test("ローカライズ可能なメッセージは入れ子も含めて解決される") {
+        let failure = RenameExecutionError.moveFailed(
+            source: URL(fileURLWithPath: "/tmp/a.jpg"),
+            destination: URL(fileURLWithPath: "/tmp/b.jpg"),
+            underlying: RenameExecutionError.destinationOccupied(URL(fileURLWithPath: "/tmp/b.jpg")),
+            rolledBack: true
+        )
+        let table = [
+            "execution.moveFailed.rolledBack": "%@ のリネームに失敗しました（%@）。変更は元に戻されました。",
+            "execution.destinationOccupied": "変更後の名前が既に使われています: %@"
+        ]
+        let japanese = LocalizableMessage.describing(failure).resolved(locale: Locale(identifier: "ja")) {
+            table[$0] ?? $1
+        }
+        try expectEqual(japanese, "a.jpg のリネームに失敗しました（変更後の名前が既に使われています: b.jpg）。変更は元に戻されました。")
+        try expectEqual(
+            failure.localizedDescription,
+            "Couldn’t rename a.jpg (The new name is already in use: b.jpg). The changes were undone."
+        )
+        let foreign = NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError)
+        try expectEqual(LocalizableMessage.describing(foreign).description, foreign.localizedDescription)
+        try expectEqual(
+            RenameExecutionError.validationFailed(errorCount: 3).localizedDescription,
+            "Can’t make the changes because 3 item(s) have errors."
+        )
     }
 }

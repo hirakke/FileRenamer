@@ -11,14 +11,6 @@ enum SimilarImageSensitivity: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var displayName: String {
-        switch self {
-        case .strict: return "厳密"
-        case .standard: return "標準"
-        case .broad: return "広め"
-        }
-    }
-
     /// Vision documents distance ordering (smaller is more similar), but deliberately
     /// does not prescribe product thresholds. These conservative app-level values are
     /// paired with a perceptual-hash prefilter to avoid obvious false positives.
@@ -380,16 +372,24 @@ actor SimilarImageDetector {
     }
 }
 
-private enum SimilarImageDetectionError: LocalizedError {
+private enum SimilarImageDetectionError: LocalizableError {
     case cannotDecode(URL)
     case cannotCreateFeaturePrint(URL)
 
-    var errorDescription: String? {
+    var localizableMessage: LocalizableMessage {
         switch self {
         case .cannotDecode(let url):
-            return "「\(url.lastPathComponent)」の画像を読み取れませんでした。"
+            return LocalizableMessage(
+                "similarity.error.cannotDecode",
+                defaultValue: "Couldn’t read the image “%@”.",
+                arguments: [.text(url.lastPathComponent)]
+            )
         case .cannotCreateFeaturePrint(let url):
-            return "「\(url.lastPathComponent)」の画像特徴を作成できませんでした。"
+            return LocalizableMessage(
+                "similarity.error.cannotCreateFeaturePrint",
+                defaultValue: "Couldn’t analyze the image “%@”.",
+                arguments: [.text(url.lastPathComponent)]
+            )
         }
     }
 }

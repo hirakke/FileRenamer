@@ -55,11 +55,12 @@ public struct RenameEngine: Sendable {
     ) -> [RenamePreview] {
         let formatters = FormatterCache()
         var counterGroups: [UUID: [String: Int]] = [:]
+        let dayResetSource = Self.dayResetSource(for: rule)
         return items.enumerated().map { index, item in
             var counterIndices: [UUID: Int] = [:]
             for token in rule.tokens {
                 guard case .counter(let config) = token else { continue }
-                let key = counterGroupKey(for: item, mode: config.resetMode)
+                let key = counterGroupKey(for: item, mode: config.resetMode, daySource: dayResetSource)
                 let next = counterGroups[config.id, default: [:]][key, default: 0]
                 counterIndices[config.id] = next
                 counterGroups[config.id, default: [:]][key] = next + 1
@@ -87,7 +88,7 @@ public struct RenameEngine: Sendable {
     ) -> RenamePreview {
         var baseName = ""
         var counterValue: Int?
-        var generationWarnings: [String] = []
+        var generationWarnings: [LocalizableMessage] = []
 
         for token in rule.tokens {
             switch token {
@@ -109,7 +110,10 @@ public struct RenameEngine: Sendable {
                 if config.source == .capture,
                    item.metadata.captureDate == nil,
                    item.date(for: .capture) != nil {
-                    generationWarnings.append("撮影日時がないため、ファイル日時を使用します")
+                    generationWarnings.append(LocalizableMessage(
+                        "warning.captureDateFallback",
+                        defaultValue: "No capture date, so the file date is used instead."
+                    ))
                 }
 
             case .originalName(let config):
@@ -121,13 +125,17 @@ public struct RenameEngine: Sendable {
                 if let value = metadataValue(config.field, from: item.metadata) {
                     baseName += value
                 } else {
-                    generationWarnings.append("\(config.field.displayName)を取得できません")
+                    generationWarnings.append(LocalizableMessage(
+                        "warning.metadataUnavailable",
+                        defaultValue: "%@ isn’t available.",
+                        arguments: [.message(config.field.localizableName)]
+                    ))
                 }
             }
         }
 
         if options.trimWhitespace {
-            baseName = baseName.trimmingCharacters(in: .whitespaces)
+            baseName = baseName.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         if options.sanitizeIllegalCharacters {
             baseName = FileNameSanitizer.sanitize(baseName, replacement: options.replacementCharacter)
@@ -154,7 +162,20 @@ public struct RenameEngine: Sendable {
         )
     }
 
-    private func counterGroupKey(for item: RenameItem, mode: CounterResetMode) -> String {
+    /// "Reset every day" follows the day the name itself shows: the first date block's
+    /// source. Without a date block the capture date is the natural day of a photo.
+    static func dayResetSource(for rule: RenameRule) -> DateSource {
+        for token in rule.tokens {
+            if case .date(let config) = token { return config.source }
+        }
+        return .capture
+    }
+
+    private func counterGroupKey(
+        for item: RenameItem,
+        mode: CounterResetMode,
+        daySource: DateSource
+    ) -> String {
         switch mode {
         case .never:
             return "all"
@@ -163,7 +184,7 @@ public struct RenameEngine: Sendable {
                 .precomposedStringWithCanonicalMapping
                 .lowercased()
         case .day:
-            guard let date = item.date(for: .capture) else { return "date-missing" }
+            guard let date = item.date(for: daySource) else { return "date-missing" }
             let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
             return "\(components.year ?? 0)-\(components.month ?? 0)-\(components.day ?? 0)"
         }

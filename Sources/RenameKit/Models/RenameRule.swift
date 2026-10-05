@@ -29,14 +29,6 @@ public enum CounterResetMode: String, CaseIterable, Hashable, Sendable, Codable 
     case never
     case folder
     case day
-
-    public var displayName: String {
-        switch self {
-        case .never: return "リセットしない"
-        case .folder: return "フォルダごと"
-        case .day: return "日付ごと"
-        }
-    }
 }
 
 public struct CounterConfiguration: Identifiable, Hashable, Sendable, Codable {
@@ -91,14 +83,6 @@ public enum DateSource: String, CaseIterable, Hashable, Sendable, Codable {
     case creation
     case modification
     case capture
-
-    public var displayName: String {
-        switch self {
-        case .creation: return "作成日"
-        case .modification: return "更新日"
-        case .capture: return "撮影日"
-        }
-    }
 }
 
 /// Presets only — the user never types a `yyyyMMdd` pattern unless they open the
@@ -155,14 +139,6 @@ public enum CaseTransform: String, CaseIterable, Hashable, Sendable, Codable {
     case lowercase
     case uppercase
 
-    public var displayName: String {
-        switch self {
-        case .none: return "そのまま"
-        case .lowercase: return "小文字"
-        case .uppercase: return "大文字"
-        }
-    }
-
     public func apply(_ string: String) -> String {
         switch self {
         case .none: return string
@@ -176,14 +152,6 @@ public enum ImageOutputFormat: String, CaseIterable, Hashable, Sendable, Codable
     case preserve
     case jpeg
     case png
-
-    public var displayName: String {
-        switch self {
-        case .preserve: return "変更しない"
-        case .jpeg: return "JPEG"
-        case .png: return "PNG"
-        }
-    }
 
     public var fileExtension: String? {
         switch self {
@@ -200,16 +168,6 @@ public enum JPEGQualityPreset: String, CaseIterable, Hashable, Sendable, Codable
     case standard
     case compact
     case custom
-
-    public var displayName: String {
-        switch self {
-        case .maximum: return "最高品質 — 100%"
-        case .high: return "高品質 — 95%（推奨）"
-        case .standard: return "標準 — 90%"
-        case .compact: return "軽量 — 80%"
-        case .custom: return "カスタム"
-        }
-    }
 
     public var fixedPercent: Int? {
         switch self {
@@ -299,7 +257,7 @@ public struct OriginalNameConfiguration: Identifiable, Hashable, Sendable, Codab
         self.usesRegularExpression = usesRegularExpression
     }
 
-    public func applying(to original: String) -> (value: String, warning: String?) {
+    public func applying(to original: String) -> (value: String, warning: LocalizableMessage?) {
         let transformed = transform.apply(original)
         guard !find.isEmpty else { return (transformed, nil) }
         if usesRegularExpression {
@@ -312,7 +270,10 @@ public struct OriginalNameConfiguration: Identifiable, Hashable, Sendable, Codab
                     withTemplate: replacement
                 ), nil)
             } catch {
-                return (transformed, "正規表現が正しくありません")
+                return (transformed, LocalizableMessage(
+                    "warning.invalidRegularExpression",
+                    defaultValue: "The regular expression isn’t valid."
+                ))
             }
         }
         return (transformed.replacingOccurrences(of: find, with: replacement), nil)
@@ -340,14 +301,14 @@ public enum MetadataField: String, CaseIterable, Hashable, Sendable, Codable {
     case aperture
     case dimensions
 
-    public var displayName: String {
+    public var localizableName: LocalizableMessage {
         switch self {
-        case .cameraModel: return "カメラ機種"
-        case .lensModel: return "レンズ"
-        case .iso: return "ISO感度"
-        case .focalLength: return "焦点距離"
-        case .aperture: return "絞り値"
-        case .dimensions: return "画像サイズ"
+        case .cameraModel: return LocalizableMessage("metadata.cameraModel", defaultValue: "Camera Model")
+        case .lensModel: return LocalizableMessage("metadata.lensModel", defaultValue: "Lens")
+        case .iso: return LocalizableMessage("metadata.iso", defaultValue: "ISO")
+        case .focalLength: return LocalizableMessage("metadata.focalLength", defaultValue: "Focal Length")
+        case .aperture: return LocalizableMessage("metadata.aperture", defaultValue: "Aperture")
+        case .dimensions: return LocalizableMessage("metadata.dimensions", defaultValue: "Dimensions")
         }
     }
 }
@@ -384,17 +345,6 @@ public enum RenameToken: Identifiable, Hashable, Sendable, Codable {
         }
     }
 
-    public var kindName: String {
-        switch self {
-        case .text: return "固定文字列"
-        case .separator: return "区切り"
-        case .counter: return "連番"
-        case .date: return "日付"
-        case .originalName: return "元の名前"
-        case .metadata: return "写真情報"
-        }
-    }
-
     public var systemImageName: String {
         switch self {
         case .text: return "textformat"
@@ -403,26 +353,6 @@ public enum RenameToken: Identifiable, Hashable, Sendable, Codable {
         case .date: return "calendar"
         case .originalName: return "doc.text"
         case .metadata: return "camera"
-        }
-    }
-
-    /// What the block shows on its face in the rule bar.
-    public var summary: String {
-        switch self {
-        case .text(let c):
-            return c.value.isEmpty ? "（未入力）" : c.value
-        case .separator(let c):
-            return c.value == " " ? "space" : c.value
-        case .counter(let c):
-            return c.formatted(at: 0)
-        case .date(let c):
-            // Upper case reads as a placeholder; the real casing only matters to
-            // DateFormatter.
-            return "\(c.source.displayName) \(c.pattern.uppercased())"
-        case .originalName(let c):
-            return c.transform == .none ? "元の名前" : "元の名前 (\(c.transform.displayName))"
-        case .metadata(let c):
-            return c.field.displayName
         }
     }
 }

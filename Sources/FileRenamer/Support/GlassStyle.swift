@@ -158,17 +158,28 @@ extension View {
     /// A borderless raised panel: a soft top highlight and lower ambient shadow
     /// describe its depth without drawing a flat rectangular outline.
     func raisedWorkSurface(opacity: Double = 0.97) -> some View {
-        background {
+        modifier(RaisedWorkSurface(opacity: opacity))
+    }
+}
+
+private struct RaisedWorkSurface: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        let isDark = colorScheme == .dark
+        content.background {
             ZStack {
                 Color(nsColor: .controlBackgroundColor).opacity(opacity)
                 LinearGradient(
-                    colors: [Color.white.opacity(0.16), Color.clear],
+                    colors: [Color.white.opacity(isDark ? 0.05 : 0.16), Color.clear],
                     startPoint: .top,
                     endPoint: .center
                 )
             }
+            .compositingGroup()
+            .shadow(color: Color.white.opacity(isDark ? 0.10 : 0.50), radius: 1.2, y: -1)
         }
-        .shadow(color: Color.white.opacity(0.50), radius: 1.2, y: -1)
     }
 }
 

@@ -17,13 +17,13 @@ public struct RenameOperation: Hashable, Sendable, Codable {
 
 public enum RenameValidation: Hashable, Sendable {
     case valid
-    case warning(String)
-    case error(String)
+    case warning(LocalizableMessage)
+    case error(LocalizableMessage)
 
     public var isError: Bool { if case .error = self { return true } else { return false } }
     public var isWarning: Bool { if case .warning = self { return true } else { return false } }
 
-    public var message: String? {
+    public var message: LocalizableMessage? {
         switch self {
         case .valid: return nil
         case .warning(let m), .error(let m): return m
@@ -41,7 +41,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
     public let proposedBaseName: String
     public let operations: [RenameOperation]
     public let requiresContentProcessing: Bool
-    public var generationWarnings: [String]
+    public var generationWarnings: [LocalizableMessage]
     public var validation: RenameValidation
 
     public var id: UUID { itemID }
@@ -52,7 +52,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
         proposedBaseName: String,
         operations: [RenameOperation],
         requiresContentProcessing: Bool = false,
-        generationWarnings: [String] = [],
+        generationWarnings: [LocalizableMessage] = [],
         validation: RenameValidation = .valid
     ) {
         self.itemID = itemID
@@ -78,4 +78,27 @@ public extension Array where Element == RenamePreview {
     var warningCount: Int { filter { $0.validation.isWarning }.count }
     var errorCount: Int { filter { $0.validation.isError }.count }
     var changedCount: Int { filter { !$0.isUnchanged && !$0.validation.isError }.count }
+
+    /// Same names, but every file ends up in `directory`.
+    func relocated(to directory: URL) -> [RenamePreview] {
+        map { preview in
+            RenamePreview(
+                itemID: preview.itemID,
+                counterValue: preview.counterValue,
+                proposedBaseName: preview.proposedBaseName,
+                operations: preview.operations.map { operation in
+                    RenameOperation(
+                        source: operation.source,
+                        destination: directory.appendingPathComponent(
+                            operation.destination.lastPathComponent,
+                            isDirectory: false
+                        )
+                    )
+                },
+                requiresContentProcessing: preview.requiresContentProcessing,
+                generationWarnings: preview.generationWarnings,
+                validation: preview.validation
+            )
+        }
+    }
 }

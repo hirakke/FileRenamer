@@ -8,19 +8,22 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
     public let moves: [RenameOperation]
     public let accessBookmarks: [Data]
     public let imageEdits: [ImageEditRecord]
+    public let createdDirectories: [URL]
 
     public init(
         id: UUID = UUID(),
         date: Date = Date(),
         moves: [RenameOperation],
         accessBookmarks: [Data] = [],
-        imageEdits: [ImageEditRecord] = []
+        imageEdits: [ImageEditRecord] = [],
+        createdDirectories: [URL] = []
     ) {
         self.id = id
         self.date = date
         self.moves = moves
         self.accessBookmarks = accessBookmarks
         self.imageEdits = imageEdits
+        self.createdDirectories = createdDirectories
     }
 
     public var fileCount: Int { max(moves.count, imageEdits.count) }
@@ -29,7 +32,8 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
     public var inverted: RenameTransaction {
         RenameTransaction(moves: moves.reversed().map {
             RenameOperation(source: $0.destination, destination: $0.source)
-        }, accessBookmarks: accessBookmarks, imageEdits: imageEdits)
+        }, accessBookmarks: accessBookmarks, imageEdits: imageEdits,
+           createdDirectories: createdDirectories)
     }
 
     public func addingImageEdits(_ edits: [ImageEditRecord]) -> RenameTransaction {
@@ -38,11 +42,14 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
             date: date,
             moves: moves,
             accessBookmarks: accessBookmarks,
-            imageEdits: edits
+            imageEdits: edits,
+            createdDirectories: createdDirectories
         )
     }
 
-    private enum CodingKeys: String, CodingKey { case id, date, moves, accessBookmarks, imageEdits }
+    private enum CodingKeys: String, CodingKey {
+        case id, date, moves, accessBookmarks, imageEdits, createdDirectories
+    }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -51,29 +58,58 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
         moves = try values.decodeIfPresent([RenameOperation].self, forKey: .moves) ?? []
         accessBookmarks = try values.decodeIfPresent([Data].self, forKey: .accessBookmarks) ?? []
         imageEdits = try values.decodeIfPresent([ImageEditRecord].self, forKey: .imageEdits) ?? []
+        createdDirectories = try values.decodeIfPresent([URL].self, forKey: .createdDirectories) ?? []
     }
 }
 
-public enum RenameExecutionError: Error, LocalizedError {
+public enum RenameExecutionError: Error, LocalizableError {
     case validationFailed(errorCount: Int)
     case nothingToDo
     case sourceMissing(URL)
     case destinationOccupied(URL)
+    case directoryCreationFailed(URL, underlying: Error)
     case moveFailed(source: URL, destination: URL, underlying: Error, rolledBack: Bool)
 
-    public var errorDescription: String? {
+    public var localizableMessage: LocalizableMessage {
         switch self {
         case .validationFailed(let count):
-            return "\(count) 件のエラーがあるため実行できません。"
+            return LocalizableMessage(
+                "execution.validationFailed",
+                defaultValue: "Can’t make the changes because %ld item(s) have errors.",
+                arguments: [.number(count)]
+            )
         case .nothingToDo:
-            return "変更が必要なファイルがありません。"
+            return LocalizableMessage("execution.nothingToDo", defaultValue: "No files need to change.")
         case .sourceMissing(let url):
-            return "ファイルが見つかりません: \(url.lastPathComponent)"
+            return LocalizableMessage(
+                "execution.sourceMissing",
+                defaultValue: "File not found: %@",
+                arguments: [.text(url.lastPathComponent)]
+            )
         case .destinationOccupied(let url):
-            return "変更後の名前が既に使われています: \(url.lastPathComponent)"
+            return LocalizableMessage(
+                "execution.destinationOccupied",
+                defaultValue: "The new name is already in use: %@",
+                arguments: [.text(url.lastPathComponent)]
+            )
+        case .directoryCreationFailed(let url, let underlying):
+            return LocalizableMessage(
+                "execution.directoryCreationFailed",
+                defaultValue: "Couldn’t create the folder %@ (%@).",
+                arguments: [.text(url.lastPathComponent), .error(underlying)]
+            )
         case .moveFailed(let source, _, let underlying, let rolledBack):
-            let suffix = rolledBack ? "変更は元に戻されました。" : "一部のファイルが元に戻せませんでした。"
-            return "\(source.lastPathComponent) のリネームに失敗しました（\(underlying.localizedDescription)）。\(suffix)"
+            return rolledBack
+                ? LocalizableMessage(
+                    "execution.moveFailed.rolledBack",
+                    defaultValue: "Couldn’t rename %@ (%@). The changes were undone.",
+                    arguments: [.text(source.lastPathComponent), .error(underlying)]
+                )
+                : LocalizableMessage(
+                    "execution.moveFailed.partial",
+                    defaultValue: "Couldn’t rename %@ (%@). Some files couldn’t be restored.",
+                    arguments: [.text(source.lastPathComponent), .error(underlying)]
+                )
         }
     }
 }
@@ -133,11 +169,15 @@ public struct RenameExecutor: @unchecked Sendable {
         guard !operations.isEmpty else { throw RenameExecutionError.nothingToDo }
         let scopedURLs = Self.resolveSecurityScopedBookmarks(transaction.accessBookmarks)
         defer { scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() } }
-        return try await run(
+        let result = try await run(
             operations: operations,
             accessBookmarks: transaction.accessBookmarks,
             progress: progress
         )
+        for directory in transaction.createdDirectories.sorted(by: Self.deepestFirst) {
+            Self.removeDirectoryIfEmpty(directory, fileManager: fileManager)
+        }
+        return result
     }
 
     // MARK: - Two-phase move
@@ -170,6 +210,28 @@ public struct RenameExecutor: @unchecked Sendable {
         for operation in operations {
             guard fileManager.fileExists(atPath: operation.source.path) else {
                 throw RenameExecutionError.sourceMissing(operation.source)
+            }
+        }
+
+        // Destination folders the batch needs but that do not exist yet, e.g. a
+        // consolidation folder chosen in the UI. Created up front so a failure
+        // later can remove them again in rollback.
+        var createdDirectories: [URL] = []
+        var seenParents = Set<String>()
+        let missingParents = operations
+            .map { $0.destination.deletingLastPathComponent().standardizedFileURL }
+            .filter { seenParents.insert($0.path).inserted }
+            .filter { !fileManager.fileExists(atPath: $0.path) }
+            .sorted { $0.path.count < $1.path.count }
+        for directory in missingParents {
+            do {
+                try fileManager.createDirectory(at: directory, withIntermediateDirectories: false)
+                createdDirectories.append(directory)
+            } catch {
+                for created in createdDirectories {
+                    Self.removeDirectoryIfEmpty(created, fileManager: fileManager)
+                }
+                throw RenameExecutionError.directoryCreationFailed(directory, underlying: error)
             }
         }
 
@@ -208,6 +270,11 @@ public struct RenameExecutor: @unchecked Sendable {
                 } catch {
                     fullyRestored = false
                 }
+            }
+            // Folders created for this batch only go away when they are still
+            // empty; one holding files stays behind without failing the restore.
+            for directory in createdDirectories.sorted(by: Self.deepestFirst) {
+                Self.removeDirectoryIfEmpty(directory, fileManager: fileManager)
             }
             if fullyRestored {
                 try? journalStore.remove(id: durableJournal.id)
@@ -279,7 +346,11 @@ public struct RenameExecutor: @unchecked Sendable {
             )
         }
         try? journalStore.remove(id: durableJournal.id)
-        return RenameTransaction(moves: operations, accessBookmarks: durableBookmarks)
+        return RenameTransaction(
+            moves: operations,
+            accessBookmarks: durableBookmarks,
+            createdDirectories: createdDirectories
+        )
     }
 
     // MARK: - Crash recovery
@@ -299,7 +370,11 @@ public struct RenameExecutor: @unchecked Sendable {
         let loaded = journalStore.loadAll()
         var report = RenameRecoveryReport()
         if !loaded.unreadableFiles.isEmpty {
-            report.messages.append("\(loaded.unreadableFiles.count) 件の復旧記録を読み取れませんでした。")
+            report.messages.append(LocalizableMessage(
+                "recovery.unreadableJournals",
+                defaultValue: "%ld recovery record(s) couldn’t be read.",
+                arguments: [.number(loaded.unreadableFiles.count)]
+            ))
         }
 
         for journal in loaded.journals {
@@ -318,7 +393,7 @@ public struct RenameExecutor: @unchecked Sendable {
                 report.recoveredFileCount += restored
             } catch {
                 report.unresolvedJournalIDs.append(journal.id)
-                report.messages.append(error.localizedDescription)
+                report.messages.append(.describing(error))
             }
         }
         return report
@@ -407,6 +482,20 @@ public struct RenameExecutor: @unchecked Sendable {
             ), url.startAccessingSecurityScopedResource() else { return nil }
             return url
         }
+    }
+
+    private static let deepestFirst: (URL, URL) -> Bool = {
+        $0.standardizedFileURL.path.count > $1.standardizedFileURL.path.count
+    }
+
+    /// Removes `directory` only when it holds nothing but a `.DS_Store` file.
+    /// Best effort on purpose: a folder that collected other files belongs to the
+    /// user now, and an unreadable or stubborn one is safe to leave behind.
+    private static func removeDirectoryIfEmpty(_ directory: URL, fileManager: FileManager) {
+        guard let contents = try? fileManager.contentsOfDirectory(atPath: directory.path),
+              contents.allSatisfy({ $0 == ".DS_Store" })
+        else { return }
+        try? fileManager.removeItem(at: directory)
     }
 
     /// Hidden (leading dot) and UUID-suffixed so it cannot collide with a real file

@@ -5,6 +5,8 @@ import RenameKit
 /// The main "Arrange" surface: rows in list order, each showing the number it will
 /// get, the original name and the resulting name. Dragging a row renumbers everything.
 struct FileListView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @EnvironmentObject private var model: AppModel
     @State private var selectionAnchor: UUID?
     /// Captured at drag start, so a multi-selection moves as one contiguous block.
@@ -175,7 +177,7 @@ struct FileListView: View {
                 ))
             } label: {
                 HStack(spacing: 3) {
-                    Text(SortValueFormatter.columnTitle(for: model.sortOption.field))
+                    Text(SortValueFormatter.columnTitle(for: model.sortOption.field, language: language))
                     Image(systemName: model.sortOption.ascending ? "chevron.up" : "chevron.down")
                         .font(.system(size: 8, weight: .bold))
                 }
@@ -219,7 +221,12 @@ struct FileListView: View {
         Divider()
         Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
         Divider()
-        Button("\(ids.count) 件をリストから除外") {
+        Button(L10n.format(
+            "list.removeItems",
+            defaultValue: "Remove %d Item(s) from List",
+            arguments: [ids.count],
+            language: language
+        )) {
             model.selection = ids
             model.removeSelected()
         }
@@ -306,6 +313,8 @@ private struct ListRowDropDelegate: DropDelegate {
 }
 
 struct FileRow: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     let item: RenameItem
     let preview: RenamePreview?
     var sortField: SortField = .fileName
@@ -392,7 +401,12 @@ struct FileRow: View {
                         ? "同一または類似している画像を確認"
                         : "類似している可能性のある画像を確認"
                 )
-                .accessibilityLabel("\(similarityBadge.count)件の重複候補")
+                .accessibilityLabel(L10n.format(
+                    "similarity.badge.accessibility",
+                    defaultValue: "%d possible duplicate(s)",
+                    arguments: [similarityBadge.count],
+                    language: language
+                ))
             } else {
                 Color.clear
             }
@@ -410,7 +424,12 @@ struct FileRow: View {
             } else {
                 Text("—")
                     .foregroundStyle(.quaternary)
-                    .help("このファイルには\(SortValueFormatter.columnTitle(for: sortField))がありません")
+                    .help(L10n.format(
+                        "sort.valueMissing",
+                        defaultValue: "No %@ for this file",
+                        arguments: [SortValueFormatter.columnTitle(for: sortField, language: language)],
+                        language: language
+                    ))
             }
         }
         .font(.system(.caption, design: .monospaced))
@@ -448,14 +467,23 @@ struct ValidationBadge: View {
     let item: RenameItem
     let preview: RenamePreview?
 
+    @EnvironmentObject private var preferences: AppPreferences
     @State private var isShowingDetail = false
 
     var body: some View {
         switch preview?.validation {
         case .error(let message):
-            badge(systemImage: "exclamationmark.octagon.fill", tint: Palette.error, message: message)
+            badge(
+                systemImage: "exclamationmark.octagon.fill",
+                tint: Palette.error,
+                message: L10n.string(message, language: preferences.resolvedLanguage)
+            )
         case .warning(let message):
-            badge(systemImage: "exclamationmark.triangle.fill", tint: Palette.warning, message: message)
+            badge(
+                systemImage: "exclamationmark.triangle.fill",
+                tint: Palette.warning,
+                message: L10n.string(message, language: preferences.resolvedLanguage)
+            )
         default:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(Palette.ok.opacity(0.8))
