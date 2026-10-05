@@ -4,50 +4,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import RenameKit
 
-/// Serial workers keep expensive synchronous RenameKit work off the main actor.
-/// Separate workers mean a slow destination scan never blocks generation of the
-/// newest names while the user keeps typing or arranging files.
-private actor PreviewGenerationWorker {
-    private let engine = RenameEngine()
-    private let validator = RenameValidator()
-
-    func generate(
-        items: [RenameItem],
-        rule: RenameRule,
-        jpegQuality: JPEGQualitySetting,
-        preservesJPEGAtMaximumQuality: Bool
-    ) throws -> [RenamePreview] {
-        try Task.checkCancellation()
-        let generated = engine.makePreviews(
-            items: items,
-            rule: rule,
-            jpegQuality: jpegQuality,
-            preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality
-        )
-        try Task.checkCancellation()
-        return validator.validate(generated, checkExistingFiles: false)
-    }
-}
-
-private actor DestinationValidationWorker {
-    private let validator = RenameValidator()
-
-    func validate(_ previews: [RenamePreview]) throws -> [RenamePreview] {
-        try Task.checkCancellation()
-        let validated = validator.validate(previews)
-        try Task.checkCancellation()
-        return validated
-    }
-}
-
-enum ViewMode: String, CaseIterable, Identifiable {
-    case list
-    case grid
-
-    var id: String { rawValue }
-    var systemImageName: String { self == .list ? "list.bullet" : "square.grid.2x2" }
-}
-
 /// The single piece of app state. Owns the item order, the naming rule and the
 /// history; delegates every non-trivial decision to RenameKit.
 ///
@@ -176,81 +132,6 @@ final class AppModel: ObservableObject {
     /// Undo can still reach the files after a relaunch.
     private var folderAccess: [String: FolderAccess] = [:]
     private var pendingFolderAccessDirectory: URL?
-
-    struct AlertMessage: Identifiable {
-        enum Action {
-            case addWorkingFolder
-        }
-
-        let id = UUID()
-        var title: String
-        var detail: String
-        var action: Action?
-        var actionTitle: String?
-    }
-
-    struct ResultMessage: Identifiable {
-        let id = UUID()
-        var text: String
-        var offersUndo: Bool = false
-    }
-
-    struct RenameConfirmation: Identifiable {
-        let id = UUID()
-        let rows: [RenameConfirmationRow]
-        let changedItemCount: Int
-        let renamedFileCount: Int
-        let processedImageCount: Int
-        let warningCount: Int
-        let originalImagesDirectory: URL?
-
-        var replacesOriginalImages: Bool {
-            processedImageCount > 0 && originalImagesDirectory == nil
-        }
-    }
-
-    struct RenameConfirmationRow: Identifiable {
-        let id = UUID()
-        let sourceName: String
-        let destinationName: String
-        let sourceDirectoryPath: String
-        let changesName: Bool
-        let imageChange: String?
-        let warning: String?
-    }
-
-    struct TrashConfirmation: Identifiable {
-        let id = UUID()
-        let itemIDs: Set<UUID>
-    }
-
-    /// One cluster of pictures that resemble each other.
-    ///
-    /// Similarity is transitive in practice — if A matches B and B matches C, the
-    /// three are one burst, not two separate pairs — so groups are the connected
-    /// components of the match graph rather than raw pairs. Reviewing a burst of five
-    /// as one group is the difference between one decision and ten.
-    struct DuplicateGroup: Identifiable {
-        let id: UUID
-        let items: [RenameItem]
-        let containsExactMatch: Bool
-
-        var count: Int { items.count }
-
-        /// All-exact groups are safe to sweep; mixed ones need looking at.
-        var isEntirelyExact: Bool { containsExactMatch }
-    }
-
-    struct SimilarityReview: Identifiable {
-        let id = UUID()
-        let groups: [DuplicateGroup]
-        let focusedGroupID: UUID
-    }
-
-    struct SimilarityBadge {
-        let count: Int
-        let containsExactMatch: Bool
-    }
 
     init(
         presetStore: RulePresetStore = RulePresetStore(),
@@ -408,102 +289,6 @@ final class AppModel: ObservableObject {
     }
 
     func preview(for item: RenameItem) -> RenamePreview? { previewsByItemID[item.id] }
-
-    func similarityBadge(for itemID: UUID) -> SimilarityBadge? {
-        guard let matches = similarImageMatchesByItemID[itemID], !matches.isEmpty else { return nil }
-        return SimilarityBadge(
-            count: matches.count,
-            containsExactMatch: matches.contains { $0.kind == .exact }
-        )
-    }
-
-    /// Connected components of the match graph, in list order.
-    ///
-    /// Rebuilt on demand rather than cached: the input is at most a few hundred
-    /// items, and a stale group list would be far worse than a recomputation.
-    var duplicateGroups: [DuplicateGroup] {
-        guard !similarImageMatchesByItemID.isEmpty else { return [] }
-
-        var parent: [UUID: UUID] = [:]
-        func find(_ id: UUID) -> UUID {
-            var root = id
-            while let next = parent[root], next != root { root = next }
-            // Path compression keeps repeated lookups flat.
-            var cursor = id
-            while let next = parent[cursor], next != root {
-                parent[cursor] = root
-                cursor = next
-            }
-            return root
-        }
-        func union(_ lhs: UUID, _ rhs: UUID) {
-            let left = find(lhs)
-            let right = find(rhs)
-            guard left != right else { return }
-            parent[left] = right
-        }
-
-        for (itemID, matches) in similarImageMatchesByItemID {
-            parent[itemID] = parent[itemID] ?? itemID
-            for match in matches {
-                parent[match.otherItemID] = parent[match.otherItemID] ?? match.otherItemID
-                union(itemID, match.otherItemID)
-            }
-        }
-
-        // Walking `items` rather than the dictionary keeps groups, and the pictures
-        // inside them, in the order the user already sees.
-        var membersByRoot: [UUID: [RenameItem]] = [:]
-        var rootOrder: [UUID] = []
-        for item in items where parent[item.id] != nil {
-            let root = find(item.id)
-            if membersByRoot[root] == nil { rootOrder.append(root) }
-            membersByRoot[root, default: []].append(item)
-        }
-
-        return rootOrder.compactMap { root in
-            guard let members = membersByRoot[root], members.count > 1 else { return nil }
-            let memberIDs = Set(members.map(\.id))
-            let containsExact = members.contains { item in
-                (similarImageMatchesByItemID[item.id] ?? []).contains {
-                    $0.kind == .exact && memberIDs.contains($0.otherItemID)
-                }
-            }
-            return DuplicateGroup(id: root, items: members, containsExactMatch: containsExact)
-        }
-    }
-
-    var duplicateGroupCount: Int { duplicateGroups.count }
-
-    /// True when at least one group is byte-identical rather than merely alike.
-    /// Drives the colour of the aggregate badge: the stronger verdict wins.
-    var hasExactDuplicates: Bool {
-        similarImageMatchesByItemID.values.contains { matches in
-            matches.contains { $0.kind == .exact }
-        }
-    }
-
-    func showSimilarImages(for itemID: UUID) {
-        let groups = duplicateGroups
-        guard let focused = groups.first(where: { group in
-            group.items.contains { $0.id == itemID }
-        }) else { return }
-        similarityReview = SimilarityReview(groups: groups, focusedGroupID: focused.id)
-    }
-
-    func showFirstSimilarImageGroup() {
-        let groups = duplicateGroups
-        guard let first = groups.first else { return }
-        similarityReview = SimilarityReview(groups: groups, focusedGroupID: first.id)
-    }
-
-    /// One row's validation problem, flattened for the status-bar popover.
-    struct Issue: Identifiable, Hashable {
-        let id: UUID
-        let name: String
-        let message: String
-        let isError: Bool
-    }
 
     func issues(errorsOnly: Bool) -> [Issue] {
         items.compactMap { item in
@@ -2093,32 +1878,6 @@ final class AppModel: ObservableObject {
                 detail: describe(error)
             )
         }
-    }
-
-    // MARK: - Finder integration
-
-    func revealInFinder(ids: Set<UUID>) {
-        let urls = items.filter { ids.contains($0.id) }.flatMap(\.allURLs)
-        guard !urls.isEmpty else { return }
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
-    }
-
-    func openDirectoryInFinder(_ directory: URL) {
-        NSWorkspace.shared.open(directory)
-    }
-
-    func copyDirectoryPath(_ directory: URL) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(directory.path, forType: .string)
-    }
-
-    func quickLookSelection() {
-        if quickLookURL != nil {
-            quickLookURL = nil
-            return
-        }
-        guard let id = selection.first, let item = items.first(where: { $0.id == id }) else { return }
-        quickLookURL = item.originalURL
     }
 
     // MARK: - Busy state

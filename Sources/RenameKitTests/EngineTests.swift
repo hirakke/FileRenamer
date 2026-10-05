@@ -83,8 +83,12 @@ private func untranslatedRuntimeAppModelCopy() throws -> [String] {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
-    let appModelURL = repositoryURL.appendingPathComponent("Sources/FileRenamer/AppModel.swift")
-    let source = try String(contentsOf: appModelURL, encoding: .utf8)
+    let appDirectory = repositoryURL.appendingPathComponent("Sources/FileRenamer")
+    let appModelFiles = try FileManager.default.contentsOfDirectory(atPath: appDirectory.path)
+        .filter { $0.hasPrefix("AppModel") && $0.hasSuffix(".swift") }
+    let source = try appModelFiles
+        .map { try String(contentsOf: appDirectory.appendingPathComponent($0), encoding: .utf8) }
+        .joined(separator: "\n")
     let japanese = try NSRegularExpression(pattern: "[ぁ-んァ-ヶ一-龯]")
     let runtimeMarkers = ["beginBusy(", "AlertMessage(", "ResultMessage(", "panel.prompt", "panel.message"]
 
