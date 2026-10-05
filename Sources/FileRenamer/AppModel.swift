@@ -73,6 +73,9 @@ final class AppModel: ObservableObject {
     @Published var isImageResizeOriginalChoicePresented = false
     @Published var isOriginalImagesFolderNamePresented = false
     @Published var originalImagesFolderName = ""
+    @Published private(set) var renameDestination: RenameDestination = .inPlace
+    @Published var isNewDestinationFolderNamePresented = false
+    @Published var newDestinationFolderName = ""
     @Published var jpegQualitySetting: JPEGQualitySetting {
         didSet {
             guard jpegQualitySetting != oldValue else { return }
@@ -176,23 +179,23 @@ final class AppModel: ObservableObject {
     var canUndoOrderChange: Bool { !isBusy && !orderUndoStack.isEmpty }
     var canRedoOrderChange: Bool { !isBusy && !orderRedoStack.isEmpty }
 
-    private var displayLanguage: ResolvedAppLanguage {
+    var displayLanguage: ResolvedAppLanguage {
         preferences.resolvedLanguage
     }
 
-    private func localized(_ key: String, defaultValue: String) -> String {
+    func localized(_ key: String, defaultValue: String) -> String {
         L10n.string(key, defaultValue: defaultValue, language: displayLanguage)
     }
 
-    private func localized(_ key: String, defaultValue: String, arguments: [CVarArg]) -> String {
+    func localized(_ key: String, defaultValue: String, arguments: [CVarArg]) -> String {
         L10n.format(key, defaultValue: defaultValue, arguments: arguments, language: displayLanguage)
     }
 
-    private func localized(_ message: LocalizableMessage) -> String {
+    func localized(_ message: LocalizableMessage) -> String {
         L10n.string(message, language: displayLanguage)
     }
 
-    private func describe(_ error: Error) -> String {
+    func describe(_ error: Error) -> String {
         if let kept = error as? RenamesKeptAfterFailure {
             return [
                 describe(kept.failure),
@@ -603,7 +606,7 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func registerFolderAccess(url: URL, bookmark: Data, isActive: Bool) {
+    func registerFolderAccess(url: URL, bookmark: Data, isActive: Bool) {
         let normalized = url.standardizedFileURL
         let key = normalized.path
         if let old = folderAccess[key], old.isActivelyAccessed {
@@ -616,7 +619,7 @@ final class AppModel: ObservableObject {
         )
     }
 
-    private func hasFolderAccess(covering directory: URL) -> Bool {
+    func hasFolderAccess(covering directory: URL) -> Bool {
         folderAccess.values.contains { access in
             access.url.standardizedFileURL == directory.standardizedFileURL
                 || isAncestor(access.url, of: directory)
@@ -793,8 +796,15 @@ final class AppModel: ObservableObject {
         importedFolderRoots = []
         workingDirectories = []
         selection.removeAll()
+        renameDestination = .inPlace
         refreshPreviews()
         scheduleSimilarityScan()
+    }
+
+    /// Single write point for the destination: the property stays `private(set)`
+    /// while the folder-choice flows in `AppModel+Destination` can change it.
+    func setRenameDestination(_ destination: RenameDestination) {
+        renameDestination = destination
     }
 
     func selectAll() {
@@ -1051,6 +1061,7 @@ final class AppModel: ObservableObject {
         let revision = previewRevision
         let itemSnapshot = items
         let ruleSnapshot = rule
+        let destinationSnapshot = renameDestination.directory
         guard !itemSnapshot.isEmpty else {
             applyPreviews([])
             isValidatingDestinations = false
@@ -1065,7 +1076,8 @@ final class AppModel: ObservableObject {
                     items: itemSnapshot,
                     rule: ruleSnapshot,
                     jpegQuality: self.jpegQualitySetting,
-                    preservesJPEGAtMaximumQuality: self.preferences.preservesJPEGAtMaximumQuality
+                    preservesJPEGAtMaximumQuality: self.preferences.preservesJPEGAtMaximumQuality,
+                    destinationDirectory: destinationSnapshot
                 )
                 guard !Task.isCancelled, self.previewRevision == revision else { return }
                 self.applyPreviews(structural)
@@ -1482,7 +1494,9 @@ final class AppModel: ObservableObject {
             warningCount: changedItemIDs.reduce(into: 0) { count, itemID in
                 if previewsByItemID[itemID]?.validation.isWarning == true { count += 1 }
             },
-            originalImagesDirectory: originalImagesDirectory
+            originalImagesDirectory: originalImagesDirectory,
+            destinationDirectory: renameDestination.directory,
+            actionTitle: renameActionTitle
         )
     }
 
@@ -1555,6 +1569,10 @@ final class AppModel: ObservableObject {
             }
             .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
         if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
+        // A folder to be created cannot grant access itself; its parent's grant covers it.
+        if case .newFolder(let url) = renameDestination {
+            changedDirectories.append(url.deletingLastPathComponent())
+        }
         guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
         guard beginBusy(localized("busy.changingFiles", defaultValue: "Changing Files…"), critical: true) else { return }
         busyTask = Task { [weak self] in
@@ -1574,12 +1592,14 @@ final class AppModel: ObservableObject {
         let ruleSnapshot = rule
         let structural: [RenamePreview]
         let validated: [RenamePreview]
+        let destinationDirectory = renameDestination.directory
         do {
             structural = try await previewWorker.generate(
                 items: itemSnapshot,
                 rule: ruleSnapshot,
                 jpegQuality: jpegQualitySetting,
-                preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality
+                preservesJPEGAtMaximumQuality: preferences.preservesJPEGAtMaximumQuality,
+                destinationDirectory: destinationDirectory
             )
             validated = try await destinationWorker.validate(structural)
         } catch {
@@ -1603,10 +1623,15 @@ final class AppModel: ObservableObject {
         }
 
         let snapshot = previews
-        let accessBookmarks = bookmarks(
-            covering: itemSnapshot.flatMap(\.allURLs).map { $0.deletingLastPathComponent() }
-                + [originalImagesDirectory].compactMap { $0 }
-        )
+        var coveredDirectories = itemSnapshot.flatMap(\.allURLs).map { $0.deletingLastPathComponent() }
+            + [originalImagesDirectory].compactMap { $0 }
+        if let destinationDirectory {
+            coveredDirectories.append(destinationDirectory)
+            if case .newFolder = renameDestination {
+                coveredDirectories.append(destinationDirectory.deletingLastPathComponent())
+            }
+        }
+        let accessBookmarks = bookmarks(covering: coveredDirectories)
         do {
             let hasMoves = snapshot.contains { !$0.effectiveOperations.isEmpty }
             var transaction: RenameTransaction
@@ -1664,22 +1689,32 @@ final class AppModel: ObservableObject {
             let discardedHistory = history.record(transaction)
             imageProcessor.removeBackups(for: discardedHistory)
             persistHistory()
+            // The items live in the destination now; a second rename must not
+            // move them there again.
+            renameDestination = .inPlace
             adoptRenamedURLs(from: transaction)
             progress = 1
-            resultMessage = ResultMessage(
-                text: imageRequests.isEmpty
-                    ? localized(
-                        "rename.completed",
-                        defaultValue: "Renamed %d file(s).",
-                        arguments: [transaction.fileCount]
-                    )
-                    : localized(
-                        "imageChange.completed",
-                        defaultValue: "Changed %d file(s).",
-                        arguments: [transaction.fileCount]
-                    ),
-                offersUndo: true
-            )
+            let completionText: String
+            if let destinationDirectory, imageRequests.isEmpty {
+                completionText = localized(
+                    "rename.movedToFolder",
+                    defaultValue: "Moved %d file(s) to “%@”.",
+                    arguments: [transaction.fileCount, destinationDirectory.lastPathComponent]
+                )
+            } else if imageRequests.isEmpty {
+                completionText = localized(
+                    "rename.completed",
+                    defaultValue: "Renamed %d file(s).",
+                    arguments: [transaction.fileCount]
+                )
+            } else {
+                completionText = localized(
+                    "imageChange.completed",
+                    defaultValue: "Changed %d file(s).",
+                    arguments: [transaction.fileCount]
+                )
+            }
+            resultMessage = ResultMessage(text: completionText, offersUndo: true)
         } catch {
             alertMessage = AlertMessage(
                 title: localized("rename.failed", defaultValue: "Couldn’t Make Changes"),
@@ -1830,7 +1865,11 @@ final class AppModel: ObservableObject {
     /// rolled back. Recording them keeps the rows truthful and lets Undo restore the
     /// original names later instead of leaving an untracked change behind.
     private func keepUndoableRenames(_ transaction: RenameTransaction) {
-        let renamesOnly = RenameTransaction(moves: transaction.moves, accessBookmarks: transaction.accessBookmarks)
+        let renamesOnly = RenameTransaction(
+            moves: transaction.moves,
+            accessBookmarks: transaction.accessBookmarks,
+            createdDirectories: transaction.createdDirectories
+        )
         // Backups of discarded redo entries are kept on purpose: after a failed
         // image step they may hold the only intact copy of an original.
         history.record(renamesOnly)

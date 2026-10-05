@@ -78,4 +78,27 @@ public extension Array where Element == RenamePreview {
     var warningCount: Int { filter { $0.validation.isWarning }.count }
     var errorCount: Int { filter { $0.validation.isError }.count }
     var changedCount: Int { filter { !$0.isUnchanged && !$0.validation.isError }.count }
+
+    /// Same names, but every file ends up in `directory`.
+    func relocated(to directory: URL) -> [RenamePreview] {
+        map { preview in
+            RenamePreview(
+                itemID: preview.itemID,
+                counterValue: preview.counterValue,
+                proposedBaseName: preview.proposedBaseName,
+                operations: preview.operations.map { operation in
+                    RenameOperation(
+                        source: operation.source,
+                        destination: directory.appendingPathComponent(
+                            operation.destination.lastPathComponent,
+                            isDirectory: false
+                        )
+                    )
+                },
+                requiresContentProcessing: preview.requiresContentProcessing,
+                generationWarnings: preview.generationWarnings,
+                validation: preview.validation
+            )
+        }
+    }
 }

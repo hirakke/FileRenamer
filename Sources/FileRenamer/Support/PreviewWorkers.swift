@@ -12,7 +12,8 @@ actor PreviewGenerationWorker {
         items: [RenameItem],
         rule: RenameRule,
         jpegQuality: JPEGQualitySetting,
-        preservesJPEGAtMaximumQuality: Bool
+        preservesJPEGAtMaximumQuality: Bool,
+        destinationDirectory: URL?
     ) throws -> [RenamePreview] {
         try Task.checkCancellation()
         let generated = engine.makePreviews(
@@ -22,7 +23,8 @@ actor PreviewGenerationWorker {
             preservesJPEGAtMaximumQuality: preservesJPEGAtMaximumQuality
         )
         try Task.checkCancellation()
-        return validator.validate(generated, checkExistingFiles: false)
+        let planned = destinationDirectory.map { generated.relocated(to: $0) } ?? generated
+        return validator.validate(planned, checkExistingFiles: false)
     }
 }
 

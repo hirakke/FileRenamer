@@ -42,6 +42,21 @@ struct RenameConfirmationView: View {
                 .font(.callout)
             }
 
+            if let destination = confirmation.destinationDirectory {
+                Label {
+                    Text(L10n.format(
+                        "confirmation.destinationFolder",
+                        defaultValue: "Files will be moved to “%@”.",
+                        arguments: [destination.lastPathComponent],
+                        language: language
+                    ))
+                } icon: {
+                    Image(systemName: "folder")
+                }
+                .font(.callout)
+                .help(destination.path)
+            }
+
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text("変更前")
@@ -81,7 +96,7 @@ struct RenameConfirmationView: View {
                 Spacer()
                 Button("キャンセル") { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("変更を実行") { confirm() }
+                Button(confirmation.actionTitle) { confirm() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }

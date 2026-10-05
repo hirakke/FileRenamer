@@ -80,18 +80,71 @@ struct StatusBar: View {
                     .buttonStyle(.link)
             }
 
-            Button {
-                model.rename()
-            } label: {
-                Text(renameButtonTitle)
-                    .frame(minWidth: 140)
+            if let destinationDirectory = model.renameDestination.directory {
+                HStack(spacing: 5) {
+                    Image(systemName: "folder")
+                    Text(destinationDirectory.lastPathComponent)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button {
+                        model.useInPlaceRename()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .font(.callout)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.quaternary.opacity(0.6), in: Capsule())
+                .frame(maxWidth: 180)
+                .help(destinationDirectory.path)
             }
-            .buttonStyle(.borderedProminent)
-            .keyboardShortcut(.return, modifiers: .command)
-            .disabled(!model.canRename)
-            .help(model.errorCount > 0
-                  ? L10n.string("status.fixErrorsHelp", defaultValue: "Resolve the errors to continue.", language: preferences.resolvedLanguage)
-                  : L10n.string("status.renameHelp", defaultValue: "Change file names, extensions, and image size.", language: preferences.resolvedLanguage))
+
+            // One accent pill: primary rename on the left, destination menu on the
+            // right, joined by a thin divider. A custom control, because SwiftUI
+            // menus can't draw as a `borderedProminent` segment.
+            HStack(spacing: 0) {
+                Button {
+                    model.rename()
+                } label: {
+                    Text(renameButtonTitle)
+                        .frame(minWidth: 140)
+                        .opacity(model.canRename ? 1 : 0.55)
+                }
+                .buttonStyle(SplitSegmentButtonStyle())
+                .keyboardShortcut(.return, modifiers: .command)
+                .disabled(!model.canRename)
+                .help(renameButtonHelp)
+
+                Rectangle()
+                    .fill(Color.white.opacity(0.35))
+                    .frame(width: 1, height: 14)
+
+                Menu {
+                    destinationMenu
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .tint(.white)
+                .disabled(model.isEmpty || model.isBusy)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .background(
+                Palette.accent.opacity(!model.canRename && (model.isEmpty || model.isBusy) ? 0.55 : 1),
+                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+            )
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -110,9 +163,99 @@ struct StatusBar: View {
     }
 
     private var renameButtonTitle: String {
-        model.changedCount > 0
-            ? L10n.format("action.renameCount", defaultValue: "Rename %lld Items", arguments: [model.changedCount], language: preferences.resolvedLanguage)
-            : L10n.string("action.rename", defaultValue: "Rename", language: preferences.resolvedLanguage)
+        model.renameActionTitle
+    }
+
+    private var renameButtonHelp: String {
+        if model.errorCount > 0 {
+            return L10n.string(
+                "status.fixErrorsHelp",
+                defaultValue: "Resolve the errors to continue.",
+                language: preferences.resolvedLanguage
+            )
+        }
+        if let directory = model.renameDestination.directory {
+            return L10n.format(
+                "status.moveHelp",
+                defaultValue: "Rename the files and move them into “%@”.",
+                arguments: [directory.lastPathComponent],
+                language: preferences.resolvedLanguage
+            )
+        }
+        return L10n.string(
+            "status.renameHelp",
+            defaultValue: "Change file names, extensions, and image size.",
+            language: preferences.resolvedLanguage
+        )
+    }
+
+    @ViewBuilder
+    private var destinationMenu: some View {
+        Button { model.useInPlaceRename() } label: {
+            HStack {
+                Image(systemName: "checkmark")
+                    .opacity(model.renameDestination == .inPlace ? 1 : 0)
+                Text(L10n.string(
+                    "menu.renameInPlace",
+                    defaultValue: "Rename in Place",
+                    language: preferences.resolvedLanguage
+                ))
+            }
+        }
+        Button { model.chooseExistingDestinationFolder() } label: {
+            HStack {
+                if case .existingFolder(let url) = model.renameDestination {
+                    Image(systemName: "checkmark")
+                    Text(L10n.format(
+                        "menu.moveToFolder",
+                        defaultValue: "Move to “%@”",
+                        arguments: [url.lastPathComponent],
+                        language: preferences.resolvedLanguage
+                    ))
+                } else {
+                    Image(systemName: "checkmark").opacity(0)
+                    Text(L10n.string(
+                        "menu.moveExisting",
+                        defaultValue: "Move to Existing Folder…",
+                        language: preferences.resolvedLanguage
+                    ))
+                }
+            }
+        }
+        Button { model.chooseNewDestinationFolder() } label: {
+            HStack {
+                if case .newFolder(let url) = model.renameDestination {
+                    Image(systemName: "checkmark")
+                    Text(L10n.format(
+                        "menu.moveToFolder",
+                        defaultValue: "Move to “%@”",
+                        arguments: [url.lastPathComponent],
+                        language: preferences.resolvedLanguage
+                    ))
+                } else {
+                    Image(systemName: "checkmark").opacity(0)
+                    Text(L10n.string(
+                        "menu.moveNew",
+                        defaultValue: "Move to New Folder…",
+                        language: preferences.resolvedLanguage
+                    ))
+                }
+            }
+        }
+    }
+}
+
+/// The left half of the split rename control: plain hit-area over the shared
+/// accent background, darkening on press like the prominent button does.
+private struct SplitSegmentButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+            .overlay {
+                Color.black.opacity(configuration.isPressed ? 0.15 : 0)
+            }
     }
 }
 

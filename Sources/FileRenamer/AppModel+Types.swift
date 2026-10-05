@@ -36,6 +36,8 @@ extension AppModel {
         let processedImageCount: Int
         let warningCount: Int
         let originalImagesDirectory: URL?
+        let destinationDirectory: URL?
+        let actionTitle: String
 
         var replacesOriginalImages: Bool {
             processedImageCount > 0 && originalImagesDirectory == nil
@@ -55,6 +57,21 @@ extension AppModel {
     struct TrashConfirmation: Identifiable {
         let id = UUID()
         let itemIDs: Set<UUID>
+    }
+
+    /// Where the files end up after a rename: next to themselves, or gathered
+    /// into one folder. `newFolder` is the folder to be created at rename time.
+    enum RenameDestination: Equatable {
+        case inPlace
+        case existingFolder(URL)
+        case newFolder(URL)
+
+        var directory: URL? {
+            switch self {
+            case .inPlace: return nil
+            case .existingFolder(let url), .newFolder(let url): return url
+            }
+        }
     }
 
     /// One cluster of pictures that resemble each other.
