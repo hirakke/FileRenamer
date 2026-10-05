@@ -137,6 +137,7 @@ struct StatusBar: View {
                 .fixedSize()
                 .tint(.white)
                 .disabled(model.isEmpty || model.isBusy)
+                .tutorialTip(RenameOrGatherTip(language: preferences.resolvedLanguage), step: 3, arrowEdge: .bottom)
             }
             .fixedSize(horizontal: false, vertical: true)
             .background(

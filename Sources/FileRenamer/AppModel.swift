@@ -3,6 +3,7 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import RenameKit
+import TipKit
 
 /// The single piece of app state. Owns the item order, the naming rule and the
 /// history; delegates every non-trivial decision to RenameKit.
@@ -13,7 +14,9 @@ import RenameKit
 final class AppModel: ObservableObject {
     // MARK: Published state
 
-    @Published private(set) var items: [RenameItem] = []
+    @Published private(set) var items: [RenameItem] = [] {
+        didSet { TutorialProgress.hasFiles = !items.isEmpty }
+    }
     @Published private(set) var importedFolderRoots: [URL] = []
     @Published private(set) var workingDirectories: [URL] = []
     private(set) var previews: [RenamePreview] = []
@@ -369,6 +372,10 @@ final class AppModel: ObservableObject {
         }
 
         items = ItemSorter.reindexed(items + fresh)
+        if !fresh.isEmpty {
+            AddFilesTip(language: displayLanguage).invalidate(reason: .actionPerformed)
+            TutorialProgress.advance(from: 0)
+        }
         invalidateOrderHistory()
         if !result.items.isEmpty {
             recordImportedFolderRoots(folderRoots)
@@ -1142,6 +1149,7 @@ final class AppModel: ObservableObject {
     /// Drops a block into the live rule at the caret.
     func insertBlock(_ token: RenameToken, atRun runID: UUID?, caret: Int) {
         rule = rule.inserting(token, atRun: runID, caret: caret)
+        TutorialProgress.advance(from: 2)
     }
 
     /// Saving the same name again overwrites that preset instead of creating a

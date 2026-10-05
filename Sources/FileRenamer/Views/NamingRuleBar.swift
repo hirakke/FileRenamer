@@ -5,6 +5,7 @@ import RenameKit
 /// a part of it has to vary per file.
 struct NamingRuleBar: View {
     @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var preferences: AppPreferences
     @State private var editingContext = RuleEditingContext()
 
     var body: some View {
@@ -14,6 +15,7 @@ struct NamingRuleBar: View {
                     .font(.headline)
                 PresetMenu()
                 BlockInsertMenu(insert: insertBlock)
+                    .tutorialTip(InsertBlocksTip(language: preferences.resolvedLanguage), step: 2, arrowEdge: .top)
                 ImageOptionsControl()
                 Spacer()
                 samplePreview
@@ -25,6 +27,7 @@ struct NamingRuleBar: View {
                 editorPresentation: .popover,
                 onEditingChanged: { model.isRuleTextEditing = $0 }
             )
+            .tutorialTip(TypeNameTip(language: preferences.resolvedLanguage), step: 1, arrowEdge: .top)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

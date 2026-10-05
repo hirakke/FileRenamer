@@ -3,6 +3,7 @@ import AppKit
 import Combine
 import RenameKit
 import Sparkle
+import TipKit
 
 @MainActor
 final class AppPreferences: ObservableObject {
@@ -371,6 +372,10 @@ struct FileRenamerApp: App {
     @StateObject private var updateController: UpdateController
 
     init() {
+        try? Tips.configure([
+            .displayFrequency(.immediate),
+            .datastoreLocation(.applicationDefault)
+        ])
         let preferences = AppPreferences()
         _preferences = StateObject(wrappedValue: preferences)
         _workspace = StateObject(wrappedValue: WorkspaceModel(preferences: preferences))
@@ -476,6 +481,12 @@ struct FileRenamerApp: App {
                     workspace.activeModel.toggleLock(ids: workspace.activeModel.selection)
                 }
                     .keyboardShortcut("l", modifiers: .command)
+            }
+
+            CommandGroup(after: .help) {
+                Button(localized("menu.showTutorial", defaultValue: "Show Tutorial Again")) {
+                    TutorialProgress.restart()
+                }
             }
         }
 
