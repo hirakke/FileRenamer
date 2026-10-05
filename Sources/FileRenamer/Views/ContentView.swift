@@ -449,20 +449,32 @@ struct EmptyStateView: View {
 
 private extension View {
     func operationPopupSurface() -> some View {
-        padding(24)
+        modifier(OperationPopupSurface())
+    }
+}
+
+private struct OperationPopupSurface: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let isDark = colorScheme == .dark
+        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+        content
+            .padding(24)
             .background {
-                let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
-                shape.fill(.regularMaterial)
-                shape.fill(Color(nsColor: .controlBackgroundColor).opacity(0.84))
-                LinearGradient(
-                    colors: [Color.white.opacity(0.35), Color.clear],
-                    startPoint: .top,
-                    endPoint: .center
-                )
+                ZStack {
+                    shape.fill(.regularMaterial)
+                    shape.fill(Color(nsColor: .controlBackgroundColor).opacity(0.84))
+                    LinearGradient(
+                        colors: [Color.white.opacity(isDark ? 0.08 : 0.35), Color.clear],
+                        startPoint: .top,
+                        endPoint: .center
+                    )
+                }
                 .clipShape(shape)
+                .compositingGroup()
+                .shadow(color: .white.opacity(isDark ? 0.10 : 0.42), radius: 1, y: -1)
+                .shadow(color: .black.opacity(isDark ? 0.45 : 0.18), radius: 18, y: 8)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .shadow(color: .white.opacity(0.42), radius: 1, y: -1)
-            .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
     }
 }
