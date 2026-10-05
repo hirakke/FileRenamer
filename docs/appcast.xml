@@ -3,20 +3,24 @@
     <channel>
         <title>FileRenamer</title>
         <item>
-            <title>1.1.4</title>
-            <pubDate>Sat, 22 Aug 2026 18:27:10 +0900</pubDate>
+            <title>1.2.0</title>
+            <pubDate>Mon, 05 Oct 2026 23:33:45 +0900</pubDate>
             <link>https://hirakke.github.io/FileRenamer/</link>
             <sparkle:fullReleaseNotesLink>https://hirakke.github.io/FileRenamer/release-notes.html</sparkle:fullReleaseNotesLink>
-            <sparkle:version>10</sparkle:version>
-            <sparkle:shortVersionString>1.1.4</sparkle:shortVersionString>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.1.4
+            <description sparkle:format="markdown"><![CDATA[# FileRenamer 1.2.0
 
-- 表示言語を日本語・English・システム設定から選べるようにしました。システム設定では、日本語以外の言語を英語で表示します。
-- メニュー、表示設定、画像設定、JPEG品質、処理状況を英語表示に対応しました。
-- 英語版のREADMEを追加しました。
+- 複数のフォルダから追加したファイルを、名前の変更と同時に既存のフォルダまたは新しいフォルダへまとめて移動できるようになりました。実行ボタン右側の ▾ から選べます。
+- 移動先で名前が重なるファイルは、実行前にエラーとして表示します。移動は「元に戻す」で元の場所へ戻せます。
+- 実行ボタンの表示を「名前を変更」「名前と画像を変更」「移動」など、実行内容がわかる表現にしました。
+- ダークモードで命名規則バーなどの文字がにじんで見える問題を修正しました。
+- エラーや確認メッセージの英語表示を完成させました。
+- 画像処理などが途中で失敗し、元に戻す処理まで失敗した場合も、変更内容を履歴に残して「元に戻す」で戻せるようにしました。
+- 改行やタブなど、ファイル名に使えない文字が入らないようにしました。
 ]]></description>
-            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.1.4/FileRenamer-1.1.4.dmg" length="6654184" type="application/octet-stream" sparkle:edSignature="fOePQiqQbzM/EN6muRoje8n8Tc0MX6WLjMf3excFFT1cUA8YWh4aRjdTov7VWsCXDEuWZu7FwpLfVIKQWbwvAQ=="/>
+            <enclosure url="https://github.com/hirakke/FileRenamer/releases/download/v1.2.0/FileRenamer-1.2.0.dmg" length="6847537" type="application/octet-stream" sparkle:edSignature="oirTQaJSWjep0gW2Qfvgy/cCDFbdW740RN3h1lOGxOKhU75JWGqIyqb3od1yFKsnZdtpm7BD35qPWoufAp1WDg=="/>
         </item>
     </channel>
 </rss>
