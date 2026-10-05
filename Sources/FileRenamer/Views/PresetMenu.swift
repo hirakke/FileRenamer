@@ -40,7 +40,8 @@ struct PresetMenu: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "square.stack.3d.up")
-                Text(model.selectedPresetName ?? "カスタム")
+                Text(model.selectedPresetName
+                     ?? L10n.string("カスタム", defaultValue: "Custom", language: preferences.resolvedLanguage))
                     .lineLimit(1)
             }
         }
@@ -130,7 +131,14 @@ struct ManagePresetsSheet: View {
                 presetPendingDeletion = nil
             }
         } message: {
-            Text(presetPendingDeletion.map { "「\($0.name)」は元に戻せません。" } ?? "")
+            Text(presetPendingDeletion.map {
+                L10n.format(
+                    "preset.delete.irreversible",
+                    defaultValue: "“%@” can’t be restored.",
+                    arguments: [$0.name],
+                    language: preferences.resolvedLanguage
+                )
+            } ?? "")
         }
     }
 
@@ -283,7 +291,7 @@ struct ManagePresetsSheet: View {
         if let item = model.items.first {
             return RenameEngine().makePreviews(items: [item], rule: rule).first?.proposedName ?? "—"
         }
-        return rule.tokens.map(\.summary).joined()
+        return rule.tokens.map { $0.localizedSummary(in: preferences.resolvedLanguage) }.joined()
     }
 
     private var canCommit: Bool {
@@ -329,7 +337,7 @@ struct ManagePresetsSheet: View {
 
     /// "マイプリセット", "マイプリセット 2", … so the field is never empty.
     private func suggestedName() -> String {
-        let base = "マイプリセット"
+        let base = L10n.string("preset.suggestedName", defaultValue: "My Preset", language: preferences.resolvedLanguage)
         guard model.userPresets.contains(where: { $0.name == base }) else { return base }
         var index = 2
         while model.userPresets.contains(where: { $0.name == "\(base) \(index)" }) { index += 1 }

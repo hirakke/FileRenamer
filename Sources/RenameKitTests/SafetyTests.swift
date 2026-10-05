@@ -110,6 +110,44 @@ func runValidatorTests() async {
             .validate([makePreview(source: "a.jpg", destination: "\(long).jpg")])
         try expect(validated[0].validation.isError)
     }
+
+    await runner.test("ドットだけの名前は空とは別の理由でエラー") {
+        let checker = StubExistenceChecker(existing: [])
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: ".."))])
+        let dots = RenameValidator(existenceChecker: checker)
+            .validate(RenameEngine().makePreviews(items: [item], rule: rule))
+        try expectEqual(dots[0].proposedBaseName, "..")
+        try expectEqual(dots[0].validation.message?.key, "validation.dotsOnlyName")
+        let empty = RenameValidator(existenceChecker: checker).validate(
+            RenameEngine().makePreviews(items: [item], rule: RenameRule(tokens: [.text(TextConfiguration(value: ""))]))
+        )
+        try expectEqual(empty[0].validation.message?.key, "validation.emptyName")
+    }
+
+    await runner.test("改行やタブなどの制御文字は置換され、名前の前後からは取り除かれる") {
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: "\nEvent\tDay\u{7F}1\r\n"))])
+        let preview = RenameEngine().makePreviews(items: [item], rule: rule)[0]
+        try expectEqual(preview.proposedBaseName, "Event-Day-1")
+        let validated = RenameValidator(existenceChecker: StubExistenceChecker(existing: [])).validate([preview])
+        try expect(!validated.hasErrors)
+    }
+
+    await runner.test("置換しない設定では制御文字をエラーにする") {
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: "Event\nDay"))])
+        let engine = RenameEngine(options: RenameOptions(sanitizeIllegalCharacters: false))
+        let validated = RenameValidator(existenceChecker: StubExistenceChecker(existing: []))
+            .validate(engine.makePreviews(items: [item], rule: rule))
+        try expectEqual(validated[0].validation.message?.key, "validation.illegalCharacters")
+    }
+
+    await runner.test("絵文字の結合文字（ZWJ）は制御文字として扱わない") {
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"
+        try expect(!FileNameSanitizer.containsIllegalCharacters(family))
+        try expectEqual(FileNameSanitizer.sanitize("Trip_\(family)"), "Trip_\(family)")
+    }
 }
 
 @MainActor
@@ -678,6 +716,39 @@ func runExecutorTests() async {
         }
     }
 
+    await runner.test("変更画像を戻せなかった場合はバックアップを消さずに知らせる") {
+        try await withSandbox { sandbox in
+            let backupRoot = sandbox.appendingPathComponent("restore-failure-backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 16, height: 8, detailed: true)
+            let edited = sandbox.appendingPathComponent("edited.png")
+            try originalData.write(to: edited)
+            let configuration = ImageEditConfiguration(outputFormat: .jpeg, maxLongEdge: nil, jpegCompressionQuality: 0.95)
+            let requests = [
+                ImageEditRequest(url: edited, configuration: configuration),
+                ImageEditRequest(url: sandbox.appendingPathComponent("missing.png"), configuration: configuration)
+            ]
+            let transactionID = UUID()
+            let processor = ImageProcessor(
+                fileManager: BackupReadFailingFileManager(backupRoot: backupRoot),
+                backupRootURL: backupRoot
+            )
+
+            var thrown: Error?
+            do {
+                _ = try await processor.apply(requests: requests, transactionID: transactionID)
+            } catch {
+                thrown = error
+            }
+            guard case .rollbackIncomplete(let directory, _)? = thrown as? ImageProcessingError else {
+                throw ExpectationFailure(message: "expected rollbackIncomplete, got \(String(describing: thrown))", file: #fileID, line: #line)
+            }
+            try expectEqual(directory.lastPathComponent, transactionID.uuidString)
+            let backups = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+            try expectEqual(backups.count, 1)
+            try expectEqual(try Data(contentsOf: directory.appendingPathComponent(backups[0])), originalData)
+        }
+    }
+
     await runner.test("キャンセル時は変更と原本保存フォルダを残さない") {
         try await withSandbox { sandbox in
             let source = sandbox.appendingPathComponent("cancel.png")
@@ -935,6 +1006,16 @@ func runExecutorTests() async {
         try expect(history.canUndo)
     }
 
+    await runner.test("やり直し後もUndo履歴の上限を超えない") {
+        let older = RenameTransaction(moves: [])
+        let newer = RenameTransaction(moves: [])
+        let redone = RenameTransaction(moves: [])
+        var history = RenameHistory(undoStack: [older, newer], redoStack: [redone], limit: 2)
+        let discarded = history.finishRedo()
+        try expectEqual(discarded.map(\.id), [older.id])
+        try expectEqual(history.undoStack.map(\.id), [newer.id, redone.id])
+    }
+
     await runner.test("Undo履歴を再起動後も読み戻せる") {
         try await withSandbox { sandbox in
             let store = RenameHistoryStore(fileURL: sandbox.appendingPathComponent("history.json"))
@@ -953,6 +1034,190 @@ func runExecutorTests() async {
             try expectEqual(loaded.lastTransaction?.moves, transaction.moves)
             try expectEqual(loaded.lastTransaction?.accessBookmarks, transaction.accessBookmarks)
         }
+    }
+
+    runner.suite("移動先フォルダ — 1つのフォルダへの集約")
+
+    await runner.test("relocated(to:) は名前を保ったまま保存先だけ変える") {
+        let destination = folder.appendingPathComponent("merged", isDirectory: true)
+        let preview = makePreview(source: "a.jpg", destination: "Event_001.jpg", in: folder)
+        let moved = [preview].relocated(to: destination)
+        try expectEqual(moved[0].proposedName, "Event_001.jpg")
+        try expectEqual(moved[0].sourceURL, preview.sourceURL)
+        try expectEqual(moved[0].destinationURL, destination.appendingPathComponent("Event_001.jpg"))
+        try expectEqual(moved[0].counterValue, preview.counterValue)
+        try expectEqual(moved[0].requiresContentProcessing, preview.requiresContentProcessing)
+    }
+
+    await runner.test("別フォルダの同名ファイルは集約先で重複エラーになる") {
+        let folderA = folder.appendingPathComponent("a", isDirectory: true)
+        let folderB = folder.appendingPathComponent("b", isDirectory: true)
+        let previews = [
+            makePreview(source: "x.jpg", destination: "Same.jpg", in: folderA),
+            makePreview(source: "y.jpg", destination: "Same.jpg", in: folderB)
+        ]
+        let separate = RenameValidator(existenceChecker: StubExistenceChecker(existing: []))
+            .validate(previews)
+        try expect(!separate.hasErrors)
+        let merged = RenameValidator(existenceChecker: StubExistenceChecker(existing: []))
+            .validate(previews.relocated(to: folder.appendingPathComponent("merged", isDirectory: true)))
+        try expect(merged.hasErrors)
+        try expectEqual(merged[0].validation.message?.key, "validation.duplicateDestination")
+    }
+
+    await runner.test("集約先に同名ファイルがあると既存衝突エラーになる") {
+        let destination = folder.appendingPathComponent("merged", isDirectory: true)
+        let existing = destination.appendingPathComponent("Taken.jpg")
+        let checker = StubExistenceChecker(existing: [existing.standardizedFileURL.path])
+        let previews = [
+            makePreview(source: "a.jpg", destination: "Taken.jpg", in: folder)
+        ].relocated(to: destination)
+        let validated = RenameValidator(existenceChecker: checker).validate(previews)
+        try expect(validated[0].validation.isError)
+        try expectEqual(validated[0].validation.message?.key, "validation.destinationExists")
+    }
+
+    func movePreview(source: URL, destination: URL) -> RenamePreview {
+        RenamePreview(
+            itemID: UUID(),
+            counterValue: nil,
+            proposedBaseName: destination.deletingPathExtension().lastPathComponent,
+            operations: [RenameOperation(source: source, destination: destination)]
+        )
+    }
+
+    await runner.test("別フォルダのファイルを既存フォルダへ移動してUndoで戻る") {
+        try await withSandbox { sandbox in
+            let folderA = sandbox.appendingPathComponent("folder-a", isDirectory: true)
+            let folderB = sandbox.appendingPathComponent("folder-b", isDirectory: true)
+            let target = sandbox.appendingPathComponent("merged", isDirectory: true)
+            for directory in [folderA, folderB, target] {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+            }
+            try "1".write(to: folderA.appendingPathComponent("one.txt"), atomically: true, encoding: .utf8)
+            try "2".write(to: folderB.appendingPathComponent("two.txt"), atomically: true, encoding: .utf8)
+
+            let executor = RenameExecutor()
+            let transaction = try await executor.execute(previews: [
+                movePreview(
+                    source: folderA.appendingPathComponent("one.txt"),
+                    destination: target.appendingPathComponent("one.txt")
+                ),
+                movePreview(
+                    source: folderB.appendingPathComponent("two.txt"),
+                    destination: target.appendingPathComponent("two.txt")
+                )
+            ])
+            try expectEqual(try names(in: target), ["one.txt", "two.txt"])
+            try expectEqual(try names(in: folderA), [])
+            try expect(transaction.createdDirectories.isEmpty)
+
+            _ = try await executor.revert(transaction)
+            try expectEqual(try names(in: folderA), ["one.txt"])
+            try expectEqual(try names(in: folderB), ["two.txt"])
+            try expectEqual(try names(in: target), [])
+        }
+    }
+
+    await runner.test("存在しない保存先フォルダを作成し、Undoで空なら取り除く") {
+        try await withSandbox { sandbox in
+            let folderA = sandbox.appendingPathComponent("folder-a", isDirectory: true)
+            try FileManager.default.createDirectory(at: folderA, withIntermediateDirectories: false)
+            try "1".write(to: folderA.appendingPathComponent("one.txt"), atomically: true, encoding: .utf8)
+            let target = sandbox.appendingPathComponent("merged", isDirectory: true)
+
+            let executor = RenameExecutor()
+            let transaction = try await executor.execute(previews: [
+                movePreview(
+                    source: folderA.appendingPathComponent("one.txt"),
+                    destination: target.appendingPathComponent("one.txt")
+                )
+            ])
+            try expectEqual(transaction.createdDirectories, [target])
+            try expectEqual(try names(in: target), ["one.txt"])
+
+            _ = try await executor.revert(transaction)
+            try expectEqual(try names(in: folderA), ["one.txt"])
+            try expect(!FileManager.default.fileExists(atPath: target.path))
+        }
+    }
+
+    await runner.test("Undoしても作成フォルダに中身があれば残す") {
+        try await withSandbox { sandbox in
+            let folderA = sandbox.appendingPathComponent("folder-a", isDirectory: true)
+            try FileManager.default.createDirectory(at: folderA, withIntermediateDirectories: false)
+            try "1".write(to: folderA.appendingPathComponent("one.txt"), atomically: true, encoding: .utf8)
+            let target = sandbox.appendingPathComponent("merged", isDirectory: true)
+
+            let executor = RenameExecutor()
+            let transaction = try await executor.execute(previews: [
+                movePreview(
+                    source: folderA.appendingPathComponent("one.txt"),
+                    destination: target.appendingPathComponent("one.txt")
+                )
+            ])
+            try "keep".write(to: target.appendingPathComponent("extra.txt"), atomically: true, encoding: .utf8)
+
+            _ = try await executor.revert(transaction)
+            try expectEqual(try names(in: folderA), ["one.txt"])
+            try expectEqual(try names(in: target), ["extra.txt"])
+        }
+    }
+
+    await runner.test("移動に失敗したら作成したフォルダも元に戻す") {
+        try await withSandbox { sandbox in
+            let folderA = sandbox.appendingPathComponent("folder-a", isDirectory: true)
+            let blocked = sandbox.appendingPathComponent("blocked", isDirectory: true)
+            for directory in [folderA, blocked] {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+            }
+            try "1".write(to: folderA.appendingPathComponent("one.txt"), atomically: true, encoding: .utf8)
+            try "2".write(to: folderA.appendingPathComponent("two.txt"), atomically: true, encoding: .utf8)
+            try "occupied".write(to: blocked.appendingPathComponent("dup.txt"), atomically: true, encoding: .utf8)
+            let target = sandbox.appendingPathComponent("merged", isDirectory: true)
+
+            try await expectThrows {
+                _ = try await RenameExecutor().execute(previews: [
+                    movePreview(
+                        source: folderA.appendingPathComponent("one.txt"),
+                        destination: target.appendingPathComponent("one.txt")
+                    ),
+                    movePreview(
+                        source: folderA.appendingPathComponent("two.txt"),
+                        destination: blocked.appendingPathComponent("dup.txt")
+                    )
+                ])
+            }
+            try expectEqual(try names(in: folderA).sorted(), ["one.txt", "two.txt"])
+            try expect(!FileManager.default.fileExists(atPath: target.path))
+            try expectEqual(try names(in: blocked), ["dup.txt"])
+        }
+    }
+
+    await runner.test("createdDirectories のない旧履歴データも読める") {
+        let json = """
+        {"id":"00794301-10E5-4F14-BEA7-CCA4BA754164","date":0,"moves":[],"accessBookmarks":[],"imageEdits":[]}
+        """
+        let transaction = try JSONDecoder().decode(RenameTransaction.self, from: Data(json.utf8))
+        try expect(transaction.createdDirectories.isEmpty)
+        try expect(transaction.moves.isEmpty)
+    }
+}
+
+/// Copies out of the backup folder fail, as if the disk refused to read them back.
+private final class BackupReadFailingFileManager: FileManager, @unchecked Sendable {
+    let backupRoot: URL
+
+    init(backupRoot: URL) {
+        self.backupRoot = backupRoot
+        super.init()
+    }
+
+    override func copyItem(at srcURL: URL, to dstURL: URL) throws {
+        if srcURL.standardizedFileURL.path.hasPrefix(backupRoot.standardizedFileURL.path) {
+            throw CocoaError(.fileReadUnknown)
+        }
+        try super.copyItem(at: srcURL, to: dstURL)
     }
 }
 

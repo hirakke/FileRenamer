@@ -129,45 +129,74 @@ public struct RenameValidator: Sendable {
         let baseName = preview.proposedBaseName
 
         // MARK: hard errors
-        if FileNameSanitizer.isReservedName(baseName) {
-            return .error("ファイル名が空です")
+        if baseName.isEmpty {
+            return .error(LocalizableMessage("validation.emptyName", defaultValue: "The file name is empty."))
+        }
+        if FileNameSanitizer.isDotsOnly(baseName) {
+            return .error(LocalizableMessage(
+                "validation.dotsOnlyName",
+                defaultValue: "A name made only of periods can’t be used."
+            ))
         }
         if FileNameSanitizer.containsIllegalCharacters(baseName) {
-            return .error("使用できない文字が含まれています（/ : は不可）")
+            return .error(LocalizableMessage(
+                "validation.illegalCharacters",
+                defaultValue: "The name contains characters that can’t be used (/, :, or control characters such as line breaks)."
+            ))
         }
         for operation in preview.operations {
             let name = operation.destination.lastPathComponent
             if FileNameSanitizer.byteLength(name) > FileNameSanitizer.maximumNameLength {
-                return .error("ファイル名が長すぎます（255バイトまで）")
+                return .error(LocalizableMessage(
+                    "validation.nameTooLong",
+                    defaultValue: "The file name is too long (255 bytes maximum)."
+                ))
             }
         }
         for operation in preview.operations {
             if destinationCounts[Self.key(operation.destination), default: 0] > 1 {
-                return .error("変更後の名前が重複しています: \(operation.destination.lastPathComponent)")
+                return .error(LocalizableMessage(
+                    "validation.duplicateDestination",
+                    defaultValue: "Another file would get the same name: %@",
+                    arguments: [.text(operation.destination.lastPathComponent)]
+                ))
             }
         }
         for operation in preview.operations where !operation.isNoop {
             let key = Self.key(operation.destination)
             if occupiedDestinations.contains(key), !vacatedSources.contains(key) {
-                return .error("同名のファイルが既に存在します: \(operation.destination.lastPathComponent)")
+                return .error(LocalizableMessage(
+                    "validation.destinationExists",
+                    defaultValue: "A file with this name already exists: %@",
+                    arguments: [.text(operation.destination.lastPathComponent)]
+                ))
             }
         }
 
         // MARK: warnings
         if baseName.hasPrefix(".") {
-            return .warning("先頭がドットのため Finder で不可視になります")
+            return .warning(LocalizableMessage(
+                "validation.leadingDot",
+                defaultValue: "Names that start with a period are hidden in Finder."
+            ))
         }
         if baseName.hasSuffix(" ") || baseName.hasSuffix(".") {
-            return .warning("末尾の空白・ドットは扱いにくい名前です")
+            return .warning(LocalizableMessage(
+                "validation.trailingSpaceOrDot",
+                defaultValue: "Names that end with a space or period are hard to work with."
+            ))
         }
         if FileNameSanitizer.containsDiscouragedCharacters(baseName) {
-            return .warning("推奨されない文字が含まれています")
+            return .warning(LocalizableMessage(
+                "validation.discouragedCharacters",
+                defaultValue: "The name contains characters that are best avoided."
+            ))
         }
         if let warning = preview.generationWarnings.first {
             return .warning(warning)
         }
         if preview.isUnchanged {
-            return .warning("名前が変わりません")
+            return .warning(LocalizableMessage("validation.unchanged", defaultValue: "The name doesn’t change."))
         }
         return .valid
     }

@@ -55,9 +55,17 @@ public struct RenameHistory: Sendable, Codable {
         redoStack.last
     }
 
-    public mutating func finishRedo() {
-        guard let transaction = redoStack.popLast() else { return }
+    /// - Returns: transactions pushed out of the bounded undo stack, whose backups
+    ///   the caller may now delete.
+    @discardableResult
+    public mutating func finishRedo() -> [RenameTransaction] {
+        guard let transaction = redoStack.popLast() else { return [] }
         undoStack.append(transaction)
+        guard undoStack.count > limit else { return [] }
+        let overflow = undoStack.count - limit
+        let discarded = Array(undoStack.prefix(overflow))
+        undoStack.removeFirst(overflow)
+        return discarded
     }
 
     @discardableResult

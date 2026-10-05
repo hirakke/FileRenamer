@@ -275,15 +275,27 @@ final class WorkspaceModel: ObservableObject {
         }
     }
 
+    var displayLanguage: ResolvedAppLanguage { preferences.resolvedLanguage }
+
     func title(for tab: Tab) -> String {
         let directories = tab.model.workingDirectories
         if let first = directories.first {
             return directories.count == 1
                 ? first.lastPathComponent
-                : "\(first.lastPathComponent) ほか\(directories.count - 1)件"
+                : L10n.format(
+                    "workspace.additionalFolders",
+                    defaultValue: "%@ and %d more location(s)",
+                    arguments: [first.lastPathComponent, directories.count - 1],
+                    language: displayLanguage
+                )
         }
         let index = tabs.firstIndex(where: { $0.id == tab.id }) ?? 0
-        return "Tab \(index + 1)"
+        return L10n.format(
+            "workspace.tabNumber",
+            defaultValue: "Tab %d",
+            arguments: [index + 1],
+            language: displayLanguage
+        )
     }
 
 }
@@ -296,9 +308,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "リネーム処理が完了するまで終了できません"
-        alert.informativeText = "ファイル名を安全に確定または復旧しています。処理が終わってから、もう一度終了してください。"
-        alert.addButton(withTitle: "処理を続ける")
+        let language = workspace?.displayLanguage ?? .english
+        alert.messageText = L10n.string(
+            "quit.blocked.title",
+            defaultValue: "FileRenamer can’t quit until renaming finishes",
+            language: language
+        )
+        alert.informativeText = L10n.string(
+            "quit.blocked.detail",
+            defaultValue: "File names are being safely finalized or recovered. Try quitting again when this finishes.",
+            language: language
+        )
+        alert.addButton(withTitle: L10n.string("quit.blocked.continue", defaultValue: "Continue", language: language))
         alert.runModal()
         return .terminateCancel
     }
@@ -544,7 +565,12 @@ private struct PreferencesView: View {
                         in: 2...8,
                         step: 1
                     )
-                    Text("\(preferences.gridColumnCount)列")
+                    Text(L10n.format(
+                        "grid.columnCount",
+                        defaultValue: "%d columns",
+                        arguments: [preferences.gridColumnCount],
+                        language: preferences.resolvedLanguage
+                    ))
                         .monospacedDigit()
                         .frame(width: 36, alignment: .trailing)
                 }

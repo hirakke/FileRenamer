@@ -162,7 +162,7 @@ private struct ImageOptionsControl: View {
     }
 
     private func optionPicker<Option: Hashable>(
-        title: String,
+        title: LocalizedStringKey,
         selection: Binding<Option>,
         options: [Option],
         label: @escaping (Option) -> String

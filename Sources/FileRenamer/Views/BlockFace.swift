@@ -63,6 +63,8 @@ struct ExtensionBlockFace: View {
 }
 
 private struct RuleBlockFace: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let label: String
     let tint: Color
     let isSelected: Bool
@@ -76,13 +78,14 @@ private struct RuleBlockFace: View {
         // content, and coloured text on a strongly tinted ground disappears. The
         // block keeps the rounded shape but draws its own light wash, so the
         // contrast between text and ground is known rather than inherited.
-        Text(label)
+        let isDark = colorScheme == .dark
+        return Text(label)
             .font(.system(.body, design: .monospaced).weight(.semibold))
-            .foregroundStyle(tint)
+            .foregroundStyle(Palette.legible(tint, in: colorScheme))
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
-            .background(tint.opacity(isSelected ? 0.26 : 0.15), in: shape)
+            .background(tint.opacity(isSelected ? (isDark ? 0.30 : 0.26) : (isDark ? 0.20 : 0.15)), in: shape)
             .overlay {
                 if isSelected {
                     shape.strokeBorder(Color.accentColor.opacity(0.65), lineWidth: 1)

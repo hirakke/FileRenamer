@@ -6,16 +6,6 @@ public enum SortField: String, CaseIterable, Hashable, Sendable, Codable {
     case modificationDate
     case fileSize
     case captureDate
-
-    public var displayName: String {
-        switch self {
-        case .fileName: return "元ファイル名"
-        case .creationDate: return "作成日時"
-        case .modificationDate: return "更新日時"
-        case .fileSize: return "ファイルサイズ"
-        case .captureDate: return "撮影日時"
-        }
-    }
 }
 
 public struct SortDescriptorOption: Hashable, Sendable, Codable {
@@ -25,10 +15,6 @@ public struct SortDescriptorOption: Hashable, Sendable, Codable {
     public init(field: SortField, ascending: Bool = true) {
         self.field = field
         self.ascending = ascending
-    }
-
-    public var displayName: String {
-        "\(field.displayName) \(ascending ? "昇順" : "降順")"
     }
 
     public static let allOptions: [SortDescriptorOption] = SortField.allCases.flatMap {

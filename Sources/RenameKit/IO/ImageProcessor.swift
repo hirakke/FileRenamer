@@ -164,12 +164,12 @@ public struct ImageProcessingJournalStore: @unchecked Sendable {
 public struct ImageRecoveryReport: Sendable {
     public var recoveredBatchCount = 0
     public var recoveredFileCount = 0
-    public var messages: [String] = []
+    public var messages: [LocalizableMessage] = []
     public var hasUnresolvedWork = false
     public var hasWork: Bool { recoveredBatchCount > 0 || hasUnresolvedWork }
 }
 
-public enum ImageProcessingError: Error, LocalizedError {
+public enum ImageProcessingError: Error, LocalizableError {
     case sourceUnreadable(URL)
     case unsupportedFormat(URL)
     case destinationCreationFailed(URL)
@@ -179,28 +179,49 @@ public enum ImageProcessingError: Error, LocalizedError {
     case originalCopyDirectoryExists(URL)
     case originalCopyExists(URL)
     case originalCopyFailed(URL, Error)
+    case rollbackIncomplete(backupDirectory: URL, underlying: Error)
 
-    public var errorDescription: String? {
+    public var localizableMessage: LocalizableMessage {
         switch self {
         case .sourceUnreadable(let url):
-            return "画像を読み込めません: \(url.lastPathComponent)"
+            return Self.message("image.error.sourceUnreadable", "Couldn’t read the image: %@", url)
         case .unsupportedFormat(let url):
-            return "対応していない画像形式です: \(url.lastPathComponent)"
+            return Self.message("image.error.unsupportedFormat", "This image format isn’t supported: %@", url)
         case .destinationCreationFailed(let url):
-            return "画像の書き出し先を作成できません: \(url.lastPathComponent)"
+            return Self.message("image.error.destinationCreationFailed", "Couldn’t create the image output: %@", url)
         case .encodingFailed(let url):
-            return "画像を書き出せません: \(url.lastPathComponent)"
+            return Self.message("image.error.encodingFailed", "Couldn’t write the image: %@", url)
         case .replacementFailed(let url, let error):
-            return "画像を置き換えられません: \(url.lastPathComponent)（\(error.localizedDescription)）"
+            return Self.message("image.error.replacementFailed", "Couldn’t replace the image: %@ (%@)", url, error)
         case .backupMissing(let url):
-            return "元画像のバックアップが見つかりません: \(url.lastPathComponent)"
+            return Self.message("image.error.backupMissing", "The original image backup is missing: %@", url)
         case .originalCopyDirectoryExists(let url):
-            return "元画像の保存フォルダが既に存在します: \(url.lastPathComponent)"
+            return Self.message(
+                "image.error.originalCopyDirectoryExists",
+                "The folder for original images already exists: %@",
+                url
+            )
         case .originalCopyExists(let url):
-            return "元画像の保存先に同名ファイルがあります: \(url.lastPathComponent)"
+            return Self.message(
+                "image.error.originalCopyExists",
+                "A file with the same name is already in the original images folder: %@",
+                url
+            )
         case .originalCopyFailed(let url, let error):
-            return "元画像を保存できません: \(url.lastPathComponent)（\(error.localizedDescription)）"
+            return Self.message("image.error.originalCopyFailed", "Couldn’t save the original image: %@ (%@)", url, error)
+        case .rollbackIncomplete(let backupDirectory, let underlying):
+            return LocalizableMessage(
+                "image.error.rollbackIncomplete",
+                defaultValue: "%@ Some images couldn’t be restored automatically. Their original data was kept in “%@”.",
+                arguments: [.error(underlying), .text(backupDirectory.path)]
+            )
         }
+    }
+
+    private static func message(_ key: String, _ defaultValue: String, _ url: URL, _ error: Error? = nil) -> LocalizableMessage {
+        var arguments: [LocalizableMessage.Argument] = [.text(url.lastPathComponent)]
+        if let error { arguments.append(.error(error)) }
+        return LocalizableMessage(key, defaultValue: defaultValue, arguments: arguments)
     }
 }
 
@@ -379,8 +400,20 @@ public struct ImageProcessor: @unchecked Sendable {
                 try? journalStore.remove(id: journal.id)
                 return records
             } catch {
+                var restoreFailed = false
                 for record in records.reversed() {
-                    try? Self.restore(record, fileManager: fileManager)
+                    do {
+                        try Self.restore(record, fileManager: fileManager)
+                    } catch {
+                        restoreFailed = true
+                    }
+                }
+                try? journalStore.remove(id: journal.id)
+                // An image that could not be put back still has its only intact
+                // original in the backup folder (and any kept original copy), so
+                // nothing that could be needed to repair it is deleted.
+                if restoreFailed {
+                    throw ImageProcessingError.rollbackIncomplete(backupDirectory: directory, underlying: error)
                 }
                 try? fileManager.removeItem(at: directory)
                 for originalCopy in createdOriginalCopies.reversed() {
@@ -395,7 +428,6 @@ public struct ImageProcessor: @unchecked Sendable {
                         try? fileManager.removeItem(at: originalDirectory)
                     }
                 }
-                try? journalStore.remove(id: journal.id)
                 throw error
             }
         }
@@ -447,7 +479,7 @@ public struct ImageProcessor: @unchecked Sendable {
                     report.recoveredFileCount += journal.entries.count
                 } catch {
                     report.hasUnresolvedWork = true
-                    report.messages.append(error.localizedDescription)
+                    report.messages.append(.describing(error))
                 }
             }
             return report
