@@ -110,6 +110,44 @@ func runValidatorTests() async {
             .validate([makePreview(source: "a.jpg", destination: "\(long).jpg")])
         try expect(validated[0].validation.isError)
     }
+
+    await runner.test("ドットだけの名前は空とは別の理由でエラー") {
+        let checker = StubExistenceChecker(existing: [])
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: ".."))])
+        let dots = RenameValidator(existenceChecker: checker)
+            .validate(RenameEngine().makePreviews(items: [item], rule: rule))
+        try expectEqual(dots[0].proposedBaseName, "..")
+        try expectEqual(dots[0].validation.message?.key, "validation.dotsOnlyName")
+        let empty = RenameValidator(existenceChecker: checker).validate(
+            RenameEngine().makePreviews(items: [item], rule: RenameRule(tokens: [.text(TextConfiguration(value: ""))]))
+        )
+        try expectEqual(empty[0].validation.message?.key, "validation.emptyName")
+    }
+
+    await runner.test("改行やタブなどの制御文字は置換され、名前の前後からは取り除かれる") {
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: "\nEvent\tDay\u{7F}1\r\n"))])
+        let preview = RenameEngine().makePreviews(items: [item], rule: rule)[0]
+        try expectEqual(preview.proposedBaseName, "Event-Day-1")
+        let validated = RenameValidator(existenceChecker: StubExistenceChecker(existing: [])).validate([preview])
+        try expect(!validated.hasErrors)
+    }
+
+    await runner.test("置換しない設定では制御文字をエラーにする") {
+        let item = RenameItem(originalURL: folder.appendingPathComponent("a.jpg"))
+        let rule = RenameRule(tokens: [.text(TextConfiguration(value: "Event\nDay"))])
+        let engine = RenameEngine(options: RenameOptions(sanitizeIllegalCharacters: false))
+        let validated = RenameValidator(existenceChecker: StubExistenceChecker(existing: []))
+            .validate(engine.makePreviews(items: [item], rule: rule))
+        try expectEqual(validated[0].validation.message?.key, "validation.illegalCharacters")
+    }
+
+    await runner.test("絵文字の結合文字（ZWJ）は制御文字として扱わない") {
+        let family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}"
+        try expect(!FileNameSanitizer.containsIllegalCharacters(family))
+        try expectEqual(FileNameSanitizer.sanitize("Trip_\(family)"), "Trip_\(family)")
+    }
 }
 
 @MainActor
@@ -678,6 +716,39 @@ func runExecutorTests() async {
         }
     }
 
+    await runner.test("変更画像を戻せなかった場合はバックアップを消さずに知らせる") {
+        try await withSandbox { sandbox in
+            let backupRoot = sandbox.appendingPathComponent("restore-failure-backups", isDirectory: true)
+            let originalData = try makeTestPNG(width: 16, height: 8, detailed: true)
+            let edited = sandbox.appendingPathComponent("edited.png")
+            try originalData.write(to: edited)
+            let configuration = ImageEditConfiguration(outputFormat: .jpeg, maxLongEdge: nil, jpegCompressionQuality: 0.95)
+            let requests = [
+                ImageEditRequest(url: edited, configuration: configuration),
+                ImageEditRequest(url: sandbox.appendingPathComponent("missing.png"), configuration: configuration)
+            ]
+            let transactionID = UUID()
+            let processor = ImageProcessor(
+                fileManager: BackupReadFailingFileManager(backupRoot: backupRoot),
+                backupRootURL: backupRoot
+            )
+
+            var thrown: Error?
+            do {
+                _ = try await processor.apply(requests: requests, transactionID: transactionID)
+            } catch {
+                thrown = error
+            }
+            guard case .rollbackIncomplete(let directory, _)? = thrown as? ImageProcessingError else {
+                throw ExpectationFailure(message: "expected rollbackIncomplete, got \(String(describing: thrown))", file: #fileID, line: #line)
+            }
+            try expectEqual(directory.lastPathComponent, transactionID.uuidString)
+            let backups = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+            try expectEqual(backups.count, 1)
+            try expectEqual(try Data(contentsOf: directory.appendingPathComponent(backups[0])), originalData)
+        }
+    }
+
     await runner.test("キャンセル時は変更と原本保存フォルダを残さない") {
         try await withSandbox { sandbox in
             let source = sandbox.appendingPathComponent("cancel.png")
@@ -935,6 +1006,16 @@ func runExecutorTests() async {
         try expect(history.canUndo)
     }
 
+    await runner.test("やり直し後もUndo履歴の上限を超えない") {
+        let older = RenameTransaction(moves: [])
+        let newer = RenameTransaction(moves: [])
+        let redone = RenameTransaction(moves: [])
+        var history = RenameHistory(undoStack: [older, newer], redoStack: [redone], limit: 2)
+        let discarded = history.finishRedo()
+        try expectEqual(discarded.map(\.id), [older.id])
+        try expectEqual(history.undoStack.map(\.id), [newer.id, redone.id])
+    }
+
     await runner.test("Undo履歴を再起動後も読み戻せる") {
         try await withSandbox { sandbox in
             let store = RenameHistoryStore(fileURL: sandbox.appendingPathComponent("history.json"))
@@ -953,6 +1034,23 @@ func runExecutorTests() async {
             try expectEqual(loaded.lastTransaction?.moves, transaction.moves)
             try expectEqual(loaded.lastTransaction?.accessBookmarks, transaction.accessBookmarks)
         }
+    }
+}
+
+/// Copies out of the backup folder fail, as if the disk refused to read them back.
+private final class BackupReadFailingFileManager: FileManager, @unchecked Sendable {
+    let backupRoot: URL
+
+    init(backupRoot: URL) {
+        self.backupRoot = backupRoot
+        super.init()
+    }
+
+    override func copyItem(at srcURL: URL, to dstURL: URL) throws {
+        if srcURL.standardizedFileURL.path.hasPrefix(backupRoot.standardizedFileURL.path) {
+            throw CocoaError(.fileReadUnknown)
+        }
+        try super.copyItem(at: srcURL, to: dstURL)
     }
 }
 

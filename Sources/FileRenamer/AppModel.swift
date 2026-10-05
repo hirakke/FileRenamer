@@ -45,7 +45,6 @@ enum ViewMode: String, CaseIterable, Identifiable {
     case grid
 
     var id: String { rawValue }
-    var displayName: String { self == .list ? "リスト" : "グリッド" }
     var systemImageName: String { self == .list ? "list.bullet" : "square.grid.2x2" }
 }
 
@@ -276,7 +275,7 @@ final class AppModel: ObservableObject {
         if let recoveryMessage = loadedPresets.recoveryMessage {
             alertMessage = AlertMessage(
                 title: localized("preset.recovered.title", defaultValue: "Presets Recovered"),
-                detail: recoveryMessage
+                detail: localized(recoveryMessage)
             )
         }
         if recoversPendingRenames {
@@ -306,6 +305,34 @@ final class AppModel: ObservableObject {
 
     private func localized(_ key: String, defaultValue: String, arguments: [CVarArg]) -> String {
         L10n.format(key, defaultValue: defaultValue, arguments: arguments, language: displayLanguage)
+    }
+
+    private func localized(_ message: LocalizableMessage) -> String {
+        L10n.string(message, language: displayLanguage)
+    }
+
+    private func describe(_ error: Error) -> String {
+        if let kept = error as? RenamesKeptAfterFailure {
+            return [
+                describe(kept.failure),
+                describe(kept.rollbackFailure),
+                localized(
+                    "rollback.renamesKept",
+                    defaultValue: "The file names couldn’t be changed back, so the files keep their new names. Choose Undo Last Rename to restore them."
+                )
+            ].joined(separator: "\n\n")
+        }
+        if let kept = error as? ImagesRestoredButNamesKept {
+            return [
+                describe(kept.failure),
+                describe(kept.reapplyFailure),
+                localized(
+                    "rollback.imagesRestoredNamesKept",
+                    defaultValue: "The images were restored to their originals, but the files still have their new names."
+                )
+            ].joined(separator: "\n\n")
+        }
+        return L10n.describe(error, language: displayLanguage)
     }
 
     var showsJPEGQualitySetting: Bool {
@@ -487,7 +514,7 @@ final class AppModel: ObservableObject {
             return Issue(
                 id: item.id,
                 name: item.displayName,
-                message: message,
+                message: localized(message),
                 isError: preview.validation.isError
             )
         }
@@ -542,7 +569,7 @@ final class AppModel: ObservableObject {
             workingDirectories = calculateWorkingDirectories()
             alertMessage = AlertMessage(
                 title: localized("import.failed.title", defaultValue: "Couldn’t Load Files"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
             return
         }
@@ -966,7 +993,7 @@ final class AppModel: ObservableObject {
         } else {
             let detail = outcome.failures
                 .prefix(5)
-                .map { "\($0.url.lastPathComponent): \($0.message)" }
+                .map { "\($0.url.lastPathComponent): \(localized($0.message))" }
                 .joined(separator: "\n")
             alertMessage = AlertMessage(
                 title: localized("trash.failed.title", defaultValue: "Some Files Couldn’t Be Moved to Trash"),
@@ -1414,7 +1441,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("preset.import.failed", defaultValue: "Couldn’t Import Presets"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -1446,7 +1473,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("preset.export.failed", defaultValue: "Couldn’t Export Presets"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -1457,7 +1484,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("preset.save.failed", defaultValue: "Couldn’t Save Presets"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -1655,7 +1682,7 @@ final class AppModel: ObservableObject {
                     imageChange: imageConfiguration == nil
                         ? nil
                         : imageConfirmationSummary(for: item, operation: operation),
-                    warning: preview.validation.message
+                    warning: preview.validation.message.map(localized)
                 ))
                 includedItem = true
             }
@@ -1773,7 +1800,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("rename.validation.failed", defaultValue: "Validation Failed"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
             return
         }
@@ -1837,9 +1864,16 @@ final class AppModel: ObservableObject {
                         Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
                     }
                     transaction = transaction.addingImageEdits(records)
-                } catch {
-                    if hasMoves { _ = try? await executor.revert(transaction) }
-                    throw error
+                } catch let imageError {
+                    if hasMoves {
+                        do {
+                            _ = try await executor.revert(transaction)
+                        } catch {
+                            keepUndoableRenames(transaction)
+                            throw RenamesKeptAfterFailure(failure: imageError, rollbackFailure: error)
+                        }
+                    }
+                    throw imageError
                 }
             }
             let discardedHistory = history.record(transaction)
@@ -1864,7 +1898,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("rename.failed", defaultValue: "Couldn’t Make Changes"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -1922,9 +1956,15 @@ final class AppModel: ObservableObject {
                     _ = try await executor.revert(transaction) { [weak self] value in
                         Task { @MainActor in self?.progress = 0.45 + value * 0.55 }
                     }
-                } catch {
-                    if restoredImages { try? await imageProcessor.reapply(transaction.imageEdits) }
-                    throw error
+                } catch let renameError {
+                    if restoredImages {
+                        do {
+                            try await imageProcessor.reapply(transaction.imageEdits)
+                        } catch {
+                            throw ImagesRestoredButNamesKept(failure: renameError, reapplyFailure: error)
+                        }
+                    }
+                    throw renameError
                 }
             }
             history.finishUndo()
@@ -1940,7 +1980,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("undo.failed", defaultValue: "Couldn’t Undo Changes"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -1970,12 +2010,19 @@ final class AppModel: ObservableObject {
                     try await imageProcessor.reapply(transaction.imageEdits) { [weak self] value in
                         Task { @MainActor in self?.progress = 0.55 + value * 0.45 }
                     }
-                } catch {
-                    if let reappliedRename { _ = try? await executor.revert(reappliedRename) }
-                    throw error
+                } catch let imageError {
+                    if let reappliedRename {
+                        do {
+                            _ = try await executor.revert(reappliedRename)
+                        } catch {
+                            keepUndoableRenames(reappliedRename)
+                            throw RenamesKeptAfterFailure(failure: imageError, rollbackFailure: error)
+                        }
+                    }
+                    throw imageError
                 }
             }
-            history.finishRedo()
+            imageProcessor.removeBackups(for: history.finishRedo())
             persistHistory()
             adoptRenamedURLs(from: transaction)
             resultMessage = ResultMessage(
@@ -1989,9 +2036,21 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("redo.failed", defaultValue: "Couldn’t Redo Changes"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
+    }
+
+    /// The renames are on disk but the step that followed failed and could not be
+    /// rolled back. Recording them keeps the rows truthful and lets Undo restore the
+    /// original names later instead of leaving an untracked change behind.
+    private func keepUndoableRenames(_ transaction: RenameTransaction) {
+        let renamesOnly = RenameTransaction(moves: transaction.moves, accessBookmarks: transaction.accessBookmarks)
+        // Backups of discarded redo entries are kept on purpose: after a failed
+        // image step they may hold the only intact copy of an original.
+        history.record(renamesOnly)
+        persistHistory()
+        adoptRenamedURLs(from: renamesOnly)
     }
 
     /// After a successful batch the rows must point at the new paths, otherwise the
@@ -2031,7 +2090,7 @@ final class AppModel: ObservableObject {
         } catch {
             alertMessage = AlertMessage(
                 title: localized("history.save.failed", defaultValue: "Couldn’t Save History"),
-                detail: error.localizedDescription
+                detail: describe(error)
             )
         }
     }
@@ -2109,7 +2168,7 @@ final class AppModel: ObservableObject {
         if imageReport.hasUnresolvedWork || report.hasUnresolvedWork {
             alertMessage = AlertMessage(
                 title: localized("recovery.unresolved.title", defaultValue: "Some Work Couldn’t Be Recovered Automatically"),
-                detail: (imageReport.messages + report.messages).joined(separator: "\n")
+                detail: (imageReport.messages + report.messages).map(localized).joined(separator: "\n")
             )
         } else {
             let recoveredCount = imageReport.recoveredFileCount + report.recoveredFileCount
@@ -2122,4 +2181,17 @@ final class AppModel: ObservableObject {
             )
         }
     }
+}
+
+/// A follow-up step failed after files were renamed, and renaming them back failed too.
+private struct RenamesKeptAfterFailure: Error {
+    let failure: Error
+    let rollbackFailure: Error
+}
+
+/// Undo restored image contents, could not restore the names, and could not re-apply
+/// the image edits either.
+private struct ImagesRestoredButNamesKept: Error {
+    let failure: Error
+    let reapplyFailure: Error
 }

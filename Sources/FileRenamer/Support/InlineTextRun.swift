@@ -1,4 +1,5 @@
 import AppKit
+import RenameKit
 import SwiftUI
 
 /// Where the caret is, across all the text runs of one rule field.
@@ -71,8 +72,13 @@ struct InlineTextRun: NSViewRepresentable {
         field.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
         field.placeholderString = placeholder
         field.stringValue = text
-        field.setAccessibilityLabel("固定文字")
-        field.setAccessibilityHelp("ファイル名にそのまま入る文字を編集します")
+        let language = ResolvedAppLanguage(locale: nsContext.environment.locale)
+        field.setAccessibilityLabel(L10n.string("固定文字", defaultValue: "Fixed Text", language: language))
+        field.setAccessibilityHelp(L10n.string(
+            "ファイル名にそのまま入る文字を編集します",
+            defaultValue: "Edit text that will be inserted directly into the file name.",
+            language: language
+        ))
         return field
     }
 

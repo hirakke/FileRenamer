@@ -45,7 +45,7 @@ struct TokenInsertPanel: View {
     ]
 
     static let metadataOptions: [InsertOption] = MetadataField.allCases.map { field in
-        InsertOption(field.displayName, englishTitle: field.localizedDisplayName(in: .english)) { .metadata(MetadataConfiguration(field: field)) }
+        InsertOption(field.localizableName.key, englishTitle: field.localizableName.defaultValue) { .metadata(MetadataConfiguration(field: field)) }
     }
 
     // Separators are ordinary characters once the field is typeable; these are just

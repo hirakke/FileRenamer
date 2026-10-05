@@ -54,26 +54,47 @@ public struct RenameTransaction: Identifiable, Hashable, Sendable, Codable {
     }
 }
 
-public enum RenameExecutionError: Error, LocalizedError {
+public enum RenameExecutionError: Error, LocalizableError {
     case validationFailed(errorCount: Int)
     case nothingToDo
     case sourceMissing(URL)
     case destinationOccupied(URL)
     case moveFailed(source: URL, destination: URL, underlying: Error, rolledBack: Bool)
 
-    public var errorDescription: String? {
+    public var localizableMessage: LocalizableMessage {
         switch self {
         case .validationFailed(let count):
-            return "\(count) 件のエラーがあるため実行できません。"
+            return LocalizableMessage(
+                "execution.validationFailed",
+                defaultValue: "Can’t make the changes because %ld item(s) have errors.",
+                arguments: [.number(count)]
+            )
         case .nothingToDo:
-            return "変更が必要なファイルがありません。"
+            return LocalizableMessage("execution.nothingToDo", defaultValue: "No files need to change.")
         case .sourceMissing(let url):
-            return "ファイルが見つかりません: \(url.lastPathComponent)"
+            return LocalizableMessage(
+                "execution.sourceMissing",
+                defaultValue: "File not found: %@",
+                arguments: [.text(url.lastPathComponent)]
+            )
         case .destinationOccupied(let url):
-            return "変更後の名前が既に使われています: \(url.lastPathComponent)"
+            return LocalizableMessage(
+                "execution.destinationOccupied",
+                defaultValue: "The new name is already in use: %@",
+                arguments: [.text(url.lastPathComponent)]
+            )
         case .moveFailed(let source, _, let underlying, let rolledBack):
-            let suffix = rolledBack ? "変更は元に戻されました。" : "一部のファイルが元に戻せませんでした。"
-            return "\(source.lastPathComponent) のリネームに失敗しました（\(underlying.localizedDescription)）。\(suffix)"
+            return rolledBack
+                ? LocalizableMessage(
+                    "execution.moveFailed.rolledBack",
+                    defaultValue: "Couldn’t rename %@ (%@). The changes were undone.",
+                    arguments: [.text(source.lastPathComponent), .error(underlying)]
+                )
+                : LocalizableMessage(
+                    "execution.moveFailed.partial",
+                    defaultValue: "Couldn’t rename %@ (%@). Some files couldn’t be restored.",
+                    arguments: [.text(source.lastPathComponent), .error(underlying)]
+                )
         }
     }
 }
@@ -299,7 +320,11 @@ public struct RenameExecutor: @unchecked Sendable {
         let loaded = journalStore.loadAll()
         var report = RenameRecoveryReport()
         if !loaded.unreadableFiles.isEmpty {
-            report.messages.append("\(loaded.unreadableFiles.count) 件の復旧記録を読み取れませんでした。")
+            report.messages.append(LocalizableMessage(
+                "recovery.unreadableJournals",
+                defaultValue: "%ld recovery record(s) couldn’t be read.",
+                arguments: [.number(loaded.unreadableFiles.count)]
+            ))
         }
 
         for journal in loaded.journals {
@@ -318,7 +343,7 @@ public struct RenameExecutor: @unchecked Sendable {
                 report.recoveredFileCount += restored
             } catch {
                 report.unresolvedJournalIDs.append(journal.id)
-                report.messages.append(error.localizedDescription)
+                report.messages.append(.describing(error))
             }
         }
         return report

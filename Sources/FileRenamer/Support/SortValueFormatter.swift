@@ -5,15 +5,15 @@ import RenameKit
 /// evidence behind the order instead of asking the user to trust it.
 enum SortValueFormatter {
     /// Column heading for the current sort field.
-    static func columnTitle(for field: SortField) -> String {
+    static func columnTitle(for field: SortField, language: ResolvedAppLanguage) -> String {
         switch field {
         // Sorting by name needs no extra column, so the slot shows the modification
         // date — the most generally useful fallback.
-        case .fileName: return "更新日時"
-        case .creationDate: return "作成日時"
-        case .modificationDate: return "更新日時"
-        case .captureDate: return "撮影日時"
-        case .fileSize: return "サイズ"
+        case .fileName: return L10n.string("更新日時", defaultValue: "Date Modified", language: language)
+        case .creationDate: return L10n.string("作成日時", defaultValue: "Date Created", language: language)
+        case .modificationDate: return L10n.string("更新日時", defaultValue: "Date Modified", language: language)
+        case .captureDate: return L10n.string("撮影日時", defaultValue: "Date Taken", language: language)
+        case .fileSize: return L10n.string("サイズ", defaultValue: "Size", language: language)
         }
     }
 

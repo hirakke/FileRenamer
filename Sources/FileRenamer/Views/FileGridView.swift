@@ -8,6 +8,15 @@ struct FileGridView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var preferences: AppPreferences
     @State private var selectionAnchor: UUID?
+
+    private var columnCountText: String {
+        L10n.format(
+            "grid.columnCount",
+            defaultValue: "%d columns",
+            arguments: [preferences.gridColumnCount],
+            language: preferences.resolvedLanguage
+        )
+    }
     /// Cells currently being dragged, captured when the drag starts so the drop does
     /// not have to decode the payload to know what is moving.
     @State private var draggingIDs: Set<UUID> = []
@@ -162,7 +171,7 @@ struct FileGridView: View {
                     step: 1
                 )
                 .accessibilityLabel("横の列数")
-                .accessibilityValue("\(preferences.gridColumnCount)列")
+                .accessibilityValue(columnCountText)
 
                 HStack(spacing: 0) {
                     ForEach(columnChoices, id: \.self) { count in
@@ -175,7 +184,7 @@ struct FileGridView: View {
             }
             .frame(width: 210)
 
-            Text("\(preferences.gridColumnCount)列")
+            Text(columnCountText)
                 .font(.system(.caption, design: .monospaced).weight(.medium))
                 .frame(width: 30, alignment: .trailing)
         }
@@ -297,7 +306,12 @@ struct FileGridView: View {
         Divider()
         Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
         Divider()
-        Button("\(ids.count) 件をリストから除外") {
+        Button(L10n.format(
+            "list.removeItems",
+            defaultValue: "Remove %d Item(s) from List",
+            arguments: [ids.count],
+            language: preferences.resolvedLanguage
+        )) {
             model.selection = ids
             model.removeSelected()
         }
@@ -394,6 +408,8 @@ private struct GridCell: View {
     let similarityBadge: AppModel.SimilarityBadge?
     let onShowSimilarity: () -> Void
 
+    @EnvironmentObject private var preferences: AppPreferences
+
     var body: some View {
         VStack(spacing: 6) {
             HStack(spacing: 2) {
@@ -437,7 +453,12 @@ private struct GridCell: View {
                             ? "同一または類似している画像を比較"
                             : "類似している可能性のある画像を比較"
                     )
-                    .accessibilityLabel("\(similarityBadge.count)件の重複候補")
+                    .accessibilityLabel(L10n.format(
+                        "similarity.badge.accessibility",
+                        defaultValue: "%d possible duplicate(s)",
+                        arguments: [similarityBadge.count],
+                        language: preferences.resolvedLanguage
+                    ))
                 }
             }
 
@@ -496,10 +517,16 @@ private struct GridCell: View {
                       : "exclamationmark.triangle.fill")
                     .foregroundStyle(validation.isError ? Palette.error : Palette.warning)
                     .padding(6)
-                    .help(validation.message ?? "名前を確認してください")
-                    .accessibilityLabel(validation.message ?? "名前の問題")
+                    .help(validationText(validation, fallbackKey: "名前を確認してください", fallback: "Check the names"))
+                    .accessibilityLabel(validationText(validation, fallbackKey: "名前の問題", fallback: "Name Issues"))
             }
         }
+    }
+
+    private func validationText(_ validation: RenameValidation, fallbackKey: String, fallback: String) -> String {
+        let language = preferences.resolvedLanguage
+        return validation.message.map { L10n.string($0, language: language) }
+            ?? L10n.string(fallbackKey, defaultValue: fallback, language: language)
     }
 
     private var numberText: String {
@@ -524,7 +551,7 @@ private struct GridCell: View {
         proposedName == item.displayName
     }
 
-    private func nameSectionLabel(_ title: String, emphasized: Bool) -> some View {
+    private func nameSectionLabel(_ title: LocalizedStringKey, emphasized: Bool) -> some View {
         Text(title)
             .font(.system(size: 9, weight: emphasized ? .semibold : .medium))
             .foregroundStyle(

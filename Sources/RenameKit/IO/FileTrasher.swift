@@ -2,9 +2,9 @@ import Foundation
 
 public struct TrashFailure: Sendable, Hashable {
     public let url: URL
-    public let message: String
+    public let message: LocalizableMessage
 
-    public init(url: URL, message: String) {
+    public init(url: URL, message: LocalizableMessage) {
         self.url = url
         self.message = message
     }
@@ -120,14 +120,18 @@ public struct FileTrasher: Sendable {
                     trashURL: try operations.moveToTrash(url)
                 ))
             } catch {
-                var failures = [TrashFailure(url: url, message: error.localizedDescription)]
+                var failures = [TrashFailure(url: url, message: .describing(error))]
                 for movedFile in moved.reversed() {
                     do {
                         try operations.restore(movedFile.trashURL, movedFile.originalURL)
                     } catch {
                         failures.append(TrashFailure(
                             url: movedFile.originalURL,
-                            message: "ゴミ箱から元の場所へ戻せませんでした: \(error.localizedDescription)"
+                            message: LocalizableMessage(
+                                "trash.error.restoreFailed",
+                                defaultValue: "Couldn’t put the file back from the Trash: %@",
+                                arguments: [.error(error)]
+                            )
                         ))
                     }
                 }
@@ -143,13 +147,17 @@ public struct FileTrasher: Sendable {
     }
 }
 
-private enum FileTrashError: LocalizedError {
+private enum FileTrashError: LocalizableError {
     case missingTrashLocation(URL)
 
-    var errorDescription: String? {
+    var localizableMessage: LocalizableMessage {
         switch self {
         case .missingTrashLocation(let url):
-            return "「\(url.lastPathComponent)」のゴミ箱内の場所を取得できませんでした。"
+            return LocalizableMessage(
+                "trash.error.missingTrashLocation",
+                defaultValue: "Couldn’t find where “%@” was placed in the Trash.",
+                arguments: [.text(url.lastPathComponent)]
+            )
         }
     }
 }

@@ -51,13 +51,13 @@ public struct RenameRecoveryReport: Sendable {
     public var recoveredBatchCount: Int
     public var recoveredFileCount: Int
     public var unresolvedJournalIDs: [UUID]
-    public var messages: [String]
+    public var messages: [LocalizableMessage]
 
     public init(
         recoveredBatchCount: Int = 0,
         recoveredFileCount: Int = 0,
         unresolvedJournalIDs: [UUID] = [],
-        messages: [String] = []
+        messages: [LocalizableMessage] = []
     ) {
         self.recoveredBatchCount = recoveredBatchCount
         self.recoveredFileCount = recoveredFileCount

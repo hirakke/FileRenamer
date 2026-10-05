@@ -112,7 +112,11 @@ struct ContentView: View {
                 Alert(
                     title: Text(message.title),
                     message: Text(message.detail),
-                    primaryButton: .default(Text(message.actionTitle ?? "フォルダを選択…")) {
+                    primaryButton: .default(Text(message.actionTitle ?? L10n.string(
+                        "フォルダを選択…",
+                        defaultValue: "Choose Folder…",
+                        language: preferences.resolvedLanguage
+                    ))) {
                         model.presentFolderAccessPanel()
                     },
                     secondaryButton: .cancel()
@@ -404,6 +408,8 @@ private final class SidebarOutsideClickMonitor: ObservableObject {
 }
 
 private struct WorkspaceSidebar: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @EnvironmentObject private var workspace: WorkspaceModel
 
     var body: some View {
@@ -445,7 +451,12 @@ private struct WorkspaceSidebar: View {
             .scrollIndicators(.hidden)
 
             HStack {
-                Text("\(workspace.tabs.count) 件")
+                Text(L10n.format(
+                    "sidebar.tabCount",
+                    defaultValue: "%d tab(s)",
+                    arguments: [workspace.tabs.count],
+                    language: ResolvedAppLanguage(locale: locale)
+                ))
                 Spacer()
                 Text("⌘Tで追加")
             }
@@ -460,6 +471,8 @@ private struct WorkspaceSidebar: View {
 }
 
 private struct WorkspaceSidebarRow: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @EnvironmentObject private var workspace: WorkspaceModel
     let tab: WorkspaceModel.Tab
     @ObservedObject var model: AppModel
@@ -480,7 +493,9 @@ private struct WorkspaceSidebarRow: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
 
-                    Text(model.items.isEmpty ? "ファイル未追加" : "\(model.fileCount) ファイル")
+                    Text(model.items.isEmpty
+                         ? L10n.string("ファイル未追加", defaultValue: "No Files Added", language: language)
+                         : L10n.format("count.files", defaultValue: "%d file(s)", arguments: [model.fileCount], language: language))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -528,7 +543,12 @@ private struct WorkspaceSidebarRow: View {
         }
         .contextMenu {
             ForEach(model.importedDirectories, id: \.path) { directory in
-                Button("\(directory.lastPathComponent)をFinderで開く") {
+                Button(L10n.format(
+                    "finder.openFolder",
+                    defaultValue: "Open %@ in Finder",
+                    arguments: [directory.lastPathComponent],
+                    language: language
+                )) {
                     model.openDirectoryInFinder(directory)
                 }
             }
@@ -740,6 +760,8 @@ private struct StandaloneQuickLookContent: View {
 /// and only the person who took them knows. Deletion moves files to the Trash, so a
 /// wrong call made from a thumbnail is always recoverable.
 private struct SimilarImageReviewView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var model: AppModel
     let review: AppModel.SimilarityReview
@@ -823,7 +845,12 @@ private struct SimilarImageReviewView: View {
         }
         .animation(.easeOut(duration: 0.15), value: zoomedItemID)
         .confirmationDialog(
-            "\(selectedItems.count) 件をゴミ箱に移動しますか？",
+            L10n.format(
+                "trash.confirmation.title",
+                defaultValue: "Move %d item(s) to Trash?",
+                arguments: [selectedItems.count],
+                language: language
+            ),
             isPresented: $isConfirmingTrash,
             titleVisibility: .visible
         ) {
@@ -844,7 +871,12 @@ private struct SimilarImageReviewView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("重複している可能性のある画像")
                     .font(.title2.weight(.semibold))
-                Text("\(groups.count) 組 · \(allItems.count) 枚。残すものと削除するものを選んでください。")
+                Text(L10n.format(
+                    "similarity.review.summary",
+                    defaultValue: "%d group(s) · %d image(s). Choose which to keep and which to delete.",
+                    arguments: [groups.count, allItems.count],
+                    language: language
+                ))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -909,7 +941,12 @@ private struct SimilarImageReviewView: View {
             ThumbnailView(url: group.items[0].originalURL, size: 40)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(group.count) 枚")
+                Text(L10n.format(
+                    "count.images",
+                    defaultValue: "%d image(s)",
+                    arguments: [group.count],
+                    language: language
+                ))
                     .font(.callout.weight(.medium))
                 Text(group.containsExactMatch ? "完全一致を含む" : "類似")
                     .font(.caption)
@@ -927,7 +964,12 @@ private struct SimilarImageReviewView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Palette.error, in: Capsule())
-                    .help("\(selectedInGroup) 件を削除対象にしています")
+                    .help(L10n.format(
+                        "similarity.group.markedForDeletion",
+                        defaultValue: "%d item(s) marked for deletion",
+                        arguments: [selectedInGroup],
+                        language: language
+                    ))
             }
         }
         .padding(.vertical, 3)
@@ -1046,7 +1088,12 @@ private struct SimilarImageReviewView: View {
                     Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
                 }
                 if item.allURLs.count > 1 {
-                    Text("\(item.allURLs.count)ファイル")
+                    Text(L10n.format(
+                        "count.files",
+                        defaultValue: "%d file(s)",
+                        arguments: [item.allURLs.count],
+                        language: language
+                    ))
                 }
             }
             .font(.caption2)
@@ -1200,7 +1247,12 @@ private struct SimilarImageReviewView: View {
                 .font(.callout)
                 .foregroundStyle(selectedIDs.isEmpty ? .secondary : .primary)
 
-            Button("\(selectedIDs.count) 件をリストから除外") {
+            Button(L10n.format(
+                "list.removeItems",
+                defaultValue: "Remove %d Item(s) from List",
+                arguments: [selectedIDs.count],
+                language: language
+            )) {
                 model.removeFromList(ids: selectedIDs)
                 dismiss()
             }
@@ -1222,10 +1274,22 @@ private struct SimilarImageReviewView: View {
     }
 
     private var selectionSummary: String {
-        guard !selectedIDs.isEmpty else { return "選択なし" }
-        var text = "\(selectedItems.count) 件を選択中"
+        guard !selectedIDs.isEmpty else {
+            return L10n.string("選択なし", defaultValue: "Nothing Selected", language: language)
+        }
+        var text = L10n.format(
+            "selection.itemCount",
+            defaultValue: "%d item(s) selected",
+            arguments: [selectedItems.count],
+            language: language
+        )
         if selectedFileCount != selectedItems.count {
-            text += "（\(selectedFileCount) ファイル）"
+            text += L10n.format(
+                "selection.fileCount",
+                defaultValue: " (%d files)",
+                arguments: [selectedFileCount],
+                language: language
+            )
         }
         if selectedByteCount > 0 {
             text += " · \(ByteCountFormatter.string(fromByteCount: selectedByteCount, countStyle: .file))"
@@ -1235,8 +1299,20 @@ private struct SimilarImageReviewView: View {
 
     private var trashConfirmationDetail: String {
         let names = selectedItems.prefix(5).map(\.displayName).joined(separator: "\n")
-        let remainder = selectedItems.count > 5 ? "\nほか \(selectedItems.count - 5) 件" : ""
-        return "ファイルはゴミ箱に移動され、Finder から元に戻せます。\n\n\(names)\(remainder)"
+        let remainder = selectedItems.count > 5
+            ? L10n.format(
+                "trash.confirmation.remainder",
+                defaultValue: "\n%d more item(s)",
+                arguments: [selectedItems.count - 5],
+                language: language
+            )
+            : ""
+        return L10n.format(
+            "trash.confirmation.detail",
+            defaultValue: "Files will be moved to Finder’s Trash and can be restored there.\n\n%@%@",
+            arguments: [names, remainder],
+            language: language
+        )
     }
 
     // MARK: - Selection
@@ -1277,6 +1353,8 @@ private struct SimilarImageReviewView: View {
 }
 
 private struct RenameConfirmationView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @Environment(\.dismiss) private var dismiss
     let confirmation: AppModel.RenameConfirmation
     let confirm: () -> Void
@@ -1302,7 +1380,12 @@ private struct RenameConfirmationView: View {
                 .foregroundStyle(Palette.warning)
             } else if let directory = confirmation.originalImagesDirectory {
                 Label {
-                    Text("元画像を「\(directory.lastPathComponent)」に保存します。")
+                    Text(L10n.format(
+                        "confirmation.originalsFolder",
+                        defaultValue: "Original images will be saved to “%@”.",
+                        arguments: [directory.lastPathComponent],
+                        language: language
+                    ))
                 } icon: {
                     Image(systemName: "folder.badge.plus")
                 }
@@ -1359,21 +1442,29 @@ private struct RenameConfirmationView: View {
 
     private var summary: some View {
         HStack(spacing: 0) {
-            summaryValue("対象", value: "\(confirmation.changedItemCount)件")
+            summaryValue("対象", value: itemCount(confirmation.changedItemCount))
             Divider().frame(height: 32)
-            summaryValue("名前変更", value: "\(confirmation.renamedFileCount)ファイル")
+            summaryValue("名前変更", value: fileCount(confirmation.renamedFileCount))
             Divider().frame(height: 32)
-            summaryValue("画像処理", value: "\(confirmation.processedImageCount)ファイル")
+            summaryValue("画像処理", value: fileCount(confirmation.processedImageCount))
             if confirmation.warningCount > 0 {
                 Divider().frame(height: 32)
-                summaryValue("警告", value: "\(confirmation.warningCount)件", tint: Palette.warning)
+                summaryValue("警告", value: itemCount(confirmation.warningCount), tint: Palette.warning)
             }
         }
         .padding(.vertical, 10)
         .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
     }
 
-    private func summaryValue(_ title: String, value: String, tint: Color = .primary) -> some View {
+    private func itemCount(_ count: Int) -> String {
+        L10n.format("count.items", defaultValue: "%d item(s)", arguments: [count], language: language)
+    }
+
+    private func fileCount(_ count: Int) -> String {
+        L10n.format("count.files", defaultValue: "%d file(s)", arguments: [count], language: language)
+    }
+
+    private func summaryValue(_ title: LocalizedStringKey, value: String, tint: Color = .primary) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption)
@@ -1431,7 +1522,11 @@ private struct EmbeddedQuickLookView: NSViewRepresentable {
         let view = QLPreviewView(frame: .zero, style: .normal)!
         view.autostarts = true
         view.shouldCloseWithWindow = false
-        view.setAccessibilityLabel("クイックルックプレビュー")
+        view.setAccessibilityLabel(L10n.string(
+            "クイックルックプレビュー",
+            defaultValue: "Quick Look Preview",
+            language: ResolvedAppLanguage(locale: context.environment.locale)
+        ))
         context.coordinator.update(url: url, previewView: view)
         return view
     }

@@ -17,6 +17,7 @@ struct RuleTextField: View {
 
     @Binding var rule: RenameRule
     let context: RuleEditingContext
+    @Environment(\.locale) private var locale
     var editorPresentation: EditorPresentation = .inline
     var onEditingChanged: (Bool) -> Void = { _ in }
 
@@ -85,7 +86,7 @@ struct RuleTextField: View {
     /// Only the first run prompts, and only while the whole rule is empty.
     private func placeholder(at index: Int) -> String {
         guard index == 0, rule.tokens.count == 1 else { return "" }
-        return "ファイル名を入力"
+        return L10n.string("ファイル名を入力", defaultValue: "Enter file name", language: ResolvedAppLanguage(locale: locale))
     }
 
     private func textBinding(for config: TextConfiguration) -> Binding<String> {
@@ -185,7 +186,12 @@ private struct ExtensionBlockToken: View {
             .frame(width: 280)
         }
         .help("拡張子の大文字・小文字を設定")
-        .accessibilityLabel("拡張子ブロック、\(label)")
+        .accessibilityLabel(L10n.format(
+            "extensionBlock.accessibility",
+            defaultValue: "Extension block, %@",
+            arguments: [label],
+            language: preferences.resolvedLanguage
+        ))
     }
 
     private var label: String {
@@ -193,13 +199,14 @@ private struct ExtensionBlockToken: View {
             return ".\(rule.extensionTransform.apply(outputExtension))"
         }
 
+        let language = preferences.resolvedLanguage
         switch rule.extensionTransform {
         case .none:
-            return ".拡張子"
+            return L10n.string("extensionBlock.placeholder", defaultValue: ".ext", language: language)
         case .lowercase:
-            return ".拡張子（小文字）"
+            return L10n.string("extensionBlock.placeholder.lowercase", defaultValue: ".ext (lowercase)", language: language)
         case .uppercase:
-            return ".拡張子（大文字）"
+            return L10n.string("extensionBlock.placeholder.uppercase", defaultValue: ".ext (UPPERCASE)", language: language)
         }
     }
 }

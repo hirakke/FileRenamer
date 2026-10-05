@@ -17,13 +17,13 @@ public struct RenameOperation: Hashable, Sendable, Codable {
 
 public enum RenameValidation: Hashable, Sendable {
     case valid
-    case warning(String)
-    case error(String)
+    case warning(LocalizableMessage)
+    case error(LocalizableMessage)
 
     public var isError: Bool { if case .error = self { return true } else { return false } }
     public var isWarning: Bool { if case .warning = self { return true } else { return false } }
 
-    public var message: String? {
+    public var message: LocalizableMessage? {
         switch self {
         case .valid: return nil
         case .warning(let m), .error(let m): return m
@@ -41,7 +41,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
     public let proposedBaseName: String
     public let operations: [RenameOperation]
     public let requiresContentProcessing: Bool
-    public var generationWarnings: [String]
+    public var generationWarnings: [LocalizableMessage]
     public var validation: RenameValidation
 
     public var id: UUID { itemID }
@@ -52,7 +52,7 @@ public struct RenamePreview: Identifiable, Hashable, Sendable {
         proposedBaseName: String,
         operations: [RenameOperation],
         requiresContentProcessing: Bool = false,
-        generationWarnings: [String] = [],
+        generationWarnings: [LocalizableMessage] = [],
         validation: RenameValidation = .valid
     ) {
         self.itemID = itemID

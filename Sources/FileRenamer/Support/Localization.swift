@@ -30,12 +30,32 @@ enum L10n {
         )
     }
 
+    static func string(_ message: LocalizableMessage, language: ResolvedAppLanguage) -> String {
+        message.resolved(locale: Locale(identifier: language.localeIdentifier)) { key, defaultValue in
+            string(key, defaultValue: defaultValue, language: language)
+        }
+    }
+
+    /// RenameKit failures in the selected language; other errors keep the text
+    /// macOS supplied.
+    static func describe(_ error: Error, language: ResolvedAppLanguage) -> String {
+        string(LocalizableMessage.describing(error), language: language)
+    }
+
     private static func localizedBundle(for language: ResolvedAppLanguage) -> Bundle {
         guard let path = Bundle.main.path(forResource: language.localeIdentifier, ofType: "lproj"),
               let bundle = Bundle(path: path) else {
             return Bundle.main
         }
         return bundle
+    }
+}
+
+extension ResolvedAppLanguage {
+    /// The scene's `\.locale` is always the resolved display locale, so views and
+    /// AppKit bridges that only see the environment can recover the language.
+    init(locale: Locale) {
+        self = locale.language.languageCode?.identifier == "ja" ? .japanese : .english
     }
 }
 
@@ -121,20 +141,7 @@ extension DateSource {
 
 extension MetadataField {
     func localizedDisplayName(in language: ResolvedAppLanguage) -> String {
-        switch self {
-        case .cameraModel:
-            return L10n.string("metadata.cameraModel", defaultValue: "Camera Model", language: language)
-        case .lensModel:
-            return L10n.string("metadata.lensModel", defaultValue: "Lens", language: language)
-        case .iso:
-            return L10n.string("metadata.iso", defaultValue: "ISO", language: language)
-        case .focalLength:
-            return L10n.string("metadata.focalLength", defaultValue: "Focal Length", language: language)
-        case .aperture:
-            return L10n.string("metadata.aperture", defaultValue: "Aperture", language: language)
-        case .dimensions:
-            return L10n.string("metadata.dimensions", defaultValue: "Dimensions", language: language)
-        }
+        L10n.string(localizableName, language: language)
     }
 }
 
