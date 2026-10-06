@@ -335,12 +335,13 @@ private enum MainWindow {
 /// closed. This is intentionally in the standard Window menu, matching macOS
 /// conventions and App Store review expectations.
 private struct MainWindowCommands: Commands {
+    let language: ResolvedAppLanguage
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(after: .windowList) {
             Divider()
-            Button("FileRenamerを開く") {
+            Button(L10n.string("settings.openFilerenamer", defaultValue: "Open FileRenamer", language: language)) {
                 openWindow(id: MainWindow.id)
             }
         }
@@ -393,7 +394,7 @@ struct FileRenamerApp: App {
         }
         .windowToolbarStyle(.unified)
         .commands {
-            MainWindowCommands()
+            MainWindowCommands(language: preferences.resolvedLanguage)
 
             CommandGroup(after: .appInfo) {
                 Button(localized("menu.checkForUpdates", defaultValue: "Check for Updates…")) { updateController.checkForUpdates() }
@@ -510,39 +511,39 @@ private struct PreferencesView: View {
 
     var body: some View {
         Form {
-            Section("確認") {
-                Toggle("実行前に変更内容を確認", isOn: $preferences.confirmsRenameChanges)
-                Text("変更前後のファイル名、画像処理、原本の扱いを一覧で確認します。")
+            Section(L10n.string("settings.confirmation", defaultValue: "Confirmation", language: preferences.resolvedLanguage)) {
+                Toggle(L10n.string("settings.reviewChangesBeforeRenaming", defaultValue: "Review changes before renaming", language: preferences.resolvedLanguage), isOn: $preferences.confirmsRenameChanges)
+                Text(L10n.string("settings.reviewFileNamesImageProcessing", defaultValue: "Review file names, image processing, and original-file handling before continuing.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("画像を変換・リサイズする前に原本の扱いを確認", isOn: $preferences.confirmsOriginalProtection)
-                Text("オフの場合は元画像を置き換えます。ファイル名の衝突防止と失敗時の復元は常に有効です。")
+                Toggle(L10n.string("settings.confirmOriginalFileHandlingBefore", defaultValue: "Confirm original-file handling before converting or resizing images", language: preferences.resolvedLanguage), isOn: $preferences.confirmsOriginalProtection)
+                Text(L10n.string("settings.whenOffTheOriginalImage", defaultValue: "When off, the original image is replaced. Name-conflict protection and recovery after failure remain active.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("Undoの前に確認", isOn: $preferences.confirmsUndo)
+                Toggle(L10n.string("settings.confirmBeforeUndoingARename", defaultValue: "Confirm before undoing a rename", language: preferences.resolvedLanguage), isOn: $preferences.confirmsUndo)
             }
 
-            Section("画像処理") {
-                Toggle("リサイズでは拡大を防ぐ設定を初期値にする", isOn: $preferences.preventsUpscalingByDefault)
-                Text("画像設定でリサイズを新しく有効にしたときに適用します。")
+            Section(L10n.string("settings.imageProcessing", defaultValue: "Image Processing", language: preferences.resolvedLanguage)) {
+                Toggle(L10n.string("settings.preventUpscalingByDefaultWhen", defaultValue: "Prevent upscaling by default when resizing", language: preferences.resolvedLanguage), isOn: $preferences.preventsUpscalingByDefault)
+                Text(L10n.string("settings.appliedWhenYouFirstEnable", defaultValue: "Applied when you first enable resizing in Image Settings.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("JPEG 100%・同形式・リサイズなしでは再圧縮しない", isOn: $preferences.preservesJPEGAtMaximumQuality)
-                Text("オンの場合、対象のJPEGデータは変更せず、必要な名前変更だけを行います。")
+                Toggle(L10n.string("settings.doNotRecompressJpegFiles", defaultValue: "Do not recompress JPEG files at 100% when format and size are unchanged", language: preferences.resolvedLanguage), isOn: $preferences.preservesJPEGAtMaximumQuality)
+                Text(L10n.string("settings.whenOnMatchingJpegData", defaultValue: "When on, matching JPEG data remains unchanged and only the file name is changed.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("類似画像") {
-                Toggle("類似している可能性のある画像を確認", isOn: $preferences.detectsSimilarImages)
+            Section(L10n.string("settings.similarImages", defaultValue: "Similar Images", language: preferences.resolvedLanguage)) {
+                Toggle(L10n.string("settings.checkForSimilarImages", defaultValue: "Check for similar images", language: preferences.resolvedLanguage), isOn: $preferences.detectsSimilarImages)
 
-                Toggle("完全に同一のファイルだけ検出", isOn: $preferences.detectsOnlyExactDuplicates)
+                Toggle(L10n.string("settings.findExactDuplicateFilesOnly", defaultValue: "Find exact duplicate files only", language: preferences.resolvedLanguage), isOn: $preferences.detectsOnlyExactDuplicates)
                     .disabled(!preferences.detectsSimilarImages)
 
-                Picker("検出感度", selection: $preferences.similarImageSensitivity) {
+                Picker(L10n.string("settings.detectionSensitivity", defaultValue: "Detection Sensitivity", language: preferences.resolvedLanguage), selection: $preferences.similarImageSensitivity) {
                     ForEach(SimilarImageSensitivity.allCases) { sensitivity in
                         Text(sensitivity.localizedDisplayName(in: preferences.resolvedLanguage)).tag(sensitivity)
                     }
@@ -550,26 +551,26 @@ private struct PreferencesView: View {
                 .pickerStyle(.segmented)
                 .disabled(!preferences.detectsSimilarImages || preferences.detectsOnlyExactDuplicates)
 
-                Toggle("RAW＋JPEGの組み合わせを候補から除外", isOn: $preferences.excludesRAWJPEGFromSimilarity)
+                Toggle(L10n.string("settings.excludeRawJpegPairsFrom", defaultValue: "Exclude RAW + JPEG pairs from suggestions", language: preferences.resolvedLanguage), isOn: $preferences.excludesRAWJPEGFromSimilarity)
                     .disabled(!preferences.detectsSimilarImages)
 
-                Text("画像特徴の比較はこのMac内で行います。候補を表示するだけで、自動的な削除や除外は行いません。")
+                Text(L10n.string("settings.imageFeatureComparisonsStayOn", defaultValue: "Image-feature comparisons stay on this Mac. FileRenamer only shows suggestions; it never removes or excludes files automatically.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("表示") {
-                Picker("表示言語", selection: $preferences.displayLanguage) {
+            Section(L10n.string("settings.display", defaultValue: "Display", language: preferences.resolvedLanguage)) {
+                Picker(L10n.string("settings.displayLanguage", defaultValue: "Display Language", language: preferences.resolvedLanguage), selection: $preferences.displayLanguage) {
                     Text(AppLanguage.system.localizedDisplayName(in: preferences.resolvedLanguage)).tag(AppLanguage.system)
                     Text(AppLanguage.japanese.localizedDisplayName(in: preferences.resolvedLanguage)).tag(AppLanguage.japanese)
                     Text("English").tag(AppLanguage.english)
                 }
 
-                Text("日本語以外のシステム言語では英語で表示します。")
+                Text(L10n.string("settings.whenYourSystemLanguageIs", defaultValue: "When your system language is not Japanese, FileRenamer uses English.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("標準の表示形式", selection: $preferences.defaultViewMode) {
+                Picker(L10n.string("settings.defaultView", defaultValue: "Default View", language: preferences.resolvedLanguage), selection: $preferences.defaultViewMode) {
                     ForEach(ViewMode.allCases, id: \.self) { mode in
                         Text(mode.localizedDisplayName(in: preferences.resolvedLanguage)).tag(mode)
                     }
@@ -577,7 +578,7 @@ private struct PreferencesView: View {
                 .pickerStyle(.segmented)
 
                 HStack {
-                    Text("グリッドの列数")
+                    Text(L10n.string("settings.gridColumns", defaultValue: "Grid Columns", language: preferences.resolvedLanguage))
                     Slider(
                         value: Binding(
                             get: { Double(preferences.gridColumnCount) },
@@ -596,12 +597,12 @@ private struct PreferencesView: View {
                         .frame(width: 36, alignment: .trailing)
                 }
 
-                Toggle("ウィンドウを開いたときにサイドバーを表示", isOn: $preferences.opensSidebarOnLaunch)
+                Toggle(L10n.string("settings.showSidebarWhenOpeningA", defaultValue: "Show sidebar when opening a window", language: preferences.resolvedLanguage), isOn: $preferences.opensSidebarOnLaunch)
             }
 
-            Section("アップデート") {
+            Section(L10n.string("settings.updates", defaultValue: "Updates", language: preferences.resolvedLanguage)) {
                 Toggle(
-                    "起動後にアップデートを自動確認",
+                    L10n.string("settings.automaticallyCheckForUpdatesAfter", defaultValue: "Automatically check for updates after launch", language: preferences.resolvedLanguage),
                     isOn: Binding(
                         get: { updateController.automaticallyChecksForUpdates },
                         set: { updateController.setAutomaticallyChecksForUpdates($0) }
@@ -609,7 +610,7 @@ private struct PreferencesView: View {
                 )
 
                 Toggle(
-                    "アップデートを自動でインストール",
+                    L10n.string("settings.automaticallyInstallUpdates", defaultValue: "Automatically install updates", language: preferences.resolvedLanguage),
                     isOn: Binding(
                         get: { updateController.automaticallyDownloadsUpdates },
                         set: { updateController.setAutomaticallyDownloadsUpdates($0) }
@@ -617,23 +618,23 @@ private struct PreferencesView: View {
                 )
                 .disabled(!updateController.automaticallyChecksForUpdates)
 
-                Button("アップデートを確認…") {
+                Button(L10n.string("settings.checkForUpdates", defaultValue: "Check for Updates…", language: preferences.resolvedLanguage)) {
                     updateController.checkForUpdates()
                 }
                 .disabled(!updateController.canCheckForUpdates)
 
-                Text("更新情報の確認時も、ファイルや画像は送信しません。")
+                Text(L10n.string("settings.checkingForUpdatesNeverSends", defaultValue: "Checking for updates never sends your files or images.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("プライバシー") {
-                LabeledContent("データの処理") {
-                    Text("このMac内のみ")
+            Section(L10n.string("settings.privacy", defaultValue: "Privacy", language: preferences.resolvedLanguage)) {
+                LabeledContent(L10n.string("settings.dataHandling", defaultValue: "Data Handling", language: preferences.resolvedLanguage)) {
+                    Text(L10n.string("settings.onThisMacOnly", defaultValue: "On This Mac Only", language: preferences.resolvedLanguage))
                         .foregroundStyle(.secondary)
                 }
 
-                Button("プライバシーポリシーを表示…") {
+                Button(L10n.string("settings.showPrivacyPolicy", defaultValue: "Show Privacy Policy…", language: preferences.resolvedLanguage)) {
                     showsPrivacyPolicy = true
                 }
             }
@@ -648,32 +649,34 @@ private struct PreferencesView: View {
 }
 
 private struct PrivacyPolicyView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("プライバシーポリシー")
+            Text(L10n.string("settings.privacyPolicy", defaultValue: "Privacy Policy", language: language))
                 .font(.title2.weight(.semibold))
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     policySection(
-                        "データの処理",
-                        "FileRenamerは、ユーザーが選択したファイルをこのMac内で処理します。ファイル、ファイル名、画像、メタデータ、利用状況を開発者へ送信または収集しません。"
+                        L10n.string("settings.dataHandling", defaultValue: "Data Handling", language: language),
+                        L10n.string("settings.filerenamerProcessesTheFilesYou", defaultValue: "FileRenamer processes the files you select only on this Mac. It does not send or collect your files, names, images, metadata, or usage data.", language: language)
                     )
                     policySection(
-                        "ファイルへのアクセス",
-                        "選択したファイルへのアクセスは、読み込み、プレビュー、名前変更、画像変換、リサイズ、類似画像候補のローカル比較、ユーザーが明示的に選んだファイルのゴミ箱への移動、Undo、失敗時の復旧にだけ使用します。"
+                        L10n.string("settings.fileAccess", defaultValue: "File Access", language: language),
+                        L10n.string("settings.accessToSelectedFilesIs", defaultValue: "Access to selected files is used only for importing, previewing, renaming, image conversion, resizing, local comparison of similar-image candidates, moving files you explicitly select to Trash, Undo, and recovery after failure.", language: language)
                     )
                     policySection(
-                        "このMacに保存する情報",
-                        "設定、命名ルール、Undo履歴、復旧情報、必要な画像バックアップをこのMac内に保存します。古いUndo履歴と関連バックアップは、アプリの保存上限に従って削除されます。"
+                        L10n.string("settings.informationStoredOnThisMac", defaultValue: "Information Stored on This Mac", language: language),
+                        L10n.string("settings.settingsNamingRulesUndoHistory", defaultValue: "Settings, naming rules, Undo history, recovery information, and any needed image backups are stored on this Mac. Older Undo history and related backups are removed according to the app’s storage limit.", language: language)
                     )
                     policySection(
-                        "追跡と第三者提供",
-                        "広告、分析、ユーザー追跡を行わず、データを第三者へ提供しません。更新確認を有効にした場合は、最新バージョンの有無を確認するため更新情報サーバーへ接続しますが、ファイル、画像、利用状況は送信しません。"
+                        L10n.string("settings.trackingAndSharing", defaultValue: "Tracking and Sharing", language: language),
+                        L10n.string("settings.filerenamerDoesNotUseAdvertising", defaultValue: "FileRenamer does not use advertising, analytics, or user tracking, and does not share data with third parties. If update checking is enabled, it connects to the update server only to check whether a newer version is available; it never sends files, images, or usage data.", language: language)
                     )
-                    Text("制定日：2026年8月13日")
+                    Text(L10n.string("settings.effectiveDateAugust132026", defaultValue: "Effective date: August 13, 2026", language: language))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -682,7 +685,7 @@ private struct PrivacyPolicyView: View {
 
             HStack {
                 Spacer()
-                Button("閉じる") { dismiss() }
+                Button(L10n.string("settings.close", defaultValue: "Close", language: language)) { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
         }

@@ -11,7 +11,7 @@ struct NamingRuleBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text("命名規則")
+                Text(L10n.string("ruleBar.namingRule", defaultValue: "Naming Rule", language: preferences.resolvedLanguage))
                     .font(.headline)
                 PresetMenu()
                 BlockInsertMenu(insert: insertBlock)
@@ -48,7 +48,7 @@ struct NamingRuleBar: View {
         Group {
             if let first = model.previews.first {
                 HStack(spacing: 6) {
-                    Text("例:").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.string("ruleBar.example", defaultValue: "Example:", language: preferences.resolvedLanguage)).font(.caption).foregroundStyle(.secondary)
                     Text(first.proposedName)
                         .font(.system(.callout, design: .monospaced))
                         .foregroundStyle(first.validation.isError ? Palette.error : Color.primary)
@@ -72,7 +72,7 @@ private struct ImageOptionsControl: View {
             isPresented.toggle()
         } label: {
             HStack(spacing: 5) {
-                Text("画像設定")
+                Text(L10n.string("ruleBar.imageSettings", defaultValue: "Image Settings", language: preferences.resolvedLanguage))
                 CustomChevron()
                     .stroke(style: StrokeStyle(lineWidth: 1.35, lineCap: .round, lineJoin: .round))
                     .frame(width: 6, height: 10)
@@ -83,7 +83,7 @@ private struct ImageOptionsControl: View {
         }
         .buttonStyle(.plain)
         .fixedSize()
-        .help("画像形式と画像サイズを設定")
+        .help(L10n.string("ruleBar.setImageFormatAndDimensions", defaultValue: "Set image format and dimensions", language: preferences.resolvedLanguage))
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             optionsPopover
         }
@@ -91,11 +91,11 @@ private struct ImageOptionsControl: View {
 
     private var optionsPopover: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("画像設定")
+            Text(L10n.string("ruleBar.imageSettings", defaultValue: "Image Settings", language: preferences.resolvedLanguage))
                 .font(.headline)
 
             optionPicker(
-                title: "画像形式",
+                title: L10n.string("ruleBar.imageFormat", defaultValue: "Image Format", language: preferences.resolvedLanguage),
                 selection: $model.rule.imageOutputFormat,
                 options: ImageOutputFormat.allCases
             ) { $0.localizedDisplayName(in: preferences.resolvedLanguage) }
@@ -108,7 +108,7 @@ private struct ImageOptionsControl: View {
 
             resizeDisclosure
 
-            Text("画像変換・リサイズは JPEG・PNG に対応。JPEGでは透明部分を白にします。")
+            Text(L10n.string("ruleBar.imageConversionAndResizingSupport", defaultValue: "Image conversion and resizing support JPEG and PNG. Transparent areas become white in JPEG.", language: preferences.resolvedLanguage))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -124,11 +124,11 @@ private struct ImageOptionsControl: View {
 
     private var jpegQualityControl: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("JPEG品質")
+            Text(L10n.string("ruleBar.jpegQuality", defaultValue: "JPEG Quality", language: preferences.resolvedLanguage))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Picker("JPEG品質", selection: $model.jpegQualitySetting.preset) {
+            Picker(L10n.string("ruleBar.jpegQuality", defaultValue: "JPEG Quality", language: preferences.resolvedLanguage), selection: $model.jpegQualitySetting.preset) {
                 ForEach(JPEGQualityPreset.allCases, id: \.self) { preset in
                     Text(preset.localizedDisplayName(in: preferences.resolvedLanguage)).tag(preset)
                 }
@@ -139,7 +139,7 @@ private struct ImageOptionsControl: View {
             if model.jpegQualitySetting.preset == .custom {
                 HStack(spacing: 10) {
                     Slider(value: customQualityValue, in: 50...100, step: 1)
-                        .accessibilityLabel("JPEGカスタム品質")
+                        .accessibilityLabel(L10n.string("ruleBar.customJpegQuality", defaultValue: "Custom JPEG Quality", language: preferences.resolvedLanguage))
                     Text("\(model.jpegQualitySetting.normalizedCustomPercent)%")
                         .font(.system(.callout, design: .monospaced))
                         .frame(width: 42, alignment: .trailing)
@@ -147,13 +147,13 @@ private struct ImageOptionsControl: View {
             }
 
             Text(preferences.preservesJPEGAtMaximumQuality
-                 ? "100%・JPEG同形式・リサイズなしでは再圧縮しません。"
-                 : "JPEGは保存時に再圧縮されます。")
+                 ? L10n.string("ruleBar.jpegFilesAreNotRecompressed", defaultValue: "JPEG files are not recompressed at 100% when format and size are unchanged.", language: preferences.resolvedLanguage)
+                 : L10n.string("ruleBar.jpegFilesAreRecompressedWhen", defaultValue: "JPEG files are recompressed when saved.", language: preferences.resolvedLanguage))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .help(preferences.preservesJPEGAtMaximumQuality
-                      ? "リサイズ時、または100%未満ではJPEGを再エンコードします"
-                      : "JPEGは品質100%を含めて再エンコードします")
+                      ? L10n.string("ruleBar.jpegFilesAreReEncoded", defaultValue: "JPEG files are re-encoded when resized or saved below 100% quality.", language: preferences.resolvedLanguage)
+                      : L10n.string("ruleBar.jpegFilesAreReEncoded2", defaultValue: "JPEG files are re-encoded, including at 100% quality.", language: preferences.resolvedLanguage))
         }
     }
 
@@ -165,7 +165,7 @@ private struct ImageOptionsControl: View {
     }
 
     private func optionPicker<Option: Hashable>(
-        title: LocalizedStringKey,
+        title: String,
         selection: Binding<Option>,
         options: [Option],
         label: @escaping (Option) -> String
@@ -198,7 +198,7 @@ private struct ImageOptionsControl: View {
                         .frame(width: 7, height: 12)
                         .rotationEffect(.degrees(isResizeExpanded ? 90 : 0))
 
-                    Text("画像リサイズ")
+                    Text(L10n.string("ruleBar.resizeImages", defaultValue: "Resize Images", language: preferences.resolvedLanguage))
                         .fontWeight(.medium)
 
                     Spacer()
@@ -210,11 +210,11 @@ private struct ImageOptionsControl: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isResizeExpanded ? "画像リサイズ設定を閉じる" : "画像リサイズ設定を開く")
+            .accessibilityLabel(isResizeExpanded ? L10n.string("ruleBar.closeResizeSettings", defaultValue: "Close resize settings", language: preferences.resolvedLanguage) : L10n.string("ruleBar.openResizeSettings", defaultValue: "Open resize settings", language: preferences.resolvedLanguage))
 
             if isResizeExpanded {
                 VStack(alignment: .leading, spacing: 10) {
-                    Toggle("リサイズを有効にする", isOn: $model.rule.imageResize.isEnabled)
+                    Toggle(L10n.string("ruleBar.enableResizing", defaultValue: "Enable Resizing", language: preferences.resolvedLanguage), isOn: $model.rule.imageResize.isEnabled)
                         .toggleStyle(.switch)
                         .onChange(of: model.rule.imageResize.isEnabled) { wasEnabled, isEnabled in
                             if isEnabled && !wasEnabled {
@@ -223,7 +223,7 @@ private struct ImageOptionsControl: View {
                         }
 
                     HStack(spacing: 8) {
-                        Text("統一する長辺")
+                        Text(L10n.string("ruleBar.maximumLongEdge", defaultValue: "Maximum Long Edge", language: preferences.resolvedLanguage))
 
                         Spacer()
 
@@ -240,12 +240,12 @@ private struct ImageOptionsControl: View {
                     }
                     .disabled(!model.rule.imageResize.isEnabled)
 
-                    Text("64〜20,000 px。拡大・縮小して、縦横比を保ったまま長辺を統一します。")
+                    Text(L10n.string("ruleBar.6420000PxResizes", defaultValue: "64–20,000 px. Resizes while preserving the aspect ratio.", language: preferences.resolvedLanguage))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
                     Toggle(
-                        "元画像より小さい場合は拡大しない",
+                        L10n.string("ruleBar.doNotUpscaleSmallerImages", defaultValue: "Do Not Upscale Smaller Images", language: preferences.resolvedLanguage),
                         isOn: $model.rule.imageResize.preventsUpscaling
                     )
                     .disabled(!model.rule.imageResize.isEnabled)
@@ -310,7 +310,7 @@ struct BlockInsertMenu: View {
 
     var body: some View {
         Menu {
-            Menu("連番と日付") {
+            Menu(L10n.string("ruleBar.counterAndDate", defaultValue: "Counter and Date", language: preferences.resolvedLanguage)) {
                 ForEach(TokenInsertPanel.counterAndDateOptions.indices, id: \.self) { index in
                     let option = TokenInsertPanel.counterAndDateOptions[index]
                     Button(option.title(in: preferences.resolvedLanguage)) { insert(option.make()) }
@@ -322,14 +322,14 @@ struct BlockInsertMenu: View {
                     language: preferences.resolvedLanguage
                 )) { isCustomDateSheetPresented = true }
             }
-            Menu("元の名前") {
+            Menu(L10n.string("ruleBar.originalName", defaultValue: "Original Name", language: preferences.resolvedLanguage)) {
                 ForEach(TokenInsertPanel.originalNameOptions.indices, id: \.self) { index in
                     let option = TokenInsertPanel.originalNameOptions[index]
                     Button(option.title(in: preferences.resolvedLanguage)) { insert(option.make()) }
                 }
             }
         } label: {
-            Label("ブロックを挿入", systemImage: "plus.square")
+            Label(L10n.string("ruleBar.insertBlock", defaultValue: "Insert Block", language: preferences.resolvedLanguage), systemImage: "plus.square")
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

@@ -106,7 +106,7 @@ struct FileGridView: View {
                                     )
                                 )
                                 .accessibilityValue(model.preview(for: item)?.proposedName ?? item.displayName)
-                                .accessibilityHint("クリックして選択。ダブルクリックまたはスペースキーでプレビュー")
+                                .accessibilityHint(L10n.string("grid.clickToSelectDoubleClick", defaultValue: "Click to select. Double-click or press Space to preview.", language: preferences.resolvedLanguage))
                             }
                         }
                         .padding(horizontalPadding)
@@ -160,7 +160,7 @@ struct FileGridView: View {
         HStack(spacing: 10) {
             Spacer()
 
-            Text("横の列数")
+            Text(L10n.string("grid.columns", defaultValue: "Columns", language: preferences.resolvedLanguage))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -170,7 +170,7 @@ struct FileGridView: View {
                     in: Double(columnChoices.first ?? 3)...Double(columnChoices.last ?? 8),
                     step: 1
                 )
-                .accessibilityLabel("横の列数")
+                .accessibilityLabel(L10n.string("grid.columns", defaultValue: "Columns", language: preferences.resolvedLanguage))
                 .accessibilityValue(columnCountText)
 
                 HStack(spacing: 0) {
@@ -287,24 +287,24 @@ struct FileGridView: View {
     @ViewBuilder
     private func cellMenu(for item: RenameItem) -> some View {
         let ids = model.selection.contains(item.id) ? model.selection : [item.id]
-        Button("1つ前へ") { model.shift(ids: ids, by: -1) }
+        Button(L10n.string("grid.moveEarlier", defaultValue: "Move Earlier", language: preferences.resolvedLanguage)) { model.shift(ids: ids, by: -1) }
             .disabled(!model.canShift(ids: ids, by: -1))
-        Button("1つ後ろへ") { model.shift(ids: ids, by: 1) }
+        Button(L10n.string("grid.moveLater", defaultValue: "Move Later", language: preferences.resolvedLanguage)) { model.shift(ids: ids, by: 1) }
             .disabled(!model.canShift(ids: ids, by: 1))
-        Button("先頭へ移動") { model.moveToEdge(ids: ids, toStart: true) }
-        Button("末尾へ移動") { model.moveToEdge(ids: ids, toStart: false) }
+        Button(L10n.string("grid.moveToStart", defaultValue: "Move to Start", language: preferences.resolvedLanguage)) { model.moveToEdge(ids: ids, toStart: true) }
+        Button(L10n.string("grid.moveToEnd", defaultValue: "Move to End", language: preferences.resolvedLanguage)) { model.moveToEdge(ids: ids, toStart: false) }
         Divider()
-        Button("Finder で表示") { model.revealInFinder(ids: ids) }
-        Button("クイックルック") { model.quickLookURL = item.originalURL }
+        Button(L10n.string("grid.showInFinder", defaultValue: "Show in Finder", language: preferences.resolvedLanguage)) { model.revealInFinder(ids: ids) }
+        Button(L10n.string("grid.quickLook", defaultValue: "Quick Look", language: preferences.resolvedLanguage)) { model.quickLookURL = item.originalURL }
         if model.similarityBadge(for: item.id) != nil {
-            Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
+            Button(L10n.string("grid.reviewSimilarImages", defaultValue: "Review Similar Images…", language: preferences.resolvedLanguage)) { model.showSimilarImages(for: item.id) }
         }
         Divider()
-        Button("ゴミ箱に移動…", role: .destructive) {
+        Button(L10n.string("grid.moveToTrash", defaultValue: "Move to Trash…", language: preferences.resolvedLanguage), role: .destructive) {
             model.requestMoveToTrash(ids: ids)
         }
         Divider()
-        Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
+        Button(item.isLocked ? L10n.string("grid.unlockPosition", defaultValue: "Unlock Position", language: preferences.resolvedLanguage) : L10n.string("grid.lockAtThisPosition", defaultValue: "Lock at This Position", language: preferences.resolvedLanguage)) { model.toggleLock(ids: ids) }
         Divider()
         Button(L10n.format(
             "list.removeItems",
@@ -450,8 +450,8 @@ private struct GridCell: View {
                     .padding(6)
                     .help(
                         similarityBadge.containsExactMatch
-                            ? "同一または類似している画像を比較"
-                            : "類似している可能性のある画像を比較"
+                            ? L10n.string("grid.compareIdenticalOrSimilarImages", defaultValue: "Compare Identical or Similar Images", language: preferences.resolvedLanguage)
+                            : L10n.string("grid.compareSimilarImages", defaultValue: "Compare Similar Images", language: preferences.resolvedLanguage)
                     )
                     .accessibilityLabel(L10n.format(
                         "similarity.badge.accessibility",
@@ -463,7 +463,7 @@ private struct GridCell: View {
             }
 
             VStack(alignment: .leading, spacing: 3) {
-                nameSectionLabel("変更前", emphasized: false)
+                nameSectionLabel(L10n.string("grid.before", defaultValue: "Before", language: preferences.resolvedLanguage), emphasized: false)
                 Text(item.displayName)
                     .font(.caption2)
                     .foregroundStyle(originalNameColor)
@@ -474,7 +474,7 @@ private struct GridCell: View {
                 Divider()
                     .opacity(isSelected ? 0.38 : 0.55)
 
-                nameSectionLabel(isUnchanged ? "変更後（変更なし）" : "変更後", emphasized: true)
+                nameSectionLabel(isUnchanged ? L10n.string("grid.afterUnchanged", defaultValue: "After (unchanged)", language: preferences.resolvedLanguage) : L10n.string("grid.after", defaultValue: "After", language: preferences.resolvedLanguage), emphasized: true)
                 Text(proposedName)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(nameColor)
@@ -551,7 +551,7 @@ private struct GridCell: View {
         proposedName == item.displayName
     }
 
-    private func nameSectionLabel(_ title: LocalizedStringKey, emphasized: Bool) -> some View {
+    private func nameSectionLabel(_ title: String, emphasized: Bool) -> some View {
         Text(title)
             .font(.system(size: 9, weight: emphasized ? .semibold : .medium))
             .foregroundStyle(

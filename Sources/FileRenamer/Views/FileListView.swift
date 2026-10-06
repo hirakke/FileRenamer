@@ -167,7 +167,7 @@ struct FileListView: View {
         HStack(spacing: 12) {
             Text("#").frame(width: 44, alignment: .trailing)
             Text("").frame(width: 36)
-            Text("元のファイル名").frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.string("list.originalName", defaultValue: "Original Name", language: language)).frame(maxWidth: .infinity, alignment: .leading)
             Text("").frame(width: 42)
 
             Button {
@@ -184,11 +184,11 @@ struct FileListView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)
-            .help("並び順を反転します")
+            .help(L10n.string("list.reverseTheCurrentOrder", defaultValue: "Reverse the current order", language: language))
             .frame(width: 118, alignment: .trailing)
 
             Image(systemName: "arrow.right").foregroundStyle(.tertiary).frame(width: 16)
-            Text("変更後").frame(maxWidth: .infinity, alignment: .leading)
+            Text(L10n.string("grid.after", defaultValue: "After", language: language)).frame(maxWidth: .infinity, alignment: .leading)
             Spacer().frame(width: 62)
         }
         .font(.caption)
@@ -201,25 +201,25 @@ struct FileListView: View {
     @ViewBuilder
     private func rowMenu(for item: RenameItem) -> some View {
         let ids = model.selection.contains(item.id) ? model.selection : [item.id]
-        Button("1つ前へ") { model.shift(ids: ids, by: -1) }
+        Button(L10n.string("grid.moveEarlier", defaultValue: "Move Earlier", language: language)) { model.shift(ids: ids, by: -1) }
             .disabled(!model.canShift(ids: ids, by: -1))
-        Button("1つ後ろへ") { model.shift(ids: ids, by: 1) }
+        Button(L10n.string("grid.moveLater", defaultValue: "Move Later", language: language)) { model.shift(ids: ids, by: 1) }
             .disabled(!model.canShift(ids: ids, by: 1))
-        Button("先頭へ移動") { model.moveToEdge(ids: ids, toStart: true) }
-        Button("末尾へ移動") { model.moveToEdge(ids: ids, toStart: false) }
+        Button(L10n.string("grid.moveToStart", defaultValue: "Move to Start", language: language)) { model.moveToEdge(ids: ids, toStart: true) }
+        Button(L10n.string("grid.moveToEnd", defaultValue: "Move to End", language: language)) { model.moveToEdge(ids: ids, toStart: false) }
         if model.similarityBadge(for: item.id) != nil {
             Divider()
-            Button("重複候補を確認…") { model.showSimilarImages(for: item.id) }
+            Button(L10n.string("grid.reviewSimilarImages", defaultValue: "Review Similar Images…", language: language)) { model.showSimilarImages(for: item.id) }
         }
         Divider()
-        Button("Finder で表示") { model.revealInFinder(ids: ids) }
-        Button("クイックルック") { model.quickLookURL = item.originalURL }
+        Button(L10n.string("grid.showInFinder", defaultValue: "Show in Finder", language: language)) { model.revealInFinder(ids: ids) }
+        Button(L10n.string("grid.quickLook", defaultValue: "Quick Look", language: language)) { model.quickLookURL = item.originalURL }
         Divider()
-        Button("ゴミ箱に移動…", role: .destructive) {
+        Button(L10n.string("grid.moveToTrash", defaultValue: "Move to Trash…", language: language), role: .destructive) {
             model.requestMoveToTrash(ids: ids)
         }
         Divider()
-        Button(item.isLocked ? "位置の固定を解除" : "この位置に固定") { model.toggleLock(ids: ids) }
+        Button(item.isLocked ? L10n.string("grid.unlockPosition", defaultValue: "Unlock Position", language: language) : L10n.string("grid.lockAtThisPosition", defaultValue: "Lock at This Position", language: language)) { model.toggleLock(ids: ids) }
         Divider()
         Button(L10n.format(
             "list.removeItems",
@@ -398,8 +398,8 @@ struct FileRow: View {
                 .buttonStyle(.plain)
                 .help(
                     similarityBadge.containsExactMatch
-                        ? "同一または類似している画像を確認"
-                        : "類似している可能性のある画像を確認"
+                        ? L10n.string("list.reviewIdenticalOrSimilarImages", defaultValue: "Review Identical or Similar Images", language: language)
+                        : L10n.string("settings.checkForSimilarImages", defaultValue: "Check for similar images", language: language)
                 )
                 .accessibilityLabel(L10n.format(
                     "similarity.badge.accessibility",
@@ -506,6 +506,8 @@ struct ValidationBadge: View {
 }
 
 struct ValidationDetail: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     let item: RenameItem
     let preview: RenamePreview?
     let message: String
@@ -522,15 +524,15 @@ struct ValidationDetail: View {
 
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 4) {
                 GridRow {
-                    Text("元").foregroundStyle(.secondary)
+                    Text(L10n.string("list.original", defaultValue: "Original", language: language)).foregroundStyle(.secondary)
                     Text(item.displayName).textSelection(.enabled)
                 }
                 GridRow {
-                    Text("変更後").foregroundStyle(.secondary)
+                    Text(L10n.string("grid.after", defaultValue: "After", language: language)).foregroundStyle(.secondary)
                     Text(preview?.proposedName ?? "—").textSelection(.enabled)
                 }
                 GridRow {
-                    Text("場所").foregroundStyle(.secondary)
+                    Text(L10n.string("list.location", defaultValue: "Location", language: language)).foregroundStyle(.secondary)
                     Text(item.directoryURL.path).textSelection(.enabled)
                 }
             }
@@ -538,7 +540,7 @@ struct ValidationDetail: View {
 
             HStack {
                 Spacer()
-                Button("Finder で表示") {
+                Button(L10n.string("grid.showInFinder", defaultValue: "Show in Finder", language: language)) {
                     NSWorkspace.shared.activateFileViewerSelecting([item.originalURL])
                 }
                 .buttonStyle(.borderless)

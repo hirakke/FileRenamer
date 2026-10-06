@@ -152,6 +152,8 @@ final class QuickLookWindowController: NSObject, ObservableObject, NSWindowDeleg
 }
 
 private struct StandaloneQuickLookContent: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     let url: URL
     let dismiss: () -> Void
 
@@ -175,11 +177,11 @@ private struct StandaloneQuickLookContent: View {
 
                 Spacer()
 
-                Button("Finderで表示") {
+                Button(L10n.string("quickLook.showInFinder", defaultValue: "Show in Finder", language: language)) {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
 
-                Button("閉じる", action: dismiss)
+                Button(L10n.string("settings.close", defaultValue: "Close", language: language), action: dismiss)
                     .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 12)

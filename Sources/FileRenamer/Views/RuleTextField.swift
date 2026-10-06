@@ -163,14 +163,14 @@ private struct ExtensionBlockToken: View {
         .onHover { isHovered = $0 }
         .popover(isPresented: $isShowingPopover, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("拡張子")
+                Text(L10n.string("rule.extension", defaultValue: "Extension", language: preferences.resolvedLanguage))
                     .font(.headline)
 
-                Text("大文字・小文字")
+                Text(L10n.string("rule.letterCase", defaultValue: "Letter Case", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Picker("大文字・小文字", selection: $rule.extensionTransform) {
+                Picker(L10n.string("rule.letterCase", defaultValue: "Letter Case", language: preferences.resolvedLanguage), selection: $rule.extensionTransform) {
                     ForEach(CaseTransform.allCases, id: \.self) { transform in
                         Text(transform.localizedDisplayName(in: preferences.resolvedLanguage)).tag(transform)
                     }
@@ -178,14 +178,14 @@ private struct ExtensionBlockToken: View {
                 .labelsHidden()
                 .pickerStyle(.segmented)
 
-                Text("画像形式は「画像設定」から変更できます。")
+                Text(L10n.string("rule.changeTheImageFormatIn", defaultValue: "Change the image format in Image Settings.", language: preferences.resolvedLanguage))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding(16)
             .frame(width: 280)
         }
-        .help("拡張子の大文字・小文字を設定")
+        .help(L10n.string("rule.setExtensionLetterCase", defaultValue: "Set extension letter case", language: preferences.resolvedLanguage))
         .accessibilityLabel(L10n.format(
             "extensionBlock.accessibility",
             defaultValue: "Extension block, %@",
@@ -213,6 +213,8 @@ private struct ExtensionBlockToken: View {
 
 /// A block sitting inside the text: click to configure, hover to delete.
 private struct BlockToken: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @Binding var rule: RenameRule
     let token: RenameToken
     let presentation: RuleTextField.EditorPresentation
@@ -243,11 +245,11 @@ private struct BlockToken: View {
                 .frame(width: 280)
         }
         .onHover { isHovered = $0 }
-        .help("クリックで設定、ドラッグで移動、Backspace で削除")
+        .help(L10n.string("rule.clickToConfigureDragTo", defaultValue: "Click to configure, drag to move, or press Backspace to delete.", language: language))
         .contextMenu {
-            Button("編集…", action: edit)
+            Button(L10n.string("rule.edit", defaultValue: "Edit…", language: language), action: edit)
             Divider()
-            Button("削除", role: .destructive, action: onDelete)
+            Button(L10n.string("preset.delete", defaultValue: "Delete", language: language), role: .destructive, action: onDelete)
         }
     }
 }

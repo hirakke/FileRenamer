@@ -97,7 +97,7 @@ private struct InsertRow: View {
             }
             .labelsHidden()
 
-            Button("挿入") {
+            Button(L10n.string("insertPanel.insert", defaultValue: "Insert", language: preferences.resolvedLanguage)) {
                 guard options.indices.contains(selection) else { return }
                 insert(options[selection].make())
             }

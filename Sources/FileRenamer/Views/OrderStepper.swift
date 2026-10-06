@@ -36,6 +36,8 @@ struct OrderStepper: View {
 /// One arrow. Also usable on its own, which the grid does so the number can sit
 /// between the two arrows.
 struct OrderStepButton: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @EnvironmentObject private var model: AppModel
     let id: UUID
     let delta: Int
@@ -64,8 +66,8 @@ struct OrderStepButton: View {
         .buttonStyle(.borderless)
         .foregroundStyle(tint(enabled: enabled))
         .disabled(!enabled)
-        .help(delta < 0 ? "1つ前へ" : "1つ後ろへ")
-        .accessibilityLabel(delta < 0 ? "1つ前へ移動" : "1つ後ろへ移動")
+        .help(delta < 0 ? L10n.string("grid.moveEarlier", defaultValue: "Move Earlier", language: language) : L10n.string("grid.moveLater", defaultValue: "Move Later", language: language))
+        .accessibilityLabel(delta < 0 ? L10n.string("orderStep.moveEarlier", defaultValue: "Move Earlier", language: language) : L10n.string("orderStep.moveLater", defaultValue: "Move Later", language: language))
     }
 
     private func tint(enabled: Bool) -> Color {
