@@ -186,7 +186,9 @@ struct FileGridView: View {
 
             Text(columnCountText)
                 .font(.system(.caption, design: .monospaced).weight(.medium))
-                .frame(width: 30, alignment: .trailing)
+                .lineLimit(1)
+                .fixedSize()
+                .frame(minWidth: 30, alignment: .trailing)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
