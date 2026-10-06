@@ -12,9 +12,9 @@ struct RenameConfirmationView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("変更内容を確認")
+                Text(L10n.string("confirm.reviewChanges", defaultValue: "Review Changes", language: language))
                     .font(.title2.weight(.semibold))
-                Text("次の内容でファイルを変更します。実行前に確認してください。")
+                Text(L10n.string("confirm.theseChangesWillBeApplied", defaultValue: "These changes will be applied to your files. Please review them before continuing.", language: language))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -23,7 +23,7 @@ struct RenameConfirmationView: View {
 
             if confirmation.replacesOriginalImages {
                 Label(
-                    "画像データを再生成し、元画像を置き換えます。",
+                    L10n.string("confirm.imageDataWillBeRecreated", defaultValue: "Image data will be recreated and the originals will be replaced.", language: language),
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.callout.weight(.medium))
@@ -59,11 +59,11 @@ struct RenameConfirmationView: View {
 
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Text("変更前")
+                    Text(L10n.string("grid.before", defaultValue: "Before", language: language))
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: "arrow.right")
                         .hidden()
-                    Text("変更後")
+                    Text(L10n.string("grid.after", defaultValue: "After", language: language))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .font(.caption.weight(.semibold))
@@ -90,11 +90,11 @@ struct RenameConfirmationView: View {
             }
 
             HStack {
-                Text("実行直前にも保存先の衝突を再確認します。")
+                Text(L10n.string("confirm.fileNameConflictsAreChecked", defaultValue: "File name conflicts are checked again immediately before running.", language: language))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("キャンセル") { dismiss() }
+                Button(L10n.string("main.cancel", defaultValue: "Cancel", language: language)) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button(confirmation.actionTitle) { confirm() }
                     .buttonStyle(.borderedProminent)
@@ -107,14 +107,14 @@ struct RenameConfirmationView: View {
 
     private var summary: some View {
         HStack(spacing: 0) {
-            summaryValue("対象", value: itemCount(confirmation.changedItemCount))
+            summaryValue(L10n.string("confirm.scope", defaultValue: "Scope", language: language), value: itemCount(confirmation.changedItemCount))
             Divider().frame(height: 32)
-            summaryValue("名前変更", value: fileCount(confirmation.renamedFileCount))
+            summaryValue(L10n.string("confirm.rename", defaultValue: "Rename", language: language), value: fileCount(confirmation.renamedFileCount))
             Divider().frame(height: 32)
-            summaryValue("画像処理", value: fileCount(confirmation.processedImageCount))
+            summaryValue(L10n.string("settings.imageProcessing", defaultValue: "Image Processing", language: language), value: fileCount(confirmation.processedImageCount))
             if confirmation.warningCount > 0 {
                 Divider().frame(height: 32)
-                summaryValue("警告", value: itemCount(confirmation.warningCount), tint: Palette.warning)
+                summaryValue(L10n.string("confirm.warnings", defaultValue: "Warnings", language: language), value: itemCount(confirmation.warningCount), tint: Palette.warning)
             }
         }
         .padding(.vertical, 10)
@@ -129,7 +129,7 @@ struct RenameConfirmationView: View {
         L10n.format("count.files", defaultValue: "%d file(s)", arguments: [count], language: language)
     }
 
-    private func summaryValue(_ title: LocalizedStringKey, value: String, tint: Color = .primary) -> some View {
+    private func summaryValue(_ title: String, value: String, tint: Color = .primary) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption)

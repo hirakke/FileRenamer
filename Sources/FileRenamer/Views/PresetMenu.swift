@@ -13,14 +13,14 @@ struct PresetMenu: View {
 
     var body: some View {
         Menu {
-            Section("プリセット") {
+            Section(L10n.string("preset.presets", defaultValue: "Presets", language: preferences.resolvedLanguage)) {
                 ForEach(model.builtInPresets) { preset in
                     presetButton(preset)
                 }
             }
 
             if !model.userPresets.isEmpty {
-                Section("マイプリセット") {
+                Section(L10n.string("preset.myPresets", defaultValue: "My Presets", language: preferences.resolvedLanguage)) {
                     ForEach(model.userPresets) { preset in
                         presetButton(preset)
                     }
@@ -28,14 +28,14 @@ struct PresetMenu: View {
             }
 
             Divider()
-            Button("現在のプリセットを保存…") {
+            Button(L10n.string("preset.saveCurrentPreset", defaultValue: "Save Current Preset…", language: preferences.resolvedLanguage)) {
                 sheetMode = .create(model.savedRule)
             }
             // Always available: this is also where a first preset gets created.
-            Button("プリセットを管理…") { sheetMode = .list }
+            Button(L10n.string("preset.managePresets", defaultValue: "Manage Presets…", language: preferences.resolvedLanguage)) { sheetMode = .list }
             Divider()
-            Button("プリセットを読み込む…") { model.importPresets() }
-            Button("プリセットを書き出す…") { model.exportPresets() }
+            Button(L10n.string("preset.importPresets", defaultValue: "Import Presets…", language: preferences.resolvedLanguage)) { model.importPresets() }
+            Button(L10n.string("preset.exportPresets", defaultValue: "Export Presets…", language: preferences.resolvedLanguage)) { model.exportPresets() }
                 .disabled(model.userPresets.isEmpty)
         } label: {
             HStack(spacing: 4) {
@@ -47,7 +47,7 @@ struct PresetMenu: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("命名規則のプリセットを選択・作成します")
+        .help(L10n.string("preset.chooseOrCreateANaming", defaultValue: "Choose or create a naming-rule preset.", language: preferences.resolvedLanguage))
         .sheet(item: $sheetMode) { mode in
             ManagePresetsSheet(initialMode: mode, dismiss: { sheetMode = nil })
                 .environmentObject(model)
@@ -119,12 +119,12 @@ struct ManagePresetsSheet: View {
                 startCreating(from: rule)
             }
         }
-        .alert("プリセットを削除しますか？", isPresented: Binding(
+        .alert(L10n.string("preset.deleteThisPreset", defaultValue: "Delete this preset?", language: preferences.resolvedLanguage), isPresented: Binding(
             get: { presetPendingDeletion != nil },
             set: { if !$0 { presetPendingDeletion = nil } }
         )) {
-            Button("キャンセル", role: .cancel) { presetPendingDeletion = nil }
-            Button("削除", role: .destructive) {
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage), role: .cancel) { presetPendingDeletion = nil }
+            Button(L10n.string("preset.delete", defaultValue: "Delete", language: preferences.resolvedLanguage), role: .destructive) {
                 if let presetPendingDeletion {
                     model.deletePreset(id: presetPendingDeletion.id)
                 }
@@ -147,13 +147,13 @@ struct ManagePresetsSheet: View {
     private var presetList: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("プリセットを管理").font(.headline)
+                Text(L10n.string("preset.managePresets2", defaultValue: "Manage Presets", language: preferences.resolvedLanguage)).font(.headline)
                 Spacer()
                 Menu {
-                    Button("初めから作る") { startCreating(from: RenameRule()) }
-                    Button("現在の規則を複製して作る") { startCreating(from: model.savedRule) }
+                    Button(L10n.string("preset.createFromScratch", defaultValue: "Create from Scratch", language: preferences.resolvedLanguage)) { startCreating(from: RenameRule()) }
+                    Button(L10n.string("preset.duplicateCurrentRule", defaultValue: "Duplicate Current Rule", language: preferences.resolvedLanguage)) { startCreating(from: model.savedRule) }
                 } label: {
-                    Label("新規プリセット", systemImage: "plus")
+                    Label(L10n.string("preset.newPreset", defaultValue: "New Preset", language: preferences.resolvedLanguage), systemImage: "plus")
                 } primaryAction: {
                     startCreating(from: RenameRule())
                 }
@@ -175,7 +175,7 @@ struct ManagePresetsSheet: View {
 
             HStack {
                 Spacer()
-                Button("閉じる", action: dismiss)
+                Button(L10n.string("settings.close", defaultValue: "Close", language: preferences.resolvedLanguage), action: dismiss)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -190,7 +190,7 @@ struct ManagePresetsSheet: View {
             }
             Spacer()
 
-            Button("適用") { model.applyPreset(preset) }
+            Button(L10n.string("preset.apply", defaultValue: "Apply", language: preferences.resolvedLanguage)) { model.applyPreset(preset) }
                 .buttonStyle(.borderless)
 
             Button {
@@ -201,7 +201,7 @@ struct ManagePresetsSheet: View {
                 Image(systemName: "slider.horizontal.3")
             }
             .buttonStyle(.borderless)
-            .help("名前とブロックを編集")
+            .help(L10n.string("preset.editNameAndBlocks", defaultValue: "Edit name and blocks", language: preferences.resolvedLanguage))
 
             Button(role: .destructive) {
                 presetPendingDeletion = preset
@@ -209,7 +209,7 @@ struct ManagePresetsSheet: View {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
-            .help("削除")
+            .help(L10n.string("preset.delete", defaultValue: "Delete", language: preferences.resolvedLanguage))
         }
         .padding(.vertical, 3)
     }
@@ -219,7 +219,7 @@ struct ManagePresetsSheet: View {
             Image(systemName: "square.stack.3d.up")
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(.tertiary)
-            Text("保存したプリセットはまだありません")
+            Text(L10n.string("preset.noSavedPresetsYet", defaultValue: "No saved presets yet", language: preferences.resolvedLanguage))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -232,16 +232,16 @@ struct ManagePresetsSheet: View {
     /// dropped in at the caret where a part of the name has to vary per file.
     private func editor(presetID: UUID?) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(presetID == nil ? "新規プリセット" : "プリセットを編集")
+            Text(presetID == nil ? L10n.string("preset.newPreset", defaultValue: "New Preset", language: preferences.resolvedLanguage) : L10n.string("preset.editPreset", defaultValue: "Edit Preset", language: preferences.resolvedLanguage))
                 .font(.headline)
 
-            LabeledContent("名前") {
-                TextField("例: 旅行写真", text: $draftName)
+            LabeledContent(L10n.string("preset.name", defaultValue: "Name", language: preferences.resolvedLanguage)) {
+                TextField(L10n.string("preset.exampleTravelPhotos", defaultValue: "Example: Travel Photos", language: preferences.resolvedLanguage), text: $draftName)
                     .textFieldStyle(.roundedBorder)
             }
 
             HStack(spacing: 6) {
-                Text("例:").font(.callout).foregroundStyle(.secondary)
+                Text(L10n.string("ruleBar.example", defaultValue: "Example:", language: preferences.resolvedLanguage)).font(.callout).foregroundStyle(.secondary)
                 Text(sampleName)
                     .font(.system(.callout, design: .monospaced).weight(.medium))
                     .foregroundStyle(draftRule.tokens.isEmpty ? Color.secondary : Color.primary)
@@ -256,7 +256,7 @@ struct ManagePresetsSheet: View {
             TokenInsertPanel(insert: insertBlock)
 
             if isDuplicateName(excluding: presetID) {
-                Label("同じ名前のプリセットを上書きします", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("preset.thisWillReplaceThePreset", defaultValue: "This will replace the preset with the same name.", language: preferences.resolvedLanguage), systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(Palette.warning)
             }
@@ -265,9 +265,9 @@ struct ManagePresetsSheet: View {
 
             HStack {
                 Spacer()
-                Button("キャンセル") { backToList() }
+                Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage)) { backToList() }
                     .keyboardShortcut(.cancelAction)
-                Button(presetID == nil ? "作成" : "保存") { commit(presetID: presetID) }
+                Button(presetID == nil ? L10n.string("preset.create", defaultValue: "Create", language: preferences.resolvedLanguage) : L10n.string("preset.save", defaultValue: "Save", language: preferences.resolvedLanguage)) { commit(presetID: presetID) }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canCommit)
             }
@@ -335,7 +335,7 @@ struct ManagePresetsSheet: View {
         }
     }
 
-    /// "マイプリセット", "マイプリセット 2", … so the field is never empty.
+    /// "My Preset", "My Preset 2", … so the field is never empty.
     private func suggestedName() -> String {
         let base = L10n.string("preset.suggestedName", defaultValue: "My Preset", language: preferences.resolvedLanguage)
         guard model.userPresets.contains(where: { $0.name == base }) else { return base }
@@ -353,7 +353,7 @@ struct RulePreviewLine: View {
     var body: some View {
         Text(
             rule.tokens.isEmpty
-                ? "（ブロックなし）"
+                ? L10n.string("preset.noBlocks", defaultValue: "(No Blocks)", language: preferences.resolvedLanguage)
                 : rule.tokens.map { $0.localizedSummary(in: preferences.resolvedLanguage) }.joined(separator: " · ")
         )
             .font(.caption)

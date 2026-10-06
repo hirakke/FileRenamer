@@ -1388,7 +1388,7 @@ final class AppModel: ObservableObject {
 
         let collisions = originalImageNameCollisions()
         guard collisions.isEmpty else {
-            let shownNames = collisions.prefix(5).joined(separator: "、")
+            let shownNames = collisions.prefix(5).joined(separator: localized("originalFolder.collisions.separator", defaultValue: ", "))
             let remainder = collisions.count > 5
                 ? localized("originalFolder.collisions.remainder", defaultValue: " and %d more", arguments: [collisions.count - 5])
                 : ""

@@ -25,8 +25,8 @@ struct WorkspaceSidebar: View {
                         .frame(width: 25, height: 25)
                 }
                 .buttonStyle(.plain)
-                .help("新しい命名作業を追加（⌘T）")
-                .accessibilityLabel("新しい命名作業を追加")
+                .help(L10n.string("sidebar.addANewNamingTask", defaultValue: "Add a new naming task (⌘T)", language: language))
+                .accessibilityLabel(L10n.string("sidebar.addANewNamingTask2", defaultValue: "Add a new naming task", language: language))
             }
             .padding(.leading, 13)
             .padding(.trailing, 9)
@@ -53,7 +53,7 @@ struct WorkspaceSidebar: View {
                     language: ResolvedAppLanguage(locale: locale)
                 ))
                 Spacer()
-                Text("⌘Tで追加")
+                Text(L10n.string("sidebar.addWithT", defaultValue: "Add with ⌘T", language: language))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -112,7 +112,7 @@ private struct WorkspaceSidebarRow: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(model.isBusy)
-                .help(model.isBusy ? "処理中のタブは閉じられません" : "タブを閉じる")
+                .help(model.isBusy ? L10n.string("sidebar.aTabCannotBeClosed", defaultValue: "A tab cannot be closed while it is processing.", language: language) : L10n.string("sidebar.closeTab", defaultValue: "Close Tab", language: language))
                 .opacity(showsActions ? 1 : 0)
                 .allowsHitTesting(showsActions && !model.isBusy)
             }
@@ -148,7 +148,7 @@ private struct WorkspaceSidebarRow: View {
                 }
             }
             if !model.importedDirectories.isEmpty { Divider() }
-            Button("タブを閉じる", role: .destructive) {
+            Button(L10n.string("sidebar.closeTab", defaultValue: "Close Tab", language: language), role: .destructive) {
                 workspace.closeTab(tab.id)
             }
             .disabled(workspace.tabs.count == 1 || model.isBusy)
