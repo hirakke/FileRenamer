@@ -107,11 +107,11 @@ struct SimilarImageReviewView: View {
             isPresented: $isConfirmingTrash,
             titleVisibility: .visible
         ) {
-            Button("ゴミ箱に移動", role: .destructive) {
+            Button(L10n.string("main.moveToTrash", defaultValue: "Move to Trash", language: language), role: .destructive) {
                 model.moveToTrash(ids: selectedIDs)
                 dismiss()
             }
-            Button("キャンセル", role: .cancel) {}
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: language), role: .cancel) {}
         } message: {
             Text(trashConfirmationDetail)
         }
@@ -122,7 +122,7 @@ struct SimilarImageReviewView: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("重複している可能性のある画像")
+                Text(L10n.string("similar.similarImages", defaultValue: "Similar Images", language: language))
                     .font(.title2.weight(.semibold))
                 Text(L10n.format(
                     "similarity.review.summary",
@@ -158,7 +158,7 @@ struct SimilarImageReviewView: View {
                     .disabled(focusedIndex >= groups.count - 1 || zoomedItemID != nil)
                     .keyboardShortcut(.rightArrow, modifiers: [])
                 }
-                .help("組を切り替えます")
+                .help(L10n.string("similar.switchGroups", defaultValue: "Switch groups", language: language))
             }
         }
         .padding(.horizontal, 20)
@@ -201,7 +201,7 @@ struct SimilarImageReviewView: View {
                     language: language
                 ))
                     .font(.callout.weight(.medium))
-                Text(group.containsExactMatch ? "完全一致を含む" : "類似")
+                Text(group.containsExactMatch ? L10n.string("similar.includesExactMatch", defaultValue: "Includes Exact Match", language: language) : L10n.string("similar.similar", defaultValue: "Similar", language: language))
                     .font(.caption)
                     .foregroundStyle(group.containsExactMatch
                                      ? Palette.duplicateExact
@@ -235,7 +235,7 @@ struct SimilarImageReviewView: View {
         if let group = focusedGroup {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    Text(group.containsExactMatch ? "完全一致を含む組" : "類似している組")
+                    Text(group.containsExactMatch ? L10n.string("similar.groupsIncludingExactMatches", defaultValue: "Groups Including Exact Matches", language: language) : L10n.string("similar.similarGroups", defaultValue: "Similar Groups", language: language))
                         .font(.headline)
                         .foregroundStyle(group.containsExactMatch
                                          ? Palette.duplicateExact
@@ -243,14 +243,14 @@ struct SimilarImageReviewView: View {
 
                     Spacer()
 
-                    Button("最初の1枚以外を選択") { selectAllButFirst(in: group) }
-                        .help("先頭を残し、同じ組の残りを削除対象にします")
-                    Button("この組の選択を解除") { deselectAll(in: group) }
+                    Button(L10n.string("similar.selectAllButTheFirst", defaultValue: "Select All but the First", language: language)) { selectAllButFirst(in: group) }
+                        .help(L10n.string("similar.keepsTheFirstFileAnd", defaultValue: "Keeps the first file and selects the rest of this group for removal.", language: language))
+                    Button(L10n.string("similar.deselectThisGroup", defaultValue: "Deselect This Group", language: language)) { deselectAll(in: group) }
                         .disabled(!group.items.contains { selectedIDs.contains($0.id) })
                 }
 
                 if group.items.allSatisfy({ selectedIDs.contains($0.id) }) {
-                    Label("この組はすべて削除対象です。1 枚は残してください。", systemImage: "exclamationmark.triangle.fill")
+                    Label(L10n.string("similar.everyFileInThisGroup", defaultValue: "Every file in this group is selected for removal. Keep at least one.", language: language), systemImage: "exclamationmark.triangle.fill")
                         .font(.callout.weight(.medium))
                         .foregroundStyle(Palette.warning)
                 }
@@ -280,7 +280,7 @@ struct SimilarImageReviewView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         } else {
-            Text("表示できる組がありません")
+            Text(L10n.string("similar.noGroupsToDisplay", defaultValue: "No groups to display", language: language))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -290,7 +290,7 @@ struct SimilarImageReviewView: View {
         let isSelected = selectedIDs.contains(item.id)
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Toggle("削除", isOn: binding(for: item))
+                Toggle(L10n.string("preset.delete", defaultValue: "Delete", language: language), isOn: binding(for: item))
                     .toggleStyle(.checkbox)
                     .font(.callout)
                     .foregroundStyle(isSelected ? Palette.error : Color.secondary)
@@ -301,7 +301,7 @@ struct SimilarImageReviewView: View {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                 }
                 .buttonStyle(.borderless)
-                .help("プレビュー（ダブルクリック / スペースキーでも開きます）")
+                .help(L10n.string("similar.previewAlsoOpensWithDouble", defaultValue: "Preview (also opens with double-click or Space)", language: language))
 
                 Button {
                     NSWorkspace.shared.activateFileViewerSelecting([item.originalURL])
@@ -309,7 +309,7 @@ struct SimilarImageReviewView: View {
                     Image(systemName: "folder")
                 }
                 .buttonStyle(.borderless)
-                .help("Finderで表示")
+                .help(L10n.string("quickLook.showInFinder", defaultValue: "Show in Finder", language: language))
             }
 
             ThumbnailView(url: item.originalURL, size: 200)
@@ -317,7 +317,7 @@ struct SimilarImageReviewView: View {
                 .opacity(isSelected ? 0.45 : 1)
                 .overlay(alignment: .topLeading) {
                     if isSelected {
-                        Label("削除", systemImage: "trash.fill")
+                        Label(L10n.string("preset.delete", defaultValue: "Delete", language: language), systemImage: "trash.fill")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 8)
@@ -406,7 +406,7 @@ struct SimilarImageReviewView: View {
 
                     Spacer()
 
-                    Toggle("削除", isOn: binding(for: item))
+                    Toggle(L10n.string("preset.delete", defaultValue: "Delete", language: language), isOn: binding(for: item))
                         .toggleStyle(.checkbox)
                         .font(.callout)
                         .foregroundStyle(isSelected ? Palette.error : .white)
@@ -418,7 +418,7 @@ struct SimilarImageReviewView: View {
                             .font(.title3)
                     }
                     .buttonStyle(.plain)
-                    .help("閉じる（Esc）")
+                    .help(L10n.string("similar.closeEsc", defaultValue: "Close (Esc)", language: language))
                 }
                 .foregroundStyle(.white)
 
@@ -490,7 +490,7 @@ struct SimilarImageReviewView: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Label("画像の比較はこのMac内で行われます", systemImage: "lock.shield")
+            Label(L10n.string("similar.imageComparisonHappensOnThis", defaultValue: "Image comparison happens on this Mac.", language: language), systemImage: "lock.shield")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -510,15 +510,15 @@ struct SimilarImageReviewView: View {
                 dismiss()
             }
             .disabled(selectedIDs.isEmpty || model.isBusy)
-            .help("ファイルは残したまま、この一覧からだけ外します")
+            .help(L10n.string("similar.keepsTheFilesAndRemoves", defaultValue: "Keeps the files and removes them only from this list.", language: language))
 
-            Button("ゴミ箱に移動…", role: .destructive) { isConfirmingTrash = true }
+            Button(L10n.string("grid.moveToTrash", defaultValue: "Move to Trash…", language: language), role: .destructive) { isConfirmingTrash = true }
                 .disabled(!canDelete)
                 .help(groupsFullySelected.isEmpty
-                      ? "選択したファイルをゴミ箱に移動します"
-                      : "すべてが削除対象の組があります")
+                      ? L10n.string("similar.moveSelectedFilesToTrash", defaultValue: "Move Selected Files to Trash", language: language)
+                      : L10n.string("similar.someGroupsHaveEveryFile", defaultValue: "Some groups have every file selected for removal.", language: language))
 
-            Button("閉じる") { dismiss() }
+            Button(L10n.string("settings.close", defaultValue: "Close", language: language)) { dismiss() }
                 .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, 20)

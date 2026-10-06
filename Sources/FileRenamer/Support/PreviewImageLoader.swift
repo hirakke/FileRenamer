@@ -1,5 +1,6 @@
 import AppKit
 import ImageIO
+import RenameKit
 import SwiftUI
 
 /// Loads display-sized images for the duplicate comparison view.
@@ -64,6 +65,8 @@ actor PreviewImageLoader {
 
 /// A large, aspect-fitted image with a placeholder while it decodes.
 struct LargeImageView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     let url: URL
     var maxPixelSize: Int = 2048
 
@@ -80,11 +83,11 @@ struct LargeImageView: View {
                     .aspectRatio(contentMode: .fit)
             } else if loadFailed {
                 ContentUnavailableView {
-                    Label("画像を読み込めませんでした", systemImage: "exclamationmark.triangle")
+                    Label(L10n.string("preview.couldnTLoadImage", defaultValue: "Couldn’t Load Image", language: language), systemImage: "exclamationmark.triangle")
                 } description: {
-                    Text("アクセス権または対応形式を確認してください。")
+                    Text(L10n.string("preview.checkTheAccessPermissionOr", defaultValue: "Check the access permission or supported format.", language: language))
                 } actions: {
-                    Button("再試行") { retryToken = UUID() }
+                    Button(L10n.string("preview.tryAgain", defaultValue: "Try Again", language: language)) { retryToken = UUID() }
                 }
             } else {
                 ZStack {

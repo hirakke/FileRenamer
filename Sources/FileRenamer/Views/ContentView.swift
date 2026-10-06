@@ -130,9 +130,9 @@ struct ContentView: View {
                 Alert(title: Text(message.title), message: Text(message.detail), dismissButton: .default(Text("OK")))
             }
         }
-        .alert("リネームを元に戻しますか？", isPresented: $model.isUndoConfirmationPresented) {
-            Button("キャンセル", role: .cancel) {}
-            Button("元に戻す", role: .destructive) {
+        .alert(L10n.string("main.undoTheRename", defaultValue: "Undo the rename?", language: preferences.resolvedLanguage), isPresented: $model.isUndoConfirmationPresented) {
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage), role: .cancel) {}
+            Button(L10n.string("main.undo", defaultValue: "Undo", language: preferences.resolvedLanguage), role: .destructive) {
                 model.confirmUndo()
             }
         } message: {
@@ -151,38 +151,38 @@ struct ContentView: View {
             ),
             titleVisibility: .visible
         ) {
-            Button("ゴミ箱に移動", role: .destructive) {
+            Button(L10n.string("main.moveToTrash", defaultValue: "Move to Trash", language: preferences.resolvedLanguage), role: .destructive) {
                 model.confirmMoveToTrash()
             }
-            Button("キャンセル", role: .cancel) {
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage), role: .cancel) {
                 model.cancelMoveToTrashConfirmation()
             }
         } message: {
             Text(trashConfirmationDetail)
         }
         .confirmationDialog(
-            "変更前の元画像を残しますか？",
+            L10n.string("main.keepTheOriginalImages", defaultValue: "Keep the original images?", language: preferences.resolvedLanguage),
             isPresented: $model.isImageResizeOriginalChoicePresented,
             titleVisibility: .visible
         ) {
-            Button("元画像を残して保存先を選ぶ") {
+            Button(L10n.string("main.keepOriginalsAndChooseLocation", defaultValue: "Keep Originals and Choose Location", language: preferences.resolvedLanguage)) {
                 model.chooseOriginalImagesDestinationForResize()
             }
-            Button("元画像を置き換える", role: .destructive) {
+            Button(L10n.string("main.replaceOriginals", defaultValue: "Replace Originals", language: preferences.resolvedLanguage), role: .destructive) {
                 model.replaceOriginalImagesForResize()
             }
-            Button("キャンセル", role: .cancel) {}
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage), role: .cancel) {}
         } message: {
-            Text("画像変換・リサイズでは画像データを再生成します。元画像を残す場合は、フォルダ名を入力してから作成場所を選択します。")
+            Text(L10n.string("main.imageConversionAndResizingRecreate", defaultValue: "Image conversion and resizing recreate image data. To keep originals, name the folder and choose where to save it.", language: preferences.resolvedLanguage))
         }
-        .alert("元画像を保存するフォルダ名", isPresented: $model.isOriginalImagesFolderNamePresented) {
-            TextField("フォルダ名", text: $model.originalImagesFolderName)
-            Button("キャンセル", role: .cancel) {}
-            Button("保存場所を選ぶ") {
+        .alert(L10n.string("main.originalImagesFolderName", defaultValue: "Original Images Folder Name", language: preferences.resolvedLanguage), isPresented: $model.isOriginalImagesFolderNamePresented) {
+            TextField(L10n.string("main.folderName", defaultValue: "Folder Name", language: preferences.resolvedLanguage), text: $model.originalImagesFolderName)
+            Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage), role: .cancel) {}
+            Button(L10n.string("main.chooseLocation", defaultValue: "Choose Location", language: preferences.resolvedLanguage)) {
                 model.confirmOriginalImagesFolderName()
             }
         } message: {
-            Text("選択する保存場所の中に、この名前の新しいフォルダを作成します。")
+            Text(L10n.string("main.aNewFolderWithThis", defaultValue: "A new folder with this name will be created in the selected location.", language: preferences.resolvedLanguage))
         }
         .frame(minWidth: 900, minHeight: 600)
         .modifier(ClearWindowContainerBackground())
@@ -248,7 +248,7 @@ struct ContentView: View {
                     .frame(width: 220)
                 Text(model.busyLabel).font(.callout)
                 if model.canCancelBusyOperation {
-                    Button("キャンセル") { model.cancelBusyOperation() }
+                    Button(L10n.string("main.cancel", defaultValue: "Cancel", language: preferences.resolvedLanguage)) { model.cancelBusyOperation() }
                 }
             }
             .operationPopupSurface()
@@ -272,11 +272,11 @@ struct ContentView: View {
 
                 HStack(spacing: 10) {
                     if message.offersUndo {
-                        Button("元に戻す") {
+                        Button(L10n.string("main.undo", defaultValue: "Undo", language: preferences.resolvedLanguage)) {
                             model.requestUndo()
                         }
                     }
-                    Button("閉じる") {
+                    Button(L10n.string("settings.close", defaultValue: "Close", language: preferences.resolvedLanguage)) {
                         model.resultMessage = nil
                     }
                     .buttonStyle(.borderedProminent)
@@ -297,50 +297,50 @@ struct ContentView: View {
             } label: {
                 Label("TabBar", systemImage: "sidebar.leading")
             }
-            .help(isWorkspaceSidebarVisible ? "TabBarを隠す" : "TabBarを表示")
+            .help(isWorkspaceSidebarVisible ? L10n.string("main.hideTabBar", defaultValue: "Hide Tab Bar", language: preferences.resolvedLanguage) : L10n.string("main.showTabBar", defaultValue: "Show Tab Bar", language: preferences.resolvedLanguage))
         }
 
         ToolbarItemGroup {
             Button {
                 model.presentOpenPanel(directories: false)
             } label: {
-                Label("ファイルを追加", systemImage: "doc.badge.plus")
+                Label(L10n.string("main.addFiles", defaultValue: "Add Files", language: preferences.resolvedLanguage), systemImage: "doc.badge.plus")
             }
             .tutorialTip(AddFilesTip(language: preferences.resolvedLanguage), step: 0, arrowEdge: .top)
 
             Button {
                 model.presentOpenPanel(directories: true)
             } label: {
-                Label("フォルダを追加", systemImage: "folder.badge.plus")
+                Label(L10n.string("main.addFolder", defaultValue: "Add Folder", language: preferences.resolvedLanguage), systemImage: "folder.badge.plus")
             }
 
             Menu {
                 ForEach(SortField.allCases, id: \.self) { field in
                     Menu(field.localizedDisplayName(in: preferences.resolvedLanguage)) {
-                        Button("昇順") { model.applySort(SortDescriptorOption(field: field, ascending: true)) }
-                        Button("降順") { model.applySort(SortDescriptorOption(field: field, ascending: false)) }
+                        Button(L10n.string("main.ascending", defaultValue: "Ascending", language: preferences.resolvedLanguage)) { model.applySort(SortDescriptorOption(field: field, ascending: true)) }
+                        Button(L10n.string("main.descending", defaultValue: "Descending", language: preferences.resolvedLanguage)) { model.applySort(SortDescriptorOption(field: field, ascending: false)) }
                     }
                 }
                 Divider()
-                Button("並びを反転") { model.reverseOrder() }
+                Button(L10n.string("main.reverseOrder", defaultValue: "Reverse Order", language: preferences.resolvedLanguage)) { model.reverseOrder() }
                 Divider()
-                Toggle("RAW + JPEG をまとめる", isOn: $model.importOptions.groupCompanionFiles)
+                Toggle(L10n.string("main.groupRawJpeg", defaultValue: "Group RAW + JPEG", language: preferences.resolvedLanguage), isOn: $model.importOptions.groupCompanionFiles)
             } label: {
-                Label("並べ替え", systemImage: "arrow.up.arrow.down")
+                Label(L10n.string("main.sort", defaultValue: "Sort", language: preferences.resolvedLanguage), systemImage: "arrow.up.arrow.down")
             }
 
-            Picker("表示", selection: $model.viewMode) {
+            Picker(L10n.string("settings.display", defaultValue: "Display", language: preferences.resolvedLanguage), selection: $model.viewMode) {
                 ForEach(ViewMode.allCases) { mode in
                     Image(systemName: mode.systemImageName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
-            .help("リスト / グリッド表示を切り替え")
+            .help(L10n.string("main.switchBetweenListAndGrid", defaultValue: "Switch between list and grid views", language: preferences.resolvedLanguage))
 
             Button {
                 model.requestUndo()
             } label: {
-                Label("元に戻す", systemImage: "arrow.uturn.backward")
+                Label(L10n.string("main.undo", defaultValue: "Undo", language: preferences.resolvedLanguage), systemImage: "arrow.uturn.backward")
             }
             .disabled(!model.canUndo)
             .tutorialTip(UndoTip(language: preferences.resolvedLanguage), step: 4, arrowEdge: .top)
@@ -461,6 +461,8 @@ private struct ClearWindowContainerBackground: ViewModifier {
 }
 
 struct EmptyStateView: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
@@ -468,9 +470,9 @@ struct EmptyStateView: View {
             Image(systemName: "square.and.arrow.down.on.square")
                 .font(.system(size: 52, weight: .light))
                 .foregroundStyle(.tertiary)
-            Text("ファイルまたはフォルダをドロップ")
+            Text(L10n.string("main.dropFilesOrAFolder", defaultValue: "Drop Files or a Folder", language: language))
                 .font(.title3)
-            Button("ファイルを追加…") { model.presentOpenPanel(directories: false) }
+            Button(L10n.string("main.addFiles2", defaultValue: "Add Files…", language: language)) { model.presentOpenPanel(directories: false) }
                 .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -20,7 +20,7 @@ struct TokenEditor: View {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(.borderless)
-                .help("このブロックを削除")
+                .help(L10n.string("tokenEditor.deleteThisBlock", defaultValue: "Delete this block", language: preferences.resolvedLanguage))
             }
 
             switch token {
@@ -42,12 +42,14 @@ struct TokenEditor: View {
 }
 
 private struct TextTokenEditor: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @State var config: TextConfiguration
     let commit: (TextConfiguration) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("例: イベント名", text: $config.value)
+            TextField(L10n.string("tokenEditor.exampleEventName", defaultValue: "Example: Event Name", language: language), text: $config.value)
                 .textFieldStyle(.roundedBorder)
         }
         .onChange(of: config) { _, new in commit(new) }
@@ -55,6 +57,8 @@ private struct TextTokenEditor: View {
 }
 
 private struct SeparatorTokenEditor: View {
+    @Environment(\.locale) private var locale
+    private var language: ResolvedAppLanguage { ResolvedAppLanguage(locale: locale) }
     @State var config: SeparatorConfiguration
     let commit: (SeparatorConfiguration) -> Void
 
@@ -68,7 +72,7 @@ private struct SeparatorTokenEditor: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            TextField("その他", text: $config.value)
+            TextField(L10n.string("tokenEditor.other", defaultValue: "Other", language: language), text: $config.value)
                 .textFieldStyle(.roundedBorder)
         }
         .onChange(of: config) { _, new in commit(new) }
@@ -82,12 +86,12 @@ private struct CounterTokenEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            LabeledContent("開始番号") {
+            LabeledContent(L10n.string("tokenEditor.startingNumber", defaultValue: "Starting Number", language: preferences.resolvedLanguage)) {
                 TextField("", value: $config.start, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
             }
-            LabeledContent("桁数") {
+            LabeledContent(L10n.string("tokenEditor.digits", defaultValue: "Digits", language: preferences.resolvedLanguage)) {
                 Picker("", selection: $config.digits) {
                     ForEach(1...6, id: \.self) { digits in
                         Text(String(repeating: "0", count: digits - 1) + "1").tag(digits)
@@ -96,10 +100,10 @@ private struct CounterTokenEditor: View {
                 .labelsHidden()
                 .frame(width: 90)
             }
-            LabeledContent("増分") {
+            LabeledContent(L10n.string("tokenEditor.increment", defaultValue: "Increment", language: preferences.resolvedLanguage)) {
                 Stepper(value: $config.step, in: 1...100) { Text("+\(config.step)") }
             }
-            Picker("番号のリセット", selection: $config.resetMode) {
+            Picker(L10n.string("tokenEditor.resetCounter", defaultValue: "Reset Counter", language: preferences.resolvedLanguage), selection: $config.resetMode) {
                 ForEach(CounterResetMode.allCases, id: \.self) { mode in
                     Text(mode.localizedDisplayName(in: preferences.resolvedLanguage)).tag(mode)
                 }
@@ -116,15 +120,15 @@ private struct DateTokenEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("種類", selection: $config.source) {
+            Picker(L10n.string("tokenEditor.type", defaultValue: "Type", language: preferences.resolvedLanguage), selection: $config.source) {
                 ForEach(DateSource.allCases, id: \.self) { source in
                     Text(source.localizedDisplayName(in: preferences.resolvedLanguage)).tag(source)
                 }
             }
 
-            Picker("形式", selection: $config.preset) {
+            Picker(L10n.string("tokenEditor.format", defaultValue: "Format", language: preferences.resolvedLanguage), selection: $config.preset) {
                 ForEach(DateFormatPreset.allCases, id: \.self) { preset in
-                    Text(preset == .custom ? "カスタム" : preset.pattern.uppercased()).tag(preset)
+                    Text(preset == .custom ? L10n.string("tokenEditor.custom", defaultValue: "Custom", language: preferences.resolvedLanguage) : preset.pattern.uppercased()).tag(preset)
                 }
             }
 
@@ -133,7 +137,7 @@ private struct DateTokenEditor: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
                 if config.customPattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Label("日付形式を入力してください", systemImage: "exclamationmark.triangle.fill")
+                    Label(L10n.string("tokenEditor.enterADateFormat", defaultValue: "Enter a date format.", language: preferences.resolvedLanguage), systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(Palette.warning)
                 }
@@ -149,7 +153,7 @@ private struct MetadataTokenEditor: View {
     let commit: (MetadataConfiguration) -> Void
 
     var body: some View {
-        Picker("項目", selection: $config.field) {
+        Picker(L10n.string("tokenEditor.item", defaultValue: "Item", language: preferences.resolvedLanguage), selection: $config.field) {
             ForEach(MetadataField.allCases, id: \.self) { field in
                 Text(field.localizedDisplayName(in: preferences.resolvedLanguage)).tag(field)
             }
@@ -165,19 +169,19 @@ private struct OriginalNameTokenEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("大文字小文字", selection: $config.transform) {
+            Picker(L10n.string("tokenEditor.letterCase", defaultValue: "Letter Case", language: preferences.resolvedLanguage), selection: $config.transform) {
                 ForEach(CaseTransform.allCases, id: \.self) { transform in
                     Text(transform.localizedDisplayName(in: preferences.resolvedLanguage)).tag(transform)
                 }
             }
-            TextField("検索（空なら置換なし）", text: $config.find)
+            TextField(L10n.string("tokenEditor.findLeaveEmptyForNo", defaultValue: "Find (leave empty for no replacement)", language: preferences.resolvedLanguage), text: $config.find)
                 .textFieldStyle(.roundedBorder)
-            TextField("置換後", text: $config.replacement)
+            TextField(L10n.string("tokenEditor.replaceWith", defaultValue: "Replace With", language: preferences.resolvedLanguage), text: $config.replacement)
                 .textFieldStyle(.roundedBorder)
-            Toggle("正規表現を使う", isOn: $config.usesRegularExpression)
+            Toggle(L10n.string("tokenEditor.useRegularExpression", defaultValue: "Use Regular Expression", language: preferences.resolvedLanguage), isOn: $config.usesRegularExpression)
             if config.usesRegularExpression, !config.find.isEmpty,
                (try? NSRegularExpression(pattern: config.find)) == nil {
-                Label("正規表現が正しくありません", systemImage: "exclamationmark.triangle.fill")
+                Label(L10n.string("tokenEditor.theRegularExpressionIsInvalid", defaultValue: "The regular expression is invalid.", language: preferences.resolvedLanguage), systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(Palette.warning)
             }
