@@ -215,28 +215,8 @@ struct StatusBar: View {
                 } else {
                     Image(systemName: "checkmark").opacity(0)
                     Text(L10n.string(
-                        "menu.moveExisting",
-                        defaultValue: "Move to Existing Folder…",
-                        language: preferences.resolvedLanguage
-                    ))
-                }
-            }
-        }
-        Button { model.chooseNewDestinationFolder() } label: {
-            HStack {
-                if case .newFolder(let url) = model.renameDestination {
-                    Image(systemName: "checkmark")
-                    Text(L10n.format(
-                        "menu.moveToFolder",
-                        defaultValue: "Move to “%@”",
-                        arguments: [url.lastPathComponent],
-                        language: preferences.resolvedLanguage
-                    ))
-                } else {
-                    Image(systemName: "checkmark").opacity(0)
-                    Text(L10n.string(
-                        "menu.moveNew",
-                        defaultValue: "Move to New Folder…",
+                        "menu.moveToFolderChoose",
+                        defaultValue: "Move to Folder…",
                         language: preferences.resolvedLanguage
                     ))
                 }
