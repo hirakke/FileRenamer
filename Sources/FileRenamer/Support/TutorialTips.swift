@@ -137,7 +137,7 @@ struct UndoTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.undo.message",
-            defaultValue: "Changes can be undone with ⌘Z, even after the app is restarted.",
+            defaultValue: "Changes can be undone with ⌥⌘Z, even after the app is restarted.",
             language: language
         ))
     }
