@@ -295,9 +295,9 @@ struct ContentView: View {
             Button {
                 isWorkspaceSidebarVisible.toggle()
             } label: {
-                Label("TabBar", systemImage: "sidebar.leading")
+                Label(L10n.string("main.sidebar", defaultValue: "Sidebar", language: preferences.resolvedLanguage), systemImage: "sidebar.leading")
             }
-            .help(isWorkspaceSidebarVisible ? L10n.string("main.hideTabBar", defaultValue: "Hide Tab Bar", language: preferences.resolvedLanguage) : L10n.string("main.showTabBar", defaultValue: "Show Tab Bar", language: preferences.resolvedLanguage))
+            .help(isWorkspaceSidebarVisible ? L10n.string("main.hideTabBar", defaultValue: "Hide Sidebar", language: preferences.resolvedLanguage) : L10n.string("main.showTabBar", defaultValue: "Show Sidebar", language: preferences.resolvedLanguage))
         }
 
         ToolbarItemGroup {
