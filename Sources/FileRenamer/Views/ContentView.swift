@@ -2,11 +2,13 @@ import SwiftUI
 import AppKit
 import QuickLookUI
 import RenameKit
+import TipKit
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
     @EnvironmentObject private var workspace: WorkspaceModel
     @EnvironmentObject private var preferences: AppPreferences
+    @AppStorage("tutorial.generation") private var tutorialGeneration = 0
     @State private var isDropTargeted = false
     @State private var isWorkspaceSidebarVisible = false
     @StateObject private var quickLookWindow = QuickLookWindowController()
@@ -97,6 +99,9 @@ struct ContentView: View {
             outsideClickMonitor.stop()
             quickLookWindow.close(notify: false)
         }
+        .task(id: tutorialGeneration) {
+            await observeTutorialTips()
+        }
         .sheet(item: $model.similarityReview) { review in
             SimilarImageReviewView(review: review)
         }
@@ -178,26 +183,6 @@ struct ContentView: View {
             }
         } message: {
             Text("選択する保存場所の中に、この名前の新しいフォルダを作成します。")
-        }
-        .alert(
-            L10n.string(
-                "destination.new.alertTitle",
-                defaultValue: "Name for the New Folder",
-                language: preferences.resolvedLanguage
-            ),
-            isPresented: $model.isNewDestinationFolderNamePresented
-        ) {
-            TextField("フォルダ名", text: $model.newDestinationFolderName)
-            Button("キャンセル", role: .cancel) {}
-            Button("保存場所を選ぶ") {
-                model.confirmNewDestinationFolderName()
-            }
-        } message: {
-            Text(L10n.string(
-                "destination.new.alertMessage",
-                defaultValue: "The new folder will be created in the chosen location, and the files will be moved into it.",
-                language: preferences.resolvedLanguage
-            ))
         }
         .frame(minWidth: 900, minHeight: 600)
         .modifier(ClearWindowContainerBackground())
@@ -321,6 +306,7 @@ struct ContentView: View {
             } label: {
                 Label("ファイルを追加", systemImage: "doc.badge.plus")
             }
+            .tutorialTip(AddFilesTip(language: preferences.resolvedLanguage), step: 0, arrowEdge: .top)
 
             Button {
                 model.presentOpenPanel(directories: true)
@@ -357,6 +343,31 @@ struct ContentView: View {
                 Label("元に戻す", systemImage: "arrow.uturn.backward")
             }
             .disabled(!model.canUndo)
+            .tutorialTip(UndoTip(language: preferences.resolvedLanguage), step: 4, arrowEdge: .top)
+        }
+    }
+
+    /// Closing a tip with its × reports `.invalidated` on `statusUpdates`; the tour
+    /// treats that the same as tapping Next so the sequence keeps moving.
+    private func observeTutorialTips() async {
+        let language = preferences.resolvedLanguage
+        let tips: [(any Tip, Int)] = [
+            (AddFilesTip(language: language), 0),
+            (TypeNameTip(language: language), 1),
+            (InsertBlocksTip(language: language), 2),
+            (RenameOrGatherTip(language: language), 3),
+            (UndoTip(language: language), 4)
+        ]
+        await withTaskGroup(of: Void.self) { group in
+            for (tip, step) in tips {
+                group.addTask {
+                    for await status in tip.statusUpdates {
+                        if case .invalidated = status {
+                            TutorialProgress.advance(from: step)
+                        }
+                    }
+                }
+            }
         }
     }
 }

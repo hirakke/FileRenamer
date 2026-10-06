@@ -1,145 +1,159 @@
 <p align="center">
-  <img src="FileRenamer-iOS-Default-1024x1024@1x.png" width="192" height="192" alt="FileRenamer app icon">
+  <img src="FileRenamer-iOS-Default-1024x1024@1x.png" width="160" height="160" alt="FileRenamer app icon">
 </p>
 
 <h1 align="center">FileRenamer</h1>
 
-<p align="center">A Mac app for batch-renaming files in the order you arrange them.</p>
-
 <p align="center">
-  <a href="https://github.com/hirakke/FileRenamer/releases/latest"><strong>Download the latest version</strong></a>
-  ·
-  <a href="https://apps.apple.com/us/app/filerenamer/id6800803707?mt=12"><strong>Download on the Mac App Store</strong></a>
-  ·
-  <a href="https://hirakke.github.io/FileRenamer/privacy.html">Privacy Policy</a>
-  ·
-  <a href="https://github.com/hirakke/FileRenamer/issues">Support</a>
+  <strong>Arrange them. Rename them all at once.</strong><br>
+  A Mac app for batch-renaming photos and documents — with every result checked before anything changes.
 </p>
 
-[日本語版はこちら](README.md)
+<p align="center">
+  <a href="https://github.com/hirakke/FileRenamer/releases/latest"><strong>Download the DMG</strong></a>
+  ·
+  <a href="https://apps.apple.com/us/app/filerenamer/id6800803707?mt=12"><strong>Get it on the Mac App Store</strong></a>
+  ·
+  <a href="README.md">日本語</a>
+</p>
 
-FileRenamer helps you put many files in a clear order, build a naming rule from dates, text, and counters, and review the result before any files are changed.
+<p align="center">
+  <img src="Documentation/Images/icon-view.png" width="860" alt="FileRenamer icon view showing photos with their original and new names">
+</p>
 
 ```text
 DSC_1842.jpg  →  20260820_Event_001.jpg
 IMG_2941.jpg  →  20260820_Event_002.jpg
-IMG_3014.jpg  →  20260820_Event_003.jpg
+DSC_2186.jpg  →  20260820_Event_003.jpg
 ```
 
-Before you rename, FileRenamer checks for duplicate names and conflicts with files already at the destination. If it finds a problem, it explains it instead of running the change.
+Add files with messy names, put them in order, and choose a naming rule. The new names appear in the list as you go, and one click applies them to every file.
 
-## Icon View
+## Features
 
-Review your photos with larger previews and both the original and proposed names. Choose two to eight columns to suit the size of your window.
+### Your order becomes the numbering
 
-![FileRenamer icon view showing original and proposed names](Documentation/Images/icon-view.png)
+Sort by capture date, creation date, modification date, name, or size, then fine-tune individual files by dragging or with `⌘↑` / `⌘↓`. Counters run `001`, `002`, … from the top of the list, and the new names update the moment you change the order.
 
-## What You Can Do
+### Naming rules made of blocks
 
-- Add files or folders with drag and drop.
-- Sort by original name, creation date, modification date, capture date, or file size.
-- Drag rows or use move controls to fine-tune the order; counters follow that exact order.
-- Combine date, counter, original-name, fixed-text, and photo-information blocks.
-- Switch between list and icon views and adjust the icon-view column count.
-- Convert JPEG, PNG, and HEIC images to JPEG or PNG.
-- Resize images by their longest edge while keeping the original aspect ratio.
-- Open images, PDFs, and videos in a separate preview window with double-click or the Space bar.
-- Keep several naming jobs open at once in tabs.
-- Review exact and visually similar image candidates before deciding what to do.
+Type fixed text directly and insert blocks only for the parts that change per file. Save rules you use often as presets.
 
-Similarity analysis stays on your Mac. FileRenamer never removes files or excludes them from the list automatically. Files can only be moved to the Finder Trash after you explicitly choose them and confirm.
-
-## Languages
-
-FileRenamer is available in Japanese and English. Open **FileRenamer → Settings…** and choose **Use System Setting**, **Japanese**, or **English**.
-
-With **Use System Setting**, FileRenamer uses Japanese only when macOS is set to Japanese; it uses English for every other system language. File names, fixed text in your naming rules, and names of presets you create are never translated.
-
-## Requirements
-
-- macOS 14.0 or later
-- Apple silicon and Intel Macs
-
-The direct-download DMG is signed and notarized by Apple.
-
-## Install from the DMG
-
-1. Download `FileRenamer-*.dmg` from the [latest release](https://github.com/hirakke/FileRenamer/releases/latest).
-2. Open the DMG.
-3. Drag `FileRenamer` to the `Applications` folder.
-4. Open FileRenamer from Applications.
-
-## Your First Rename
-
-### 1. Add Files
-
-Choose **Add Files…** or **Add Folder…** in the toolbar, or drag files from Finder onto the window.
-
-When you add a folder, its name appears at the top of the window. Click it to reveal that folder in Finder.
-
-### 2. Arrange the Order
-
-Use the Sort menu in the toolbar, or drag rows into the order you want. The first item becomes `001`, the second becomes `002`, and so on. Proposed names update immediately when you change the order.
-
-### 3. Make a Naming Rule
-
-You can start with a built-in preset. To build your own rule, type any fixed text directly into the naming field, then choose **Insert Block** for the parts that vary per file.
-
-| Block | Use | Example |
+| Block | What it inserts | Example |
 | --- | --- | --- |
-| Date | Add a creation, modification, or capture date | `20260820` |
-| Counter | Number files in the arranged order | `001` |
-| Original Name | Reuse all or part of the original name | `DSC_1842` |
-| Photo Information | Use camera, lens, ISO, and other metadata | `ISO800` |
-| Fixed Text | Add an event name or separator | `_Event_` |
+| Date | Capture, creation, or modification date (or type a format such as `YYYYMMDD` with **Date (Custom Format)…**) | `20260820` |
+| Counter | Position in the list (digits, start number, reset per date or folder) | `001` |
+| Original Name | The original file name, optionally upper- or lowercased | `DSC_1842` |
+| Photo Info | Camera, lens, ISO, and other EXIF data | `ISO800` |
 
-For example, a rule of capture date + `_Event_` + a three-digit counter produces `20260820_Event_001.jpg`. By default, the existing file extension is kept.
+### Every result checked before you rename
 
-### 4. Review the Changes
+Duplicate names, files already at the destination, characters that can't be used, and names that are too long are flagged as errors before anything runs. FileRenamer never renames with errors present and never overwrites existing files.
 
-The list shows the original name and the proposed name side by side. Double-click a file or press Space to inspect it in a separate preview window.
+### Gather files from many folders into one
 
-A green check means the file can be processed. An orange warning is something to review. A red error must be resolved before FileRenamer can continue; use the control at the right edge of the row to read the reason.
+Files added from different folders can be moved into one folder as part of the same rename. Choose **Move to Folder…** from the ▾ next to the rename button and pick the destination (create a new folder with the **New Folder** button in the chooser). Choose **Rename in Place** to keep files where they are. Name clashes in the destination are reported before anything moves.
 
-### 5. Rename
+### See your photos while you work
 
-Click **Rename** at the bottom right, review the final confirmation, then run the change.
+Icon view shows thumbnails alongside the original and new names, in two to eight columns. Double-click or press Space to open images, PDFs, and videos in Quick Look. Dark Mode is fully supported.
 
-FileRenamer asks macOS for folder access only when it is needed, such as when working with an external drive. It does not repeatedly request access for folders that are already available.
+### Convert and resize in the same step
 
-## Image Conversion and Resizing
+Convert JPEG, PNG, and HEIC images to JPEG or PNG and resize them by their longest edge while renaming. Keep the originals in a separate folder, or replace them after confirmation.
 
-Open **Image Settings** beside the naming rule to choose an output format and an optional longest edge.
+### Find similar images
 
-- JPEG and PNG output are supported.
-- The aspect ratio is always preserved.
-- **Do Not Upscale Smaller Images** is on by default when you enable resizing.
-- JPEG output offers Maximum (100%), High (95%, recommended), Standard (90%), Compact (80%), and Custom quality.
-- JPEG files are recompressed when saved. At 100%, when the output remains JPEG and resizing is off, FileRenamer can skip recompression and only rename the file.
+FileRenamer points out identical images and visually similar ones, such as burst shots. Analysis stays on your Mac, and nothing is deleted or excluded automatically — only files you choose in the review sheet go to the Trash.
 
-Whenever image content will change, FileRenamer lets you choose whether to keep the originals. You can save originals in a newly created folder with a name you choose, or replace them after confirmation. Name-conflict checks, rollback after a failure, and rename history continue to protect the operation in either case.
+### Undo anytime
 
-## Undo and Recovery
+Undo the last rename with `⌥⌘Z` and redo it with `⇧⌥⌘Z`. History is kept even after you quit the app.
 
-- **Command-Z** undoes the most recent list-order change.
-- **Option-Command-Z** undoes the last completed file rename after confirmation.
-- Image processing keeps the backup material needed for Undo and for recovery after an interrupted operation.
-- Undo history is limited. Keeping originals is separate from Undo and is the safer option when image content matters.
+### And more
 
-## Privacy
+- A tutorial on first launch (show it again anytime from **Help → Show Tutorial Again**)
+- Work on several naming jobs at once in tabs (`⌘T`)
+- Keep RAW + JPEG pairs together under the same name
+- Japanese and English interface, or follow the system language
+- Everything happens on your Mac — no files or usage data are sent anywhere
 
-Files, thumbnails, image analysis, metadata reading, renaming, conversion, resizing, similarity checks, Trash actions, Undo, and recovery are handled on your Mac. FileRenamer does not collect or send your files, images, names, metadata, or usage data.
+## Download
 
-When update checking is enabled, the app contacts the update feed only to learn whether a newer version is available. It does not upload file or usage data.
+| Where | Details |
+| --- | --- |
+| [GitHub Releases (DMG)](https://github.com/hirakke/FileRenamer/releases/latest) | Notarized by Apple, with in-app update checks |
+| [Mac App Store](https://apps.apple.com/us/app/filerenamer/id6800803707?mt=12) | Installed and updated through the App Store |
 
-Read the full [Privacy Policy](https://hirakke.github.io/FileRenamer/privacy.html).
+**Requirements:** macOS 14.0 or later (Apple silicon and Intel)
 
-## Development
+For the DMG, open it, drag `FileRenamer` to `Applications`, and launch it from there.
 
-The repository uses three branches:
+## How to Use
 
-- `develop` — shared feature work and verification
-- `main` — direct, notarized DMG distribution with Sparkle updates
-- `app-store` — Mac App Store submission, without Sparkle
+1. **Add files.** Click **Add Files** or **Add Folder** in the toolbar, or drop files from Finder onto the window.
+2. **Arrange the order.** Pick a sort order from the Sort menu, then drag to adjust if needed.
+3. **Make a naming rule.** Choose a preset, or type text and use **Insert Block** for the parts that vary.
+4. **Review.** Check the new names in the list. Green means ready, orange is worth a look, and red must be fixed.
+5. **Rename.** Click **Rename N Items** at the bottom right and confirm. To gather the files into one folder, choose **Move to Folder…** from ▾ first.
 
-See [the release process](docs/RELEASE_PROCESS.md) for the checks required before a release.
+macOS asks for folder access only for locations that need it, such as external drives.
+
+## Keyboard Shortcuts
+
+| Action | Shortcut |
+| --- | --- |
+| New tab | `⌘T` |
+| Add files / folder | `⌘O` / `⇧⌘O` |
+| Rename | `⌘↩` |
+| Quick Look | `Space` |
+| Move selection earlier / later | `⌘↑` / `⌘↓` |
+| Move selection to start / end | `⌥⌘↑` / `⌥⌘↓` |
+| Lock / unlock position | `⌘L` |
+| Remove from list | `Delete` |
+| Undo / redo an order change | `⌘Z` / `⇧⌘Z` |
+| Undo / redo the last rename | `⌥⌘Z` / `⇧⌥⌘Z` |
+
+## FAQ
+
+### Can I rename files other than photos?
+
+Yes — PDFs, videos, audio, Office documents, and more. Image conversion and resizing work on JPEG, PNG, and HEIC/HEIF; RAW files support renaming and photo-info blocks.
+
+### Does adding files change them?
+
+No. Files change only after you click the rename button and confirm.
+
+### What if two files would get the same name?
+
+It's shown as an error before anything runs. Existing files are never silently overwritten.
+
+### Are similar images deleted?
+
+Never automatically. Only files you explicitly choose are moved to the Finder Trash. You can turn detection off in **FileRenamer → Settings…**.
+
+### How do I get updates?
+
+The DMG version checks via **FileRenamer → Check for Updates…**, and automatic checks can be turned on in Settings. The App Store version updates through the App Store.
+
+## Built to Be Safe
+
+Renaming is hard to take back, so FileRenamer is designed above all to get you back to where you started if something goes wrong.
+
+- **Two-phase renaming.** Every file first moves to a temporary name, then to its final name, so swaps like `A↔B` and case-only changes are safe.
+- **Rollback on failure.** If an error occurs mid-run, completed changes are reversed in order. If some files can't be restored, that state is kept in history so Undo can restore them later.
+- **Crash recovery.** Progress is journaled file by file, so if the app or your Mac stops mid-run, the original names are restored on the next launch.
+- **Image backups.** Before converting or resizing, the original data and metadata are set aside.
+- **Name variants count as clashes.** Like the standard macOS file system, differences in case and Unicode normalization (NFC/NFD) are treated as the same name.
+- **Renaming doesn't touch contents.** A plain rename never reads or writes file data — only the name changes.
+- **Stays on your Mac.** No files, images, names, or usage data leave your Mac. The DMG update check only asks whether a newer version exists.
+
+## Privacy and Support
+
+- [Privacy Policy](https://hirakke.github.io/FileRenamer/privacy.html)
+- [Report a problem or ask a question](https://github.com/hirakke/FileRenamer/issues)
+- [Release notes](https://hirakke.github.io/FileRenamer/release-notes.html) · [All releases](https://github.com/hirakke/FileRenamer/releases)
+
+---
+
+Copyright © 2026 Keiju Hiramoto. All rights reserved.

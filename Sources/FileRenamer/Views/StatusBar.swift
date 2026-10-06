@@ -51,7 +51,7 @@ struct StatusBar: View {
                     Label(
                         L10n.format(
                             "status.duplicateGroups",
-                            defaultValue: "%lld Duplicate Groups",
+                            defaultValue: "%lld Similar Groups",
                             arguments: [model.duplicateGroupCount],
                             language: preferences.resolvedLanguage
                         ),
@@ -63,7 +63,7 @@ struct StatusBar: View {
                                      : Palette.duplicateSimilar)
                 }
                 .buttonStyle(.plain)
-                .help(L10n.string("status.reviewDuplicatesHelp", defaultValue: "Review potentially duplicate images before removing any files.", language: preferences.resolvedLanguage))
+                .help(L10n.string("status.reviewDuplicatesHelp", defaultValue: "Review and delete similar images.", language: preferences.resolvedLanguage))
             }
             if model.isValidatingDestinations {
                 ProgressView()
@@ -145,6 +145,8 @@ struct StatusBar: View {
             )
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            // Attached outside the white foreground/tint so the tip keeps its own colors.
+            .tutorialTip(RenameOrGatherTip(language: preferences.resolvedLanguage), step: 3, arrowEdge: .bottom)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -215,28 +217,8 @@ struct StatusBar: View {
                 } else {
                     Image(systemName: "checkmark").opacity(0)
                     Text(L10n.string(
-                        "menu.moveExisting",
-                        defaultValue: "Move to Existing Folder…",
-                        language: preferences.resolvedLanguage
-                    ))
-                }
-            }
-        }
-        Button { model.chooseNewDestinationFolder() } label: {
-            HStack {
-                if case .newFolder(let url) = model.renameDestination {
-                    Image(systemName: "checkmark")
-                    Text(L10n.format(
-                        "menu.moveToFolder",
-                        defaultValue: "Move to “%@”",
-                        arguments: [url.lastPathComponent],
-                        language: preferences.resolvedLanguage
-                    ))
-                } else {
-                    Image(systemName: "checkmark").opacity(0)
-                    Text(L10n.string(
-                        "menu.moveNew",
-                        defaultValue: "Move to New Folder…",
+                        "menu.moveToFolderChoose",
+                        defaultValue: "Move to Folder…",
                         language: preferences.resolvedLanguage
                     ))
                 }

@@ -403,7 +403,7 @@ struct FileRow: View {
                 )
                 .accessibilityLabel(L10n.format(
                     "similarity.badge.accessibility",
-                    defaultValue: "%d possible duplicate(s)",
+                    defaultValue: "%d similar image(s)",
                     arguments: [similarityBadge.count],
                     language: language
                 ))

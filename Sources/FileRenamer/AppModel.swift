@@ -3,6 +3,7 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import RenameKit
+import TipKit
 
 /// The single piece of app state. Owns the item order, the naming rule and the
 /// history; delegates every non-trivial decision to RenameKit.
@@ -13,7 +14,9 @@ import RenameKit
 final class AppModel: ObservableObject {
     // MARK: Published state
 
-    @Published private(set) var items: [RenameItem] = []
+    @Published private(set) var items: [RenameItem] = [] {
+        didSet { TutorialProgress.hasFiles = !items.isEmpty }
+    }
     @Published private(set) var importedFolderRoots: [URL] = []
     @Published private(set) var workingDirectories: [URL] = []
     private(set) var previews: [RenamePreview] = []
@@ -74,8 +77,6 @@ final class AppModel: ObservableObject {
     @Published var isOriginalImagesFolderNamePresented = false
     @Published var originalImagesFolderName = ""
     @Published private(set) var renameDestination: RenameDestination = .inPlace
-    @Published var isNewDestinationFolderNamePresented = false
-    @Published var newDestinationFolderName = ""
     @Published var jpegQualitySetting: JPEGQualitySetting {
         didSet {
             guard jpegQualitySetting != oldValue else { return }
@@ -369,6 +370,10 @@ final class AppModel: ObservableObject {
         }
 
         items = ItemSorter.reindexed(items + fresh)
+        if !fresh.isEmpty {
+            AddFilesTip(language: displayLanguage).invalidate(reason: .actionPerformed)
+            TutorialProgress.advance(from: 0)
+        }
         invalidateOrderHistory()
         if !result.items.isEmpty {
             recordImportedFolderRoots(folderRoots)
@@ -1142,6 +1147,7 @@ final class AppModel: ObservableObject {
     /// Drops a block into the live rule at the caret.
     func insertBlock(_ token: RenameToken, atRun runID: UUID?, caret: Int) {
         rule = rule.inserting(token, atRun: runID, caret: caret)
+        TutorialProgress.advance(from: 2)
     }
 
     /// Saving the same name again overwrites that preset instead of creating a
@@ -1569,10 +1575,6 @@ final class AppModel: ObservableObject {
             }
             .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
         if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
-        // A folder to be created cannot grant access itself; its parent's grant covers it.
-        if case .newFolder(let url) = renameDestination {
-            changedDirectories.append(url.deletingLastPathComponent())
-        }
         guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
         guard beginBusy(localized("busy.changingFiles", defaultValue: "Changing Files…"), critical: true) else { return }
         busyTask = Task { [weak self] in
@@ -1627,9 +1629,6 @@ final class AppModel: ObservableObject {
             + [originalImagesDirectory].compactMap { $0 }
         if let destinationDirectory {
             coveredDirectories.append(destinationDirectory)
-            if case .newFolder = renameDestination {
-                coveredDirectories.append(destinationDirectory.deletingLastPathComponent())
-            }
         }
         let accessBookmarks = bookmarks(covering: coveredDirectories)
         do {
