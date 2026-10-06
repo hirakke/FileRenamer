@@ -60,16 +60,15 @@ extension AppModel {
     }
 
     /// Where the files end up after a rename: next to themselves, or gathered
-    /// into one folder. `newFolder` is the folder to be created at rename time.
+    /// into one folder.
     enum RenameDestination: Equatable {
         case inPlace
         case existingFolder(URL)
-        case newFolder(URL)
 
         var directory: URL? {
             switch self {
             case .inPlace: return nil
-            case .existingFolder(let url), .newFolder(let url): return url
+            case .existingFolder(let url): return url
             }
         }
     }

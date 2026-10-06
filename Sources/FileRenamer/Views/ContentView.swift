@@ -184,26 +184,6 @@ struct ContentView: View {
         } message: {
             Text("選択する保存場所の中に、この名前の新しいフォルダを作成します。")
         }
-        .alert(
-            L10n.string(
-                "destination.new.alertTitle",
-                defaultValue: "Name for the New Folder",
-                language: preferences.resolvedLanguage
-            ),
-            isPresented: $model.isNewDestinationFolderNamePresented
-        ) {
-            TextField("フォルダ名", text: $model.newDestinationFolderName)
-            Button("キャンセル", role: .cancel) {}
-            Button("保存場所を選ぶ") {
-                model.confirmNewDestinationFolderName()
-            }
-        } message: {
-            Text(L10n.string(
-                "destination.new.alertMessage",
-                defaultValue: "The new folder will be created in the chosen location, and the files will be moved into it.",
-                language: preferences.resolvedLanguage
-            ))
-        }
         .frame(minWidth: 900, minHeight: 600)
         .modifier(ClearWindowContainerBackground())
     }

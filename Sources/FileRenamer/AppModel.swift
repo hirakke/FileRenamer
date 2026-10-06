@@ -77,8 +77,6 @@ final class AppModel: ObservableObject {
     @Published var isOriginalImagesFolderNamePresented = false
     @Published var originalImagesFolderName = ""
     @Published private(set) var renameDestination: RenameDestination = .inPlace
-    @Published var isNewDestinationFolderNamePresented = false
-    @Published var newDestinationFolderName = ""
     @Published var jpegQualitySetting: JPEGQualitySetting {
         didSet {
             guard jpegQualitySetting != oldValue else { return }
@@ -1577,10 +1575,6 @@ final class AppModel: ObservableObject {
             }
             .flatMap { [$0.source.deletingLastPathComponent(), $0.destination.deletingLastPathComponent()] }
         if let originalImagesDirectory { changedDirectories.append(originalImagesDirectory) }
-        // A folder to be created cannot grant access itself; its parent's grant covers it.
-        if case .newFolder(let url) = renameDestination {
-            changedDirectories.append(url.deletingLastPathComponent())
-        }
         guard ensureFolderAccess(forDirectories: changedDirectories, showCancellationAlert: true) else { return }
         guard beginBusy(localized("busy.changingFiles", defaultValue: "Changing Files…"), critical: true) else { return }
         busyTask = Task { [weak self] in
@@ -1635,9 +1629,6 @@ final class AppModel: ObservableObject {
             + [originalImagesDirectory].compactMap { $0 }
         if let destinationDirectory {
             coveredDirectories.append(destinationDirectory)
-            if case .newFolder = renameDestination {
-                coveredDirectories.append(destinationDirectory.deletingLastPathComponent())
-            }
         }
         let accessBookmarks = bookmarks(covering: coveredDirectories)
         do {
