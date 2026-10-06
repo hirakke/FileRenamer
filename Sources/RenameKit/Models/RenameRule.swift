@@ -129,8 +129,14 @@ public struct DateConfiguration: Identifiable, Hashable, Sendable, Codable {
         self.customPattern = customPattern
     }
 
+    /// `DateFormatter` reads `YYYY` as the week-based year and `DD` as the day of
+    /// the year, so a typed `YYYYMMDD` would drift around New Year. Custom patterns
+    /// are folded to `y` / `d`; month (`M`), minute (`m`), hour and second stay as typed.
     public var pattern: String {
-        preset == .custom ? customPattern : preset.pattern
+        guard preset == .custom else { return preset.pattern }
+        return customPattern
+            .replacingOccurrences(of: "Y", with: "y")
+            .replacingOccurrences(of: "D", with: "d")
     }
 }
 

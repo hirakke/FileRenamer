@@ -306,6 +306,7 @@ private struct CustomChevron: Shape {
 struct BlockInsertMenu: View {
     @EnvironmentObject private var preferences: AppPreferences
     let insert: (RenameToken) -> Void
+    @State private var isCustomDateSheetPresented = false
 
     var body: some View {
         Menu {
@@ -314,6 +315,12 @@ struct BlockInsertMenu: View {
                     let option = TokenInsertPanel.counterAndDateOptions[index]
                     Button(option.title(in: preferences.resolvedLanguage)) { insert(option.make()) }
                 }
+                Divider()
+                Button(L10n.string(
+                    "blockInsert.customDate.menu",
+                    defaultValue: "Date (Custom Format)…",
+                    language: preferences.resolvedLanguage
+                )) { isCustomDateSheetPresented = true }
             }
             Menu("元の名前") {
                 ForEach(TokenInsertPanel.originalNameOptions.indices, id: \.self) { index in
@@ -326,5 +333,96 @@ struct BlockInsertMenu: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .sheet(isPresented: $isCustomDateSheetPresented) {
+            CustomDateBlockSheet { insert(.date($0)) }
+        }
+    }
+}
+
+/// Lets a custom date pattern be typed straight from the insert menu instead of
+/// inserting a preset and then opening the block's editor.
+private struct CustomDateBlockSheet: View {
+    @EnvironmentObject private var preferences: AppPreferences
+    @Environment(\.dismiss) private var dismiss
+    @State private var pattern = "YYYYMMDD"
+    @State private var source: DateSource = .creation
+    let onInsert: (DateConfiguration) -> Void
+
+    private var configuration: DateConfiguration {
+        DateConfiguration(source: source, preset: .custom, customPattern: pattern)
+    }
+
+    private var trimmedPatternIsEmpty: Bool {
+        pattern.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    private var exampleText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = configuration.pattern
+        return formatter.string(from: Date())
+    }
+
+    private func text(_ key: String, _ defaultValue: String) -> String {
+        L10n.string(key, defaultValue: defaultValue, language: preferences.resolvedLanguage)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(text("blockInsert.customDate.title", "Custom Date Format"))
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text("blockInsert.customDate.format", "Format"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                TextField("YYYYMMDD", text: $pattern)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .monospaced))
+                    .onSubmit(commit)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text("blockInsert.customDate.source", "Date Type"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker(text("blockInsert.customDate.source", "Date Type"), selection: $source) {
+                    ForEach(DateSource.allCases, id: \.self) { source in
+                        Text(source.localizedDisplayName(in: preferences.resolvedLanguage)).tag(source)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+            }
+
+            Text(L10n.format(
+                "blockInsert.customDate.preview",
+                defaultValue: "Example: %@",
+                arguments: [exampleText],
+                language: preferences.resolvedLanguage
+            ))
+            .font(.system(.callout, design: .monospaced))
+
+            Text(text("blockInsert.customDate.help", "YYYY year / MM month / DD day / HH hour / mm minute / ss second"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                Spacer()
+                Button(text("blockInsert.customDate.cancel", "Cancel")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button(text("blockInsert.customDate.insert", "Insert"), action: commit)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(trimmedPatternIsEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 380)
+    }
+
+    private func commit() {
+        guard !trimmedPatternIsEmpty else { return }
+        onInsert(configuration)
+        dismiss()
     }
 }
