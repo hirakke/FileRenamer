@@ -40,7 +40,7 @@ struct AddFilesTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.addFiles.message",
-            defaultValue: "Add files or folders here, or drop them anywhere in the window.",
+            defaultValue: "Add files here, or drop them on the window.",
             language: language
         ))
     }
@@ -64,7 +64,7 @@ struct TypeNameTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.typeName.message",
-            defaultValue: "Type fixed text directly. Every file is renamed with this rule, and the list shows the result before anything changes.",
+            defaultValue: "Type the new name. Check the list before renaming.",
             language: language
         ))
     }
@@ -88,7 +88,7 @@ struct InsertBlocksTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.insertBlocks.message",
-            defaultValue: "Blocks change per file — counters, dates, the original name, or photo info. Click a block to adjust it.",
+            defaultValue: "Add counters, dates, and more that change per file.",
             language: language
         ))
     }
@@ -112,7 +112,7 @@ struct RenameOrGatherTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.renameOrGather.message",
-            defaultValue: "Press the button to rename. Use ▾ to move the files into one existing or new folder at the same time.",
+            defaultValue: "Rename here. Use ▾ to also move files into a folder.",
             language: language
         ))
     }
@@ -137,7 +137,7 @@ struct UndoTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.undo.message",
-            defaultValue: "Changes can be undone with ⌥⌘Z, even after the app is restarted.",
+            defaultValue: "Undo with ⌥⌘Z, even after restarting.",
             language: language
         ))
     }
@@ -178,7 +178,21 @@ extension View {
     /// Attaches one step of the tutorial. The primary action advances the tour;
     /// "skip" ends it entirely.
     func tutorialTip(_ tip: some Tip, step: Int, arrowEdge: Edge) -> some View {
-        popoverTip(tip, arrowEdge: arrowEdge) { action in
+        modifier(TutorialTipModifier(tip: tip, step: step, arrowEdge: arrowEdge))
+    }
+}
+
+/// Watches the generation itself so a host view that otherwise has no reason to
+/// redraw (the status bar, the rule bar) re-attaches its tip under the new id
+/// as soon as "Show Tutorial Again" is chosen.
+private struct TutorialTipModifier<T: Tip>: ViewModifier {
+    let tip: T
+    let step: Int
+    let arrowEdge: Edge
+    @AppStorage("tutorial.generation") private var generation = 0
+
+    func body(content: Content) -> some View {
+        content.popoverTip(tip, arrowEdge: arrowEdge) { action in
             if action.id == "skip" {
                 TutorialProgress.step = 99
             } else {
@@ -186,5 +200,6 @@ extension View {
             }
             tip.invalidate(reason: .actionPerformed)
         }
+        .id(generation)
     }
 }

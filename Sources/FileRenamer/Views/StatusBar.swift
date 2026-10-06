@@ -137,7 +137,6 @@ struct StatusBar: View {
                 .fixedSize()
                 .tint(.white)
                 .disabled(model.isEmpty || model.isBusy)
-                .tutorialTip(RenameOrGatherTip(language: preferences.resolvedLanguage), step: 3, arrowEdge: .bottom)
             }
             .fixedSize(horizontal: false, vertical: true)
             .background(
@@ -146,6 +145,8 @@ struct StatusBar: View {
             )
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            // Attached outside the white foreground/tint so the tip keeps its own colors.
+            .tutorialTip(RenameOrGatherTip(language: preferences.resolvedLanguage), step: 3, arrowEdge: .bottom)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
