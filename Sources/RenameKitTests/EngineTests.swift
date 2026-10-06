@@ -263,6 +263,15 @@ func runEngineTests() async {
         )
     }
 
+    await runner.test("カスタム形式の YYYYMMDD は年末でも暦の年月日になる") {
+        let item = makeItem("a.jpg", creation: makeDate("2026-12-31 10:00:00"))
+        let rule = RenameRule(tokens: [
+            .date(DateConfiguration(source: .creation, preset: .custom, customPattern: "YYYYMMDD"))
+        ])
+        let previews = RenameEngine().makePreviews(items: [item], rule: rule)
+        try expectEqual(previews.map(\.proposedName), ["20261231.jpg"])
+    }
+
     await runner.test("開始番号と桁数が反映される") {
         let rule = RenameRule(tokens: [.counter(CounterConfiguration(start: 100, digits: 4))])
         let previews = RenameEngine().makePreviews(items: [makeItem("a.jpg"), makeItem("b.jpg")], rule: rule)

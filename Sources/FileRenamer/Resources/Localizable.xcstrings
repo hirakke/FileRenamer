@@ -528,7 +528,15 @@
     "confirmation.destinationFolder" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Files will be moved to “%@”." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ファイルは「%@」に移動されます。" } } } },
     "rename.movedToFolder" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Moved %d file(s) to “%@”." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "%d 件を「%@」に移動しました" } } } },
     "similarity.error.cannotDecode" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t read the image “%@”." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%@」の画像を読み取れませんでした。" } } } },
-    "similarity.error.cannotCreateFeaturePrint" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t analyze the image “%@”." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%@」の画像特徴を作成できませんでした。" } } } }
+    "similarity.error.cannotCreateFeaturePrint" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t analyze the image “%@”." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "「%@」の画像特徴を作成できませんでした。" } } } },
+    "blockInsert.customDate.menu" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date (Custom Format)…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日付（形式を入力）…" } } } },
+    "blockInsert.customDate.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom Date Format" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日付の形式" } } } },
+    "blockInsert.customDate.format" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Format" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "形式" } } } },
+    "blockInsert.customDate.source" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Date Type" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "日付の種類" } } } },
+    "blockInsert.customDate.preview" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Example: %@" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "例: %@" } } } },
+    "blockInsert.customDate.help" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "YYYY year / MM month / DD day / HH hour / mm minute / ss second" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "YYYY 年 / MM 月 / DD 日 / HH 時 / mm 分 / ss 秒" } } } },
+    "blockInsert.customDate.insert" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Insert" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "挿入" } } } },
+    "blockInsert.customDate.cancel" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "キャンセル" } } } }
   },
   "version" : "1.0"
 }
