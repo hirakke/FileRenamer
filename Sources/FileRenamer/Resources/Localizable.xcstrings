@@ -85,6 +85,7 @@
     "ウィンドウを開いたときにサイドバーを表示" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Show sidebar when opening a window" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "ウィンドウを開いたときにサイドバーを表示" } } } },
     "アップデート" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップデート" } } } },
     "起動後にアップデートを自動確認" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatically check for updates after launch" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "起動後にアップデートを自動確認" } } } },
+    "アップデートを自動でインストール" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatically install updates" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "アップデートを自動でインストール" } } } },
     "更新情報の確認時も、ファイルや画像は送信しません。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking for updates never sends your files or images." } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "更新情報の確認時も、ファイルや画像は送信しません。" } } } },
     "プライバシー" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー" } } } },
     "データの処理" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Data Handling" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "データの処理" } } } },

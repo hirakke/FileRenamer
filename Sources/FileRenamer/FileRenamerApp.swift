@@ -608,6 +608,15 @@ private struct PreferencesView: View {
                     )
                 )
 
+                Toggle(
+                    "アップデートを自動でインストール",
+                    isOn: Binding(
+                        get: { updateController.automaticallyDownloadsUpdates },
+                        set: { updateController.setAutomaticallyDownloadsUpdates($0) }
+                    )
+                )
+                .disabled(!updateController.automaticallyChecksForUpdates)
+
                 Button("アップデートを確認…") {
                     updateController.checkForUpdates()
                 }

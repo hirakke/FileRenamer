@@ -7,6 +7,7 @@ final class UpdateController: ObservableObject {
 
     @Published private(set) var canCheckForUpdates = false
     @Published private(set) var automaticallyChecksForUpdates = false
+    @Published private(set) var automaticallyDownloadsUpdates = false
 
     init() {
         updaterController = SPUStandardUpdaterController(
@@ -21,6 +22,9 @@ final class UpdateController: ObservableObject {
         updaterController.updater.publisher(for: \.automaticallyChecksForUpdates)
             .receive(on: RunLoop.main)
             .assign(to: &$automaticallyChecksForUpdates)
+        updaterController.updater.publisher(for: \.automaticallyDownloadsUpdates)
+            .receive(on: RunLoop.main)
+            .assign(to: &$automaticallyDownloadsUpdates)
     }
 
     func checkForUpdates() {
@@ -29,5 +33,9 @@ final class UpdateController: ObservableObject {
 
     func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
         updaterController.updater.automaticallyChecksForUpdates = enabled
+    }
+
+    func setAutomaticallyDownloadsUpdates(_ enabled: Bool) {
+        updaterController.updater.automaticallyDownloadsUpdates = enabled
     }
 }
