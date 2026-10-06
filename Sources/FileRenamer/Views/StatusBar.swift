@@ -51,7 +51,7 @@ struct StatusBar: View {
                     Label(
                         L10n.format(
                             "status.duplicateGroups",
-                            defaultValue: "%lld Duplicate Groups",
+                            defaultValue: "%lld Similar Groups",
                             arguments: [model.duplicateGroupCount],
                             language: preferences.resolvedLanguage
                         ),
@@ -63,7 +63,7 @@ struct StatusBar: View {
                                      : Palette.duplicateSimilar)
                 }
                 .buttonStyle(.plain)
-                .help(L10n.string("status.reviewDuplicatesHelp", defaultValue: "Review potentially duplicate images before removing any files.", language: preferences.resolvedLanguage))
+                .help(L10n.string("status.reviewDuplicatesHelp", defaultValue: "Review and delete similar images.", language: preferences.resolvedLanguage))
             }
             if model.isValidatingDestinations {
                 ProgressView()
