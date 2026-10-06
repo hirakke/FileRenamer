@@ -112,7 +112,7 @@ struct RenameOrGatherTip: Tip {
     var message: Text? {
         Text(L10n.string(
             "tutorial.renameOrGather.message",
-            defaultValue: "Rename here. Use ▾ to also move files into a folder.",
+            defaultValue: "Rename here. Use ▾ to pick a folder to move them to.",
             language: language
         ))
     }
